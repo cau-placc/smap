@@ -1,0 +1,135 @@
+--------------------------------------------------------------------------------
+--- This module implements the execution of programs. It primarily provides an
+--- appropriate function to execute source code of a specific programming
+--- language with an associated language implementation system from the
+--- execution environment (see module `ExecEnv`) and a data type to classify
+--- the execution results.
+---
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version February 2014
+--------------------------------------------------------------------------------
+
+module Execution (
+  ExecResult(..),execute
+) where
+
+import IO
+import Maybe
+import Read
+import ReadNumeric
+import Socket
+
+import ExecEnvModel
+
+--------------------------------------------------------------------------------
+-- Executing programs                                                         --
+--------------------------------------------------------------------------------
+
+--- The data type für execution results. Currently, there are two different
+--- types of execution results (future extensions may differentiate between more
+--- types depending on execution exit codes).
+--- @cons ExecSuccess out - the constructor for successful executions
+--- @cons ExecError out   - the constructor for failed executions
+data ExecResult = ExecSuccess String | ExecError String
+
+--- Executes the given source code with the given language implementation
+--- system and returns an `ExecResult` containing the execution output. If no
+--- system is given an `ExecError` is returned.
+--- @param code    - the program to be executed
+--- @param mSystem - a possibly given execution system
+execute :: String -> Maybe System -> IO ExecResult
+execute code mSystem =
+  maybe (return $ ExecError noSystemFoundErr)
+        (\s -> do (exitCode,result) <- connectToCGI (systemExecUrl s) code
+                  execResult        <- getExecResult exitCode (header s++result)
+                  return execResult)
+        mSystem
+  where
+    header s     = headerRule s++headerText s++headerRule s++"\n"
+    headerText s = "Executing with "++systemName s++":\n"
+    headerRule s = replicate (length (headerText s)-1) '-'++"\n"
+    noSystemFoundErr =
+      "-----------------------\nOops, an error occured!\n--------------------"++
+      "---\n\nSorry, this programming language is not yet fully supported."
+
+-- Maps exit codes from execution results to values of type `ExecResult`.
+-- @param exitCode - the exit code of the execution attempt
+-- @param output   - the textual output of the execution attempt (stdout/stderr)
+getExecResult :: Int -> String -> IO ExecResult
+getExecResult exitCode output = return $
+  case exitCode of
+    0 -> ExecSuccess output
+    _ -> ExecError   output
+
+--------------------------------------------------------------------------------
+--- Connecting to a web service (originally by Michael Hanus)                 --
+--------------------------------------------------------------------------------
+
+-- Sends an input string to given CGI URL and retrieves the output of the script
+-- execution.
+-- @param url   - the URL of the execution web service
+-- @param input - the source code tp be executed
+-- @author Michael Hanus, Lasse Kristopher Meyer
+connectToCGI :: String -> String -> IO (Int,String)
+connectToCGI url input = 
+  maybe (return (1,"The execution service could not be reached."))
+        (\(host,path,socketNr) -> 
+          do postResponse <- httpPost host path socketNr input
+             return $ readResult postResponse)
+        (partitionUrl url)
+
+-- Parses the textual result from the SCI script execution and extracts the exit
+-- code abd the execution output.
+-- @param postResponse - the response to the POST request as plain text
+readResult :: String -> (Int,String)
+readResult postResponse =
+  maybe (1,"No exit code found.")
+        (\(exitCode,_) -> (exitCode,drop 1 rest))
+        (ReadNumeric.readNat fstLn)
+  where
+    (fstLn,rest) = break (=='\n') postResponse
+
+-- An I/O action that shows the answer of a web server to the request of a
+-- document.
+-- @author Michael Hanus
+httpPost :: String -> String -> Int -> String -> IO String
+httpPost host doc snr input = do
+ str <- connectToSocket host snr
+ hPutStrLn str ("POST " ++ doc ++ " HTTP/1.0")
+ hPutStrLn str ("Host: " ++ host)
+ hPutStrLn str "Content-Type: text/plain; charset=ISO-8859-1"
+ hPutStrLn str ("Content-Length: "++show (length input))
+ hPutStrLn str "" -- end of HTTP header
+ hPutStrLn str input
+ hFlush str
+ result <- hGetContents str
+ return $ readContent result
+
+-- Splits a URL into the host name, path, and socket number (default 80).
+-- @author Michael Hanus
+partitionUrl :: String -> Maybe (String,String,Int)
+partitionUrl purl = let (protocol,url) = splitAt 7 purl in
+  if protocol=="http://" 
+  then case break (==':') url of 
+         (host,_:snrPath) -> case break (=='/') snrPath of
+                               (snr,"") -> result host "/" snr
+                               (snr,path) -> result host path snr
+         _                -> case break (=='/') url of
+                               (host,"") -> Just (host,"/",80)
+                               (host,path) -> Just (host,path,80)
+  else Nothing                             
+  where
+    result host path snrs = if snr == 0 then Nothing else Just (host,path,snr)
+      where
+        snr = Read.readNat snrs
+
+-- Yield content (i.e., the string following the first empty line).
+-- @author Michael Hanus
+readContent :: String -> String
+readContent s = case break (=='\n') s of
+  (_,'\n':'\r':'\n':conts) -> conts
+  (_,'\n':'\n':conts)      -> conts
+  (_,'\n':noconts)         -> readContent noconts
+  _                        -> "error: no content read"
+
+--------------------------------------------------------------------------------

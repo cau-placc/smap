@@ -1,0 +1,62 @@
+/* -------------------------------------------------------------------------- */
+
+.cm-s-smap span.cm-comment {
+  color: #5cb85c;
+}
+
+.cm-s-smap span.cm-keyword {
+  color: #d9524f;
+  font-weight: bold; 
+  line-height: 1em;
+}
+
+.cm-s-smap span.cm-string {
+  color: #f0ad4e; 
+}
+
+.cm-s-smap span.cm-builtin {
+  color: #f0ad4e;
+  line-height: 1em;
+}
+
+.cm-s-smap span.cm-special {
+  color: #0aa;
+  font-weight: bold;
+  line-height: 1em;
+}
+
+.cm-s-smap span.cm-variable {
+  color: #000;
+}
+
+.cm-s-smap span.cm-number, 
+.cm-s-neat span.cm-atom {
+  color: #418bca;
+}
+
+.cm-s-smap span.cm-meta {
+  color: #555;
+}
+
+.cm-s-smap span.cm-link {
+  color: #3a3;
+}
+
+.cm-s-smap .CodeMirror-activeline-background {
+  background: #f8f8f8 !important;
+}
+
+.cm-s-smap .CodeMirror-matchingbracket {
+  border-bottom: 1px solid #000;
+  color: #000 !important;
+}
+
+.cm-s-smap .CodeMirror-selected {
+  background: #edf7ed !important;
+}
+
+.cm-s-smap .CodeMirror-focused .CodeMirror-selected {
+  background: #edf7ed !important;
+}
+
+/* -------------------------------------------------------------------------- */

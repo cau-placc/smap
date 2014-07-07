@@ -1,0 +1,1068 @@
+/* --------------------------------------------------------------------------
+ * The primary style sheet for the web application `Smap`.
+ *
+ * Author: Lasse Kristopher Meyer
+ * Version: January 2014
+ * -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+ * -- General                                                              --
+ * -------------------------------------------------------------------------- */
+
+body {
+  background: #f9f9f9;
+  height: 100%;
+  padding-top: 40px;
+}
+
+code {
+  background-color: transparent;
+  color : #000;
+  font-size: 85%;
+}
+
+html,
+form {
+  height: 100%;
+}
+
+label {
+  margin-bottom: 2px;
+}
+
+.border-right {
+  border-right: 1px solid #EEEEEE;
+}
+
+.left {
+  display: inline-block;
+}
+
+.right {
+  display: inline-block;
+  float: right;
+  text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Customized Bootstrap 3 components                                    --
+ * -------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Glyphicons Halflings';
+  src: 
+    url('../fonts/glyphicons-halflings-regular.eot');
+  src: 
+    url('../fonts/glyphicons-halflings-regular.eot?#iefix')
+      format('embedded-opentype'),
+    url('../fonts/glyphicons-halflings-regular.woff')
+      format('woff'), 
+    url('../fonts/glyphicons-halflings-regular.ttf')
+      format('truetype'),
+    url('../fonts/glyphicons-halflings-regular.svg#glyphicons-halflingsregular')
+      format('svg');
+}
+
+.btn-primary {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.btn-success {
+  font-weight: bold;
+}
+
+.btn-warning {
+  font-weight: bold;
+}
+
+.checkbox {
+  margin-top: 0;
+}
+
+.col-xs-1,
+.col-sm-1,
+.col-md-1,
+.col-lg-1,
+.col-xs-2,
+.col-sm-2,
+.col-md-2,
+.col-lg-2,
+.col-xs-3,
+.col-sm-3,
+.col-md-3,
+.col-lg-3,
+.col-xs-4,
+.col-sm-4,
+.col-md-4,
+.col-lg-4,
+.col-xs-5,
+.col-sm-5,
+.col-md-5,
+.col-lg-5,
+.col-xs-6,
+.col-sm-6,
+.col-md-6,
+.col-lg-6,
+.col-xs-7,
+.col-sm-7,
+.col-md-7,
+.col-lg-7,
+.col-xs-8,
+.col-sm-8,
+.col-md-8,
+.col-lg-8,
+.col-xs-9,
+.col-sm-9,
+.col-md-9,
+.col-lg-9,
+.col-xs-10,
+.col-sm-10,
+.col-md-10,
+.col-lg-10,
+.col-xs-11,
+.col-sm-11,
+.col-md-11,
+.col-lg-11,
+.col-xs-12,
+.col-sm-12,
+.col-md-12,
+.col-lg-12 {
+  padding: 0 5px;
+}
+
+.row {
+  padding: 0 10px;
+}
+
+.container .text-muted {
+  margin: 10px 0;
+  text-align: center;
+}
+
+.control-label {
+  margin-bottom: 2px;
+}
+
+.glyphicon-eye-close {
+  color: #999;
+  font-size: 90%;
+  margin-left: 5px;
+}
+
+.help-block {
+  font-size: 12px;
+}
+
+.input-group-btn > .btn-primary {
+  margin-right: 0;
+}
+
+.input-group-sm > textarea.form-control {
+  height: auto;
+}
+
+.modal-body,
+.modal-footer,
+.modal-header {
+  margin: 0;
+  padding: 10px;
+}
+
+.modal-dialog {
+  margin-top: 50px;
+}
+
+.panel {
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.page-header {
+  border-bottom: 1px solid #ccc;
+  margin: 0 0 20px 0;
+  padding-bottom: 0;
+}
+
+.page-header > h3,
+.page-header > h4 {
+  font-weight: bold;
+  margin: 0 0 5px 0;
+}
+
+.well {
+  margin-top: 10px;
+}
+
+.tooltip.fade.right.in .tooltip-inner {
+  width: 180px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Customized CodeMirror components                                     --
+ * -------------------------------------------------------------------------- */
+
+.CodeMirror {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  height: 100%;
+}
+
+.CodeMirror-scroll {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Navigation bar                                                       --
+ * -------------------------------------------------------------------------- */
+
+#navigation-bar {
+  min-height: 40px;
+}
+
+#navigation-bar .navbar-brand {
+  color: #ddd;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 8px 15px 9px 15px;
+}
+
+#navigation-bar .navbar-nav > li > a {
+  padding: 10px 15px;
+}
+
+#navigation-bar .navbar-nav > li > a.admin > .glyphicon-user {
+  color: #5cb85c;
+}
+
+#navbar-search-form {
+  margin: 5px 0px;
+}
+
+#navbar-search-form .btn {
+  border-radius: 0 10px 10px 0;
+  margin-left: -5px;
+}
+
+#navbar-search-form .form-control {
+  border-color: #aaa;
+  border-radius: 10px 0 0 10px;
+}
+
+#navbar-fork-form {
+  padding: 5px 20px 10px 20px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Content wrap                                                         --
+ * -------------------------------------------------------------------------- */
+
+#wrap {
+  margin: 0 auto -50px;
+  min-height: 100%;
+  padding: 10px 0 50px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Sticky footer                                                        --
+ * -------------------------------------------------------------------------- */
+
+#sticky-footer {
+  background-color: #eee;
+  border-top: 1px solid #ccc;
+  height: 40px;
+  margin-top: 10px;
+}
+
+#sticky-footer > .container {
+  padding: 0 15px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Alert dialog box                                                     --
+ * -------------------------------------------------------------------------- */
+
+#alert-error-dialog-box .modal-header {
+  background-color: #f2dede;
+  border-bottom: 1px solid #ebccd1;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  color: #a94442;
+}
+
+#alert-error-dialog-box .close {
+  color: inherit;
+}
+
+#alert-success-dialog-box .modal-header {
+  background-color: #dff0d8;
+  border-bottom: 1px solid #d6e9c6;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  color: #3c763d;
+}
+
+#alert-success-dialog-box .close {
+  color: inherit;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Error page                                                           --
+ * -------------------------------------------------------------------------- */
+
+#error-page hr {
+  margin: 10px 0;
+}
+
+#error-page label {
+  margin-bottom: 0;
+}
+
+#error-page .panel-danger {
+  border: 1px solid #ccc;
+}
+
+#error-page .panel-title {
+  margin: 5px;
+}
+
+#error-page .well {
+  margin-bottom: 10px;
+  margin-top: 0;
+  padding: 10px;
+}
+
+#error-page .well code {
+  display: inline-block;
+  font-size: 80%;
+  line-height: 1;
+  white-space: normal;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Confirmation dialog box                                              --
+ * -------------------------------------------------------------------------- */
+
+.confirmation-dialog-box .modal-dialog {
+  width: 400px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- WUI forms                                                            --
+ * -------------------------------------------------------------------------- */
+
+#wui-form hr {
+  margin: 0;
+}
+
+#wui-form label {
+  margin-bottom: 0;
+}
+
+#wui-form textarea {
+  resize: none;
+}
+
+#wui-form .btn-primary {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+#wui-form .control-label {
+  width: 100%;
+}
+
+#wui-form .form-widget {
+  border-bottom: 1px solid #ddd;
+  margin: 15px 0;
+}
+
+#wui-form .form-widget > :last-child {
+  margin-bottom: 15px;
+}
+
+#wui-form .form-widget .clearfix {
+  border-bottom: 1px dashed #EEEEEE;
+  margin-bottom: 15px;
+}
+
+#wui-form .info {
+  border-bottom: 1px solid #eee;
+  color: #999;
+  font-size: 85%;
+}
+
+#wui-form .page-header {
+  margin-bottom: 0;
+}
+
+#wui-form .panel-body {
+  padding: 20px 20px 15px 20px;
+}
+
+#wui-form .panel-footer {
+  color: #999;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Interactive source code editor (SmapIE)                              --
+ * -------------------------------------------------------------------------- */
+
+#smap-ie {
+  height: 100%;
+}
+
+#smap-ie label {
+  margin-bottom: 2px;
+}
+
+#smap-ie select {
+  border: 1px solid #ccc;
+  height: 30px;
+  position: absolute;
+  right: 8px;
+  top: 30px;
+  width: 150px;
+}
+
+#smap-ie textarea {
+  resize: none;
+}
+
+#smap-ie .CodeMirror {
+  border-radius: 5px 5px 0 5px;
+}
+
+#smap-ie .col-xs-5 {
+  height: 100%;
+  padding-right: 0;
+  padding-left: 10px;
+}
+
+#smap-ie .col-xs-5 .row:first-child {
+  height: 70%;
+  padding-bottom: 10px;
+}
+
+#smap-ie .col-xs-5 .row:last-child {
+  height: 30%;
+  margin-right: 0;
+  padding: 0 0 56px 5px;
+}
+
+#smap-ie .col-xs-7 {
+  height: 100%;
+  padding-right: 0;
+  padding-bottom: 22px;
+  padding-left: 0;
+}
+
+#smap-ie .form-group {
+  height: 100%;
+  margin-bottom: 0;
+  padding-bottom: 22px;
+}
+
+#smap-ie .help-block {
+  margin: 5px 0 0 0;
+}
+
+#smap-ie .panel {
+  height: 100%;
+  margin: 0;
+}
+
+#smap-ie .panel-body {
+  height: 100%;
+  padding: 10px 15px 15px 15px;
+}
+
+#smap-ie .row {
+  height: 100%;
+  padding: 0 15px;
+}
+
+#execution-result {
+  background-color: #f6f6f6;
+  color: #000;
+  cursor: auto;
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 80%;
+  height: 100%;
+}
+
+#execution-result:focus {
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  border: 1px solid #ccc;
+}
+
+.has-error #execution-result,
+.has-error #execution-result:focus {
+  background-color: #f9f0f0;
+  border-color: #a94442;
+  color: #a94442;
+}
+
+.has-success #execution-result,
+.has-success #execution-result:focus {
+  background-color: #eef7ea;
+  border-color: #3c763d;
+  color: #3c763d;
+}
+
+#run-button {
+  margin-right: 5px;
+  width: 122px;
+}
+
+#reset-button {
+  font-weight: normal;
+}
+
+#smap-ie #button-bar {
+  border: 1px solid #ccc;
+  border-left: none;
+  border-radius: 0 5px 0 0;
+  padding: 10px;
+}
+
+#program-info {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  border-radius: 0 0 5px 0;
+  font-size: 85%;
+  height: 100%;
+  margin: 0;
+  padding: 10px;
+}
+
+#program-info .clearfix {
+  border-bottom: 1px dashed #ddd;
+}
+
+#program-info-label {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px 0 5px 0;
+  bottom: 0;
+  margin: 0;
+  padding: 2px 4px 0 4px;
+  right: 0;
+  position: absolute;
+}
+
+.dropdown-menu > li > button {
+  border: none;
+  display: block;
+  padding: 3px 20px;
+  clear: both;
+  font-weight: normal;
+  line-height: 1.428571429;
+  color: #333333;
+  white-space: nowrap;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+/* -- Rendering submit buttons in dropdown menus as hyperlinks -- */
+
+.dropdown-menu > li > button:hover,
+.dropdown-menu > li > button:focus {
+  background-color: #e8e8e8;
+  background-image: -webkit-linear-gradient(top, #f5f5f5 0%, #e8e8e8 100%);
+  background-image: linear-gradient(to bottom, #f5f5f5 0%, #e8e8e8 100%);
+  background-repeat: repeat-x;
+  color: #262626;
+  text-decoration: none;
+}
+
+.dropdown-menu > .active > button,
+.dropdown-menu > .active > button:hover,
+.dropdown-menu > .active > button:focus {
+  background-color: #357ebd;
+  background-image: -webkit-linear-gradient(top, #428bca 0%, #357ebd 100%);
+  background-image: linear-gradient(to bottom, #428bca 0%, #357ebd 100%);
+  background-repeat: repeat-x;
+  color: #fff;
+  outline: 0;
+  text-decoration: none;
+}
+
+.dropdown-menu > .disabled > button,
+.dropdown-menu > .disabled > button:hover,
+.dropdown-menu > .disabled > button:focus {
+  background-color: transparent;
+  background-image: none;
+  color: #999;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Search panel                                                         --
+ * -------------------------------------------------------------------------- */
+
+#search-panel hr {
+  border-color: #ccc;
+  margin-bottom: 0;
+  margin-top: 10px;
+}
+
+#search-panel .body {
+  margin: 0;
+}
+
+#search-panel .btn {
+  width: 50%;
+}
+
+#search-panel .btn-group {
+  margin-top: 10px;
+  width: 100%;
+}
+
+#search-panel .checkbox {
+  margin-bottom: 5px;
+}
+
+#search-panel .form-group {
+  margin-bottom: 10px;
+}
+
+#search-panel .text-muted {
+  border-bottom: 1px solid #eee;
+  display: block;
+  margin: 0 0 10px 0;
+  text-align: left;
+}
+
+#search-panel-apply-button {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+#search-panel-reset-button {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Pager                                                                --
+ * -------------------------------------------------------------------------- */
+
+#pager {
+  margin: -5px;
+}
+
+#pager li.next > a,
+#pager li.previous > a {
+  padding: 2px 10px;
+}
+
+#pager .text-muted {
+  display: inline;
+  font-size: 85%;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Sidebar panels                                                       --
+ * -------------------------------------------------------------------------- */
+
+.sidebar-panel {
+  margin-bottom: 10px;
+}
+
+.sidebar-panel > .panel-body {
+  padding-top: 10px;
+}
+
+.sidebar-panel .header {
+  margin-bottom: 0px
+}
+
+.sidebar-panel .header a.right {
+  margin-top: 3px
+}
+
+.sidebar-panel .header a > .badge {
+}
+
+.sidebar-panel .header a > .badge:hover {
+  background-color: #666;
+}
+
+.sidebar-panel .info {
+  border-bottom: 1px solid #eee;
+  color: #999;
+  font-size: 85%;
+  line-height: 1.2;
+}
+
+.sidebar-panel .body {
+  margin-top: 10px;
+}
+
+.sidebar-panel .body label {
+  margin: 1px;
+}
+
+.sidebar-panel .body p {
+  margin-bottom: 0;
+}
+
+.sidebar-panel .body select {
+  margin-bottom: 10px;
+}
+
+.sidebar-panel .body .text-muted {
+  margin: 0;
+}
+
+.sidebar-panel .body .well {
+  font-size: 80%;
+  font-style: italic;
+  margin: 0;
+}
+
+.sidebar-panel .body .well code {
+  display: inline-block;
+  font-style: normal;
+  line-height: 1;
+  white-space: normal;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Options panel                                                        --
+ * -------------------------------------------------------------------------- */
+
+#options-panel .list-unstyled {
+  margin-bottom: 0;
+}
+
+#options-panel .list-unstyled > li {
+  border: none;
+  padding: 0;
+}
+
+#options-panel .list-unstyled > li:first-child > :first-child {
+  border-radius: 5px 5px 0 0;
+  width: 100%;
+}
+
+#options-panel .list-unstyled > li:not(:first-child) {
+  border: 1px solid #ccc;
+  border-top: none;
+  border-bottom: 1px solid #eee;
+}
+
+#options-panel .list-unstyled > li:last-child {
+  border-radius: 0 0 5px 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+#options-panel .list-unstyled > li:not(:first-child) > a,
+#options-panel .list-unstyled > li:not(:first-child) > button {
+  color: #999;
+  display: inline-block;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 1px 10px;
+  text-align: left;
+  text-decoration: none;
+  width: 100%;
+}
+
+#options-panel .list-unstyled > li:not(:first-child) > a.disabled,
+#options-panel .list-unstyled > li:not(:first-child) > button.disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+#options-panel .list-unstyled > li:not(:first-child) > a:hover,
+#options-panel .list-unstyled > li:not(:first-child) > button:hover {
+  background-color: #eee;
+  color: #000;
+}
+
+#open-button {
+  font-weight: bold;
+  height: auto;
+  line-height: 1;
+  width: 100%;
+}
+
+#open-button :last-child {
+  font-weight: normal;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Browser main panel                                                   --
+ * -------------------------------------------------------------------------- */
+
+.breadcrumb {
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+#main-panel .page-header {
+  margin-bottom: 0;
+}
+
+#main-panel .info {
+  border-bottom: 1px solid #eee;
+  color: #999;
+  font-size: 85%;
+  line-height: 1.2;
+  margin: 0;
+  padding: 2px 0;
+}
+
+#main-panel .body {
+  margin-top: 10px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Program list                                                         --
+ * -------------------------------------------------------------------------- */
+
+#program-list {
+  margin-bottom: 0;
+}
+
+#program-list h5 {
+  margin: 0 0 2px 0;
+}
+
+#program-list > li {
+  background-color: #f8f8f8;
+  border-bottom: 1px dashed #ccc;
+  clear: both;
+  padding: 5px;
+}
+
+#program-list li h5 > a {
+  color: #000;
+}
+
+#program-list li .open-link {
+  color: #999;
+  display: none;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+#program-list li:hover .open-link {
+  display: inline;
+}
+
+#program-list li:hover .open-link:hover {
+  color: #666;
+  text-decoration: none;
+}
+
+#program-list > li:hover {
+  background-color: #f1f1f1;
+}
+
+#program-list > li:first-child {
+  border-top: 1px solid #eee;
+}
+
+#program-list > li:last-child {
+  border-bottom: 1px solid #eee;
+}
+
+#program-list .right {
+  color: #aaa;
+  font-size: 85%;
+  line-height: 1.7;
+}
+
+#program-list .right .glyphicon {
+  color: #666;
+  margin-left: 10px;
+}
+
+#program-list .right .glyphicon-heart {
+  color: #a94442;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Comment modal                                                        --
+ * -------------------------------------------------------------------------- */
+
+#comment-modal .list-unstyled {
+  margin: 0;
+}
+
+#comment-modal .list-unstyled li {
+  background-color: #f8f8f8;
+  border-bottom: 1px dashed #ccc;
+  clear: both;
+  padding: 5px;
+}
+
+#comment-modal .list-unstyled li:hover {
+  background-color: #f1f1f1;
+}
+
+#comment-modal .list-unstyled > li:first-child {
+  border-top: 1px solid #eee;
+}
+
+#comment-modal .list-unstyled > li:last-child {
+  border-bottom: 1px solid #eee;
+}
+
+#comment-modal hr {
+  margin: 10px 0 20px 0;
+}
+
+#comment-modal textarea {
+  font-size: 85%;
+  margin-bottom: 10px;
+  resize: none;
+}
+
+#comment-modal .modal-body {
+  padding: 10px 20px 20px 20px;
+}
+
+#comment-modal .text-muted {
+  margin: 2px 0 0 0;
+}
+
+#comment-modal .comment-text {
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  font-size: 80%;
+  font-style: italic;
+  padding: 10px;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Landing page                                                         --
+ * -------------------------------------------------------------------------- */
+
+#landing-page {
+  color: #999;
+}
+
+#landing-page h3 {
+  color: #000;
+}
+
+#landing-page .col-xs-4,
+#landing-page .col-md-4 {
+  padding: 0 20px;
+  text-align: center;
+}
+
+#landing-page .img-circle {
+  border: 1px solid #ccc;
+}
+
+.jumbotron {
+  margin-top: -10px;
+  margin-bottom: 70px;
+  padding: 30px;
+}
+
+#help-line {
+  font-size: 85%;
+  padding-top: 70px;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Authentication views                                                 --
+ * -------------------------------------------------------------------------- */
+
+#sign-in-page .panel,
+#forgot-password-page .panel {
+  border-radius: 15px;
+}
+
+#sign-in-page .panel-body,
+#forgot-password-page .panel-body {
+  padding: 20px 20px 15px 20px;
+}
+
+#sign-in-page .panel-footer,
+#forgot-password-page .panel-footer {
+  border-bottom-right-radius: 15px;
+  border-bottom-left-radius: 15px; 
+}
+
+#sign-in-page hr,
+#forgot-password-page hr {
+  margin: 15px 0;
+}
+
+#sign-in-page .btn-primary,
+#forgot-password-page .btn-primary {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+#sign-in-page .panel-footer,
+#forgot-password-page .panel-footer {
+  color: #999;
+}
+
+/* --------------------------------------------------------------------------
+ * -- About page                                                           --
+ * -------------------------------------------------------------------------- */
+
+#about-page h3 {
+  font-weight: bold;
+}
+
+#about-page h4 {
+  margin-bottom: 5px;
+}
+
+#about-page hr {
+  margin: 10px 0;
+}
+
+#about-page ul {
+  padding-left: 20px;
+}
+
+#about-page .panel-body {
+  padding: 20px;
+}
+
+#about-page .text-muted.small {
+  font-style: italic;
+}
+
+#about-page .thumbnail {
+  height: 112px;
+  margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * -- Help page                                                            --
+ * -------------------------------------------------------------------------- */
+
+#help-page .info {
+  border-bottom: 1px solid #eee;
+  color: #999;
+  font-size: 85%;
+  line-height: 1.2;
+  margin-bottom: 15px;
+}
+
+#help-page .page-header {
+  margin-bottom: 0;
+}
+
+/* -------------------------------------------------------------------------- */
