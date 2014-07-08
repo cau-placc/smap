@@ -112,11 +112,16 @@ helpPage =
     help02Title =
       "What is SmapIE?"
     help02Text =
-      "..."
+      "SmapIE is an interactive source code editor and execution environment "++
+      "for small programs. If you are signed in and your program "++
+      "successfully executes, you can store your program and, thus, make "++
+      "it available to everybody in the world."
     help03Title =
       "What is the Browser?"
     help03Text =
-      "..."
+      "The browser is the primary tool to search through and preview the "++
+      "programs stored in Smap. You can also open selected programs "++
+      "with SmapIE in order to execute and play with them."
 
 --- The about page view.
 aboutPage :: View

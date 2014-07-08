@@ -3,6 +3,9 @@
 # 1. configure the following two variables:
 # target directory where the compiled cgi program should be stored:
 WEBSERVERDIR=$HOME/public_html/smap
+if [ $# = 1 ] ; then
+  WEBSERVERDIR=$1
+fi
 # makecurrycgi script to deploy the system (included in the PAKCS distribution):
 MAKECURRYPATH=/opt/kics2/bin/makecurrycgi
 CGI=smap.cgi
@@ -26,7 +29,7 @@ CODEPATH=$ORIGDIR/views:$ORIGDIR/controllers:$ORIGDIR/models:$ORIGDIR/system:$OR
 CURRYPATH=$CODEPATH
 export CURRYPATH
 
-$MAKECURRYPATH -m main -o $WEBSERVERDIR/$CGI Main.curry
+$MAKECURRYPATH -standalone -m main -o $WEBSERVERDIR/$CGI Main.curry
 
 # copy other files (Stylesheets, Images...)
 cp -r $ORIGDIR/public/* $WEBSERVERDIR

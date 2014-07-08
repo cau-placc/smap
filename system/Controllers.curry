@@ -173,7 +173,7 @@ getForm view =
      body   <- addLayoutToView
      langs  <- getAllLanguages
      return $ HtmlForm "Smap"
-                ([viewportMetaTag,cookie,favicon]
+                ([viewportMetaTag,cookie,favicon,MultipleHandlers]
                 ++(jsHeadIncludes $ map languageName langs)
                 ++cssIncludes)
                 (body++jsBodyIncludes)

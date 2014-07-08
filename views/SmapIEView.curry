@@ -11,7 +11,7 @@
 --------------------------------------------------------------------------------
 
 module SmapIEView (
-  smapIE,programCreationForm,versionCreationForm
+  smapIE,programCreationForm,versionCreationForm, removeCRs
 ) where
 
 import Char
@@ -189,6 +189,7 @@ renderSmapIE mProg
     langName       = languageName $ lang
     systemMenu     = map (\s -> (systemName s,showSystemKey s)) systems
     execHdlr e     = next $ executeProg   (execEnv,e systemRef,getCode e,mProg)
+    downloadHdlr e = return (HtmlAnswer "text/plain" (removeCRs (getCode e)))
     pcFormHdlr e   = next $ tryShowPCForm (execEnv,e systemRef,getCode e)
     vcFormHdlr p e = next $ tryShowVCForm (execEnv,e systemRef,getCode e,p)
     getCode e      = removeCRs $ e codeRef
@@ -205,9 +206,9 @@ renderSmapIE mProg
       ul [class "dropdown-menu pull-right",role "menu"] $
         maybe noProgOpts progOpts mProg
       ++[li [class "divider"] []
-        ,li [class "disabled"] 
-          [a [href "#"] 
-            [downloadIcon,text " Download source code"]]]
+        ,li []
+          [submitButton [class "btn btn-link",("formtarget","_blank")]
+             downloadHdlr [downloadIcon,text " Download source code"]]]
     noProgOpts =
       [li []
         [a [href $ newProgBaseUrl++"/"++(map toLower langName)]
@@ -270,6 +271,7 @@ renderSmapIE mProg
       div [class "clearfix"]
         [div [class "pull-left" ] name
         ,div [class "pull-right"] [span [class "text-muted"] [text value]]]
+
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

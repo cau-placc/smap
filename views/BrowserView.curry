@@ -250,8 +250,10 @@ programPage (prog,versNum)
       ,mAddFavOption
       ,mRemFavOption
       ,mDeleteOption
-      ,(linkLinkBtn "#" `withAddClass` "disabled") 
-        [downloadIcon,text " Download source code"]]
+      ,linkLinkBtn ("?download/"++key ++ (if versNum==0 then "" else '/':show versNum))
+                   [downloadIcon,text " Download source code"]
+         `addAttr` ("target","_blank")
+      ]
     ,renderSidebarPanel
       [h4 [class "left"]  [versionIcon,text " Versions"]
       ,h4 [class "right"] [versCountHExp]]

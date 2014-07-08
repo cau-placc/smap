@@ -9,9 +9,9 @@ module Main (
 ) where
 
 import Html5
-
 import Controllers
 import ControllerMapping
+import DownloadController
 import Routes
 import Url
 
@@ -27,12 +27,14 @@ main = dispatcher
 --- reference (see `RoutesData`), maps the reference to an actual controller and
 --- returns the form.
 dispatcher :: IO HtmlForm
-dispatcher =
-  do url         <- getUrl
-     controller  <- getControllerReference url
-                    >>= maybe (showInvalidUrlErrorPage url)
-                              (getController url)
-     form        <- getForm controller
-     return form
-
+dispatcher = do
+  url         <- getUrl
+  case url of
+    ("download":_,_) -> downloadController url
+    _ -> do controller  <- getControllerReference url
+                           >>= maybe (showInvalidUrlErrorPage url)
+                                     (getController url)
+            form        <- getForm controller
+            return form
+          
 --------------------------------------------------------------------------------
