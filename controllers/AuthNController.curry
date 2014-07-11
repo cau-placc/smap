@@ -58,12 +58,12 @@ showSignUpPage initCreationData =
                         (showSignInPage . Just,Just signUpSucceededAlert  )
   where
     nameNotUniqueErrAlert = 
-      (ErrorAlert,"This username is already taken. Please try another one.")
+      (ErrorAlert,"This user name is already taken. Please try another one.")
     emailNotUniqueErrAlert = 
       (ErrorAlert,"This email address already exists. Please try another one.")
     signUpSucceededAlert = 
-      (SuccessAlert,"You can now sign in to Smap with your username and passw"++
-      "ord!")
+      (SuccessAlert,"You can now sign in to Smap with your user name and "++
+      "password!")
 
 --------------------------------------------------------------------------------
 -- Signing in                                                                 --
@@ -96,7 +96,7 @@ doSignIn (userName,password) =
   where
     signInFailedAlert =
       (ErrorAlert,"<strong>Oh snap!</strong> Your attempt to sign in failed d"++
-      "ue to an unknown username and password combination. Try again!")
+      "ue to an unknown user name and password combination. Try again!")
 
 -- Signs out an user and deletes the associated authentication data from the
 -- session (see module `Authentication`).

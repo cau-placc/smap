@@ -85,12 +85,13 @@ smapIEOperation accessType authzData =
 --- @cons Show Program prog        - shows `prog` in the browser
 --- @cons AddToFavorites prog      - adds `prog` to the current users favorites
 --- @cons RemoveFromFavorites prog - removes `prog` from the users favorites
+--- @cons ModifyProgram prog       - modify description of `prog`
 --- @cons DeleteProgram prog       - deletes `prog` from Smap
 --- @cons ShowAllTags              - shows all tags on Smap
 data BrowserAccessType 
   = ShowAllPrograms | ShowUserPrograms | ShowUserFavorites | ShowProgram Program
   | MakeVisible Program | AddToFavorites Program | RemoveFromFavorites Program 
-  | DeleteProgram Program | CreateComment | ShowAllTags
+  | ModifyProgram Program | DeleteProgram Program | CreateComment | ShowAllTags
 
 --- Checks the authorization of browser operations
 --- @param accessType - the browser access type
@@ -136,6 +137,12 @@ browserOperation accessType authzData =
       Admin    name -> if name `favorites` prog
                        then AccessGranted
                        else AccessDenied remFromFavsDeniedAErr
+    ModifyProgram prog -> case authzData of
+      Guest         -> AccessDenied modProgDeniedGErr
+      Standard name -> if name `authored` prog
+                       then AccessGranted
+                       else AccessDenied modProgDeniedSErr
+      Admin    _    -> AccessGranted 
     DeleteProgram prog -> case authzData of
       Guest         -> AccessDenied delProgDeniedGErr
       Standard name -> if name `authored` prog
@@ -170,6 +177,11 @@ browserOperation accessType authzData =
       "You have not favorited this program."
     remFromFavsDeniedAErr =
       "You have not favorited this program."
+    modProgDeniedGErr = 
+      "You are not signed in. <a href=\"?signin\">Sign in</a> to proceed."
+    modProgDeniedSErr =
+      "You are not the author of this program. You are not allowed to modify "++
+      "the programs of other users."
     delProgDeniedGErr = 
       "You are not signed in. <a href=\"?signin\">Sign in</a> to proceed."
     delProgDeniedSErr =

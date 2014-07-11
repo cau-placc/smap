@@ -24,7 +24,8 @@ module ProgramModel (
   Tag,tagName,
   Comment,commentText,commentDate,
 
-  Program,ProgramKey,programKey,programTitle,programDescription,
+  Program,ProgramKey,programKey,setProgramTitle,programTitle,
+  programDescription,setProgramDescription,
   setProgramIsVisible,programIsVisible,programImplLang,programAuthor,
   programVersions,programTags,programComments,programFavoriters,
   programFirstVersion,programLatestVersion,programLatestComment,
@@ -93,9 +94,23 @@ programKey (Program mdata _ _ _ _ _ _) = metadataKey mdata
 programTitle :: Program -> String
 programTitle (Program mdata _ _ _ _ _ _) = metadataTitle mdata
 
+--- Sets the title of a given program. 
+--- @param title - the new title
+--- @param prog  - the old program 
+setProgramTitle :: String -> Program -> Program
+setProgramTitle title (Program m l a vs ts cs fs) =
+  Program (setMetadataTitle m title) l a vs ts cs fs
+
 --- Returns the program description.
 programDescription :: Program -> String
 programDescription (Program mdata _ _ _ _ _ _) = metadataDescription mdata
+
+--- Sets the description of a given program. 
+--- @param descr - the new description
+--- @param prog  - the old program 
+setProgramDescription :: String -> Program -> Program
+setProgramDescription descr (Program m l a vs ts cs fs) =
+  Program (setMetadataDescription m descr) l a vs ts cs fs
 
 --- Sets the visibility state of a given program. 
 --- @param isVisisble - the new visibility state (if set to `True` the program

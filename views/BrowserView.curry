@@ -221,11 +221,13 @@ tagList allTags popularTags =
 ---   the currently authenticated user
 --- @param remFromFavs - controller that removes the program from the favorites
 ---   of the currently authenticated user
+--- @param modifyProg  - controller that modifies title of the program
 --- @param deleteProg  - controller that deletes the program
 --- @param createCom   - controller that creates a comment
 --- @param authzData   - the current authorization data
 programPage
   :: (Program,Int)
+  -> (Program -> Controller)
   -> (Program -> Controller)
   -> (Program -> Controller)
   -> (Program -> Controller)
@@ -237,6 +239,7 @@ programPage (prog,versNum)
             makeVisible
             addToFavs
             remFromFavs
+            modifyProg
             deleteProg
             createCom
             authzData =
@@ -249,6 +252,7 @@ programPage (prog,versNum)
       ,mMakeVisibleOption
       ,mAddFavOption
       ,mRemFavOption
+      ,mModifyOption
       ,mDeleteOption
       ,linkLinkBtn ("?download/"++key ++ (if versNum==0 then "" else '/':show versNum))
                    [downloadIcon,text " Download source code"]
@@ -287,12 +291,13 @@ programPage (prog,versNum)
       [codeIcon,text " Source code ",codeLabelHExp,text " "]
       ,codeHExp
       ,script [] [text codeMirrorInstance]
+    ,modifyModal
     ,commentModal
     ,confirmMakeVisibleDialog
     ,confirmDeleteDialog]
     []    
   where
-    comRef free
+    titleRef,descrRef,comRef free
     -- getting program attributes
     key          = showProgramKey prog
     title        = programTitle prog
@@ -318,6 +323,8 @@ programPage (prog,versNum)
     makeVisibleHdlr _ = next $ makeVisible $ setProgramIsVisible True prog
     addFavHdlr      _ = next $ addToFavs   prog
     remFavHdlr      _ = next $ remFromFavs prog
+    modifyHdlr    env = next $ modifyProg $ setProgramTitle (env titleRef)
+                             $ setProgramDescription (env descrRef) prog
     deleteHdlr      _ = next $ deleteProg  prog
     creatComHdlr  env = next $ createCom   (env comRef,prog)
     -- HTML expressions for program attributes
@@ -370,6 +377,12 @@ programPage (prog,versNum)
                        else (" ",faverCount)
           msgPrefix  = mYou++show cnt++(if cnt==1 then " user " else " users ")
        in [favoriteIcon,text $ msgPrefix++"favorited this"]
+    -- modify modal
+    modifyModal =
+      stdModal "modify-modal" "comment-modal-title" 
+        [text "Modify metadata: "]
+        mModifyForm
+        []
     -- comment modal
     commentModal =
       stdModal "comment-modal" "comment-modal-title" 
@@ -399,6 +412,23 @@ programPage (prog,versNum)
     remFavOption = 
       linkSubmitBtn remFavHdlr 
         [favoriteIcon,text " Remove from favorites"]
+
+    mModifyOption = 
+      byAuthorization (browserOperation (ModifyProgram prog) authzData)
+        (linkLinkBtn "#" [modifiedIcon, text $ " Change title/description"]
+          `addAttrs` [modalToggle,targetId "modify-modal"])
+        (\_ -> empty)
+    mModifyForm = 
+      byAuthorization (browserOperation (ModifyProgram prog) authzData)
+        [label [] [text "Title"]
+        ,textarea [class "form-control",rows 1] titleRef title
+        ,label [] [text "Description"]
+        ,textarea [class "form-control",rows 5] descrRef descr
+        ,blueSubmitBtn modifyHdlr [text "Change!"]
+        ,buttonButton [class "btn btn-default",modalDismiss]
+          [text "Cancel"]]
+        (\err -> [p [class "text-muted"] [text err]])
+
     mDeleteOption = 
       byAuthorization (browserOperation (DeleteProgram prog) authzData)
         deleteOption

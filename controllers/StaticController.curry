@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --- This module provides controllers that display all kinds of static pages
---- (like the landing page, the help page or the abput page). 
+--- (like the landing page, the help page or the about page). 
 --- 
---- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 import Controllers
@@ -35,10 +35,25 @@ showLandingPage = return landingPage
 
 -- Returns a controller that displays the help page of this application.
 showHelpPage :: Controller
-showHelpPage = return helpPage
+showHelpPage = do
+  helpTexts <- mapIO readHelpFile helpTextFiles
+  return $ helpPage helpTexts
 
 -- Returns a controller that displays the about page of this application.
 showAboutPage :: Controller
 showAboutPage = return aboutPage
 
 --------------------------------------------------------------------------------
+-- Reads a help file and returns the first line (unique help key),
+-- second line (title), and remaining lines:
+readHelpFile :: String -> IO (String,String,String)
+readHelpFile fname = do
+  cnt <- readFile ("static/"++fname)
+  let (key,wokey) = break (=='\n') cnt
+      (title,txt) = break (=='\n') (tail wokey)
+  return (key,title,tail txt)
+
+-- The list of help text files (stored in public/static):
+helpTextFiles =
+  map (\t -> "help"++t++".txt")
+      ["Smap","SmapIE","Browser","SignIn"]

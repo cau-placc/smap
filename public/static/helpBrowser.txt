@@ -1,0 +1,22 @@
+help-03
+What is the Browser?
+<p>
+The browser is the primary tool to search through and preview the
+programs stored in Smap.
+</p>
+You can use the <em>Dashboard</em> to look at all programs
+or filter programs by the implementation language
+or keywords occurring in the title, decsription, or tags.
+<p>
+</p>
+Once you found an interesting program, you can open it
+in the browser or with [SmapIE](help-02) in order to execute and play with them.
+If you open a program in the browser, you see more details
+like a short description or the source code.
+<p>
+</p>
+If you are signed in and you created this program, you can also delete it or
+make it visible to others (if it was created as private).
+Moreover, you can write a comment to a program
+or add programs from other authors to your favorites.
+</p>

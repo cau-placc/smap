@@ -1,0 +1,16 @@
+helpSignIn
+Why should I sign in?
+<p>
+You can use Smap just to write and run some tiny program written in one
+of the currently supported languages.
+However, if you want to store your program in Smap so that
+you can improve or show it to other interested people,
+you must be signed in.
+Furthermore, writing comments to other programs or add them
+to your favorites is only possible if you are signed in.
+</p>
+<p>
+If you are new to Smap and don't have an account,
+you can simply sign up and create an account by choosing
+a user name, password, and providing your email address.
+</p>

@@ -35,9 +35,9 @@ signUpPage initCreationData signUp =
     [text "Already have an account? "
     ,a [href "?signin"] [text "Sign in &raquo;"]]
 
---- Supplies a WUI form to sign in to Smap with an username and a password. If
---- given, an initial username is set.
---- @param mUsername - an possibly given initial username 
+--- Supplies a WUI form to sign in to Smap with a user name and a password. If
+--- given, an initial user name is set.
+--- @param mUsername - an possibly given initial user name 
 --- @param signIn    - the controller which handles the sign in process
 signInPage :: Maybe String -> ((String,String) -> Controller) -> View
 signInPage mUsername signIn = wuiFrame hExp wHdlr
@@ -98,7 +98,7 @@ forgotPasswordPage senNewPassword = wuiFrame hExp wHdlr
 -- The WUI specification for creating a new user (signing up).
 wSignUpData :: WuiSpec (String,String,String,String)
 wSignUpData = wSmap4Tuple
-  (wUsername     "Choose your username"      True  nameHelp      nameErr
+  (wUsername     "Choose your user name"     True  nameHelp      nameErr
     `withCondition` isRequired)
   (wEmailAddress "Choose your email address" False emailHelp     emailErr
     `withCondition` isAValidEmailAddress)
@@ -115,7 +115,7 @@ wSignUpData = wSmap4Tuple
       render hExps `addToClass` "has-error with-error"
                    `addAttrs`   [tooltipToggle,title err]
     nameHelp = 
-      "The username is required for the authentication process and identifies"++
+      "The user name is required for the authentication process and identifies"++
       " you throughout this web application."
     emailHelp = 
       "The email address is required when you forget your password."
@@ -125,7 +125,7 @@ wSignUpData = wSmap4Tuple
     password2Help =
       "Repeat your password to make sure that you didn't made a typing error."
     nameErr =
-      "Please choose an username."
+      "Please choose a user name."
     emailErr =
       "Please choose a valid email address."
     password1Err =
@@ -140,13 +140,13 @@ wSignUpData = wSmap4Tuple
 -- @param focusUsername - focus state on the username input field
 wSignInData :: Bool -> WuiSpec (String,String)
 wSignInData focusUsername = wSmapPair
-  (wUsername "Enter your username" focusUsername "" nameErr
+  (wUsername "Enter your user name" focusUsername "" nameErr
     `withCondition` isRequired)
   (wPassword "Enter your password" False         "" passwordErr
     `withCondition` isRequired)
   where 
     nameErr = 
-      "Please enter your username."
+      "Please enter your user name."
     passwordErr =
       "Please enter your password."
 
@@ -164,14 +164,14 @@ wNewPasswordData =
 
 -- Helper WUI specifications
 
--- A WUI specification for an username form field.
+-- A WUI specification for a user name form field.
 -- @param label - the label for the input field
 -- @param focus - the autofocus state of the input field
 -- @param help  - help text beneath the input field
 -- @param err   - a message for the error case
 wUsername :: String -> Bool -> String -> String -> WuiSpec String
 wUsername label focus help err =
-  wSmapString ("user","text",focus) label "Username" (help,err)
+  wSmapString ("user","text",focus) label "User name" (help,err)
 
 -- A WUI specification for an email address form field.
 -- @param label - the label for the input field

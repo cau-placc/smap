@@ -1,0 +1,11 @@
+help-02
+What is SmapIE?
+<p>
+SmapIE is an interactive source code editor and execution environment
+for small programs. If you are signed in and your program
+successfully executes, you can store your program and, thus, make
+it available to everybody in the world.
+If you want to keep it private for some time, you can also
+set its status to private (and make it later visible with the
+[Browser](help-03)).
+</p>

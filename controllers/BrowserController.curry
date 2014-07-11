@@ -195,6 +195,7 @@ showProgramPage (progKey,versNum) =
                                                doMakeVisibleCtrl
                                                doAddFavCtrl
                                                doRemFavCtrl
+                                               doModifyProgCtrl
                                                (doDeleteProgCtrl prog)
                                                doCreateComCtrl
                                                azData)
@@ -211,7 +212,7 @@ showProgramPage (progKey,versNum) =
       = showProgramPage (progKey,versNum)
     doMakeVisibleCtrl
       = doUpdateProgram
-        (const $ goBack,Just programEditingSucceededAlert)
+        (const $ goBack,Just programVisibleSucceededAlert)
     doAddFavCtrl
       = doAddFavoritingForCurrentUser
         (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
@@ -220,6 +221,9 @@ showProgramPage (progKey,versNum) =
       = doRemoveFavoritingForCurrentUser
         (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
         (goBack                                              ,Nothing)
+    doModifyProgCtrl
+      = doUpdateProgram
+          (const $ goBack,Just programEditingSucceededAlert)
     doDeleteProgCtrl prog
       = doDeleteProgram
         (showDashboard,Just $ programDeletionSucceededAlert prog)
@@ -233,8 +237,10 @@ showProgramPage (progKey,versNum) =
     versionNotFoundErr prog =
       "We couldn't find the version you requested (see <a href=?browser/"++
       showProgramKey prog++">latest version</a> instead)."
-    programEditingSucceededAlert =
+    programVisibleSucceededAlert =
       (SuccessAlert,"This program is now available for everyone on Smap.")
+    programEditingSucceededAlert =
+      (SuccessAlert,"The program metadata has been modified.")
     programDeletionSucceededAlert prog =
       (SuccessAlert,"\"<code>"++programTitle prog++"</code>\" was successfull"++
       "y deleted from Smap and is no longer available.")

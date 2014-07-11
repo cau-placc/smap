@@ -11,6 +11,7 @@ module StaticView (
 ) where
 
 import Prelude hiding (div,span)
+import SetFunctions
 
 import Views
 import SmapHtml
@@ -64,8 +65,8 @@ landingPage =
       "more information."
 
 --- The help page view.
-helpPage :: View
-helpPage =
+--helpPage :: View
+helpPage helpTexts =
   [(container `withId` "help-page")
     [row
       [div [class "col-xs-8 col-xs-offset-2"]
@@ -75,13 +76,12 @@ helpPage =
             ,div [class "info"]
               [text infoText]
             ,(div [class "panel-group"] `withId` "accordion")
-              [helpPanel "help-01" help01Title help01Text
-              ,helpPanel "help-02" help02Title help02Text
-              ,helpPanel "help-03" help03Title help03Text]]
+              (map helpPanel helpTexts)
+            ]
           ,panelFooter
             []]]]]]
   where
-    helpPanel helpPanelId helpPanelTitle helpPanelContent =
+    helpPanel (helpPanelId,helpPanelTitle,helpPanelContent) =
       panelDefault
         [panelHeading
           [h4 [class "panel-title"]
@@ -90,8 +90,8 @@ helpPage =
               [text helpPanelTitle]]]
         ,(div [class "panel-collapse collapse"] `withId` helpPanelId)
           [panelBody
-            [text helpPanelContent]]]
-    helpLink helpPanelId helpPanelKeyword =
+            [text (replaceLinks helpLink helpPanelContent)]]]
+    helpLink helpPanelKeyword helpPanelId =
       "<a data-toggle=\"collapse\" data-parent=\"accordion\" href=\"#"++
       helpPanelId++"\"><span class=\"glyphicon glyphicon-question-sign\"></sp"++
       "an><b>"++helpPanelKeyword++"</b></a>"
@@ -99,29 +99,15 @@ helpPage =
       "<strong>Welcome to the help page!</strong> Below is a selection of com"++
       "mon questions with answers that may help you if you are new to Smap. S"++
       "ee the answer to a question by clicking on the particular title."
-    help01Title =
-      "What is Smap?"
-    help01Text =
-      "Smap (a portmanteau for \"<b>sma</b>ll <b>p</b>rograms\") is primarily"++
-      " an interactive source code editor that lets you write programs and ex"++
-      "ecute them online in various programming languages. In addition, Smap "++
-      "allows you to save and manage your creations and make them available t"++
-      "o other users. For these purposes Smap provides two core components: t"++
-      "he "++helpLink "help-02" "SmapIE"++" and the "++
-      helpLink "help-03" "Browser"++"."
-    help02Title =
-      "What is SmapIE?"
-    help02Text =
-      "SmapIE is an interactive source code editor and execution environment "++
-      "for small programs. If you are signed in and your program "++
-      "successfully executes, you can store your program and, thus, make "++
-      "it available to everybody in the world."
-    help03Title =
-      "What is the Browser?"
-    help03Text =
-      "The browser is the primary tool to search through and preview the "++
-      "programs stored in Smap. You can also open selected programs "++
-      "with SmapIE in order to execute and play with them."
+
+-- Replaces in a text occurrences of "[name](ref)" by (repfun name ref),
+-- where repfun is the first argument.
+replaceLinks :: (String -> String -> String) -> String -> String
+replaceLinks repfun s = let reps = set2 replaceLink repfun s in
+  if isEmpty reps then s else replaceLinks repfun (selectValue reps)
+
+replaceLink repfun (pre++"["++name++"]("++ref++")"++suf) =
+  pre ++ repfun name ref ++ suf
 
 --- The about page view.
 aboutPage :: View

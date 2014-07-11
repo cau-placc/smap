@@ -1,0 +1,26 @@
+help-01
+What is Smap?
+<p>
+Smap (a portmanteau for "<b>sma</b>ll <b>p</b>rograms") is primarily
+an interactive source code editor that lets you write programs and
+execute them online in various programming languages. In addition, Smap 
+allows you to save and manage your creations and make them available
+to other users.
+For these purposes Smap provides two core components:
+the [SmapIE](help-02) and the [Browser](help-03).
+</p>
+<p>
+In the header of the main Smap view, you can perform a quick search
+to find all programs containing a given keyword (like "quicksort")
+in its title, description, or list of tags.
+The list of such programs are shown in the [Browser](help-03).
+</p>
+<p>
+Furthermore, you can create new programs in a specific programming language
+with the [SmapIE](help-02).
+</p>
+<p>
+Each program stored in Smap has a unique identifier (a number).
+If you know this identifier, you can also use the "SmapIE" menu
+to open this program directly in the [SmapIE](help-02).
+</p>
