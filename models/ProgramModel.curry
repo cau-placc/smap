@@ -13,8 +13,8 @@
 --- associated entities from the ERD specification. Not all of these entities
 --- are freely accessible via the accessors in this module.)
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module ProgramModel (
@@ -31,7 +31,9 @@ module ProgramModel (
   programFirstVersion,programLatestVersion,programLatestComment,
   showProgramKey,readProgramKey,readVersionNumber,
   readProgramKeyAndVersionNumber,
-  createProgram,createProgramVersion,updateProgram,deleteProgram,
+  createProgram,createProgramVersion,
+  updateProgramMetadata,updateProgramMetadataWithTags,
+  deleteProgram,
   getProgramByKey,getAllProgramsWith,
 
   ProgramQuery,defaultProgramQuery,
@@ -238,10 +240,32 @@ createProgramVersion
 createProgramVersion (num,code,msg,date,prog) =
   runT $ newVersionWithMetadataVersioningKey num code msg date (programKey prog)
 
---- Updates an existing program.
+--- Updates metadata of an existing program.
 --- @param prog - the modification of an existing program
-updateProgram :: Program -> IO (Either () TError)
-updateProgram = runT . updateMetadata . programMetadata
+updateProgramMetadata :: Program -> IO (Either () TError)
+updateProgramMetadata = runT . updateMetadata . programMetadata
+
+--- Updates metadata and tags of an existing program.
+--- @param tagnames - the names of the tags for the updated program
+--- @param prog - the modification of an existing program
+updateProgramMetadataWithTags :: [String] -> Program -> IO (Either () TError)
+updateProgramMetadataWithTags tagnames prog = runT $
+  (if null newtagnames
+   then returnT []
+   else getDB (queryCondTag ((`elem` newtagnames) . tagName)))
+  |>>= \existingnewtags ->
+       mapT newTag (newtagnames \\ map tagName existingnewtags)
+  |>>= \newtags -> mapT_ addTaggingT (newtags++existingnewtags)
+  |>> mapT_ delTaggingT tagsToDelete
+  |>> updateMetadata (programMetadata prog)
+ where 
+  mdata        = programMetadata prog
+  oldtags      = programTags prog
+  oldtagnames  = map tagName oldtags
+  tagsToDelete = filter ((`notElem` tagnames) . tagName) oldtags
+  newtagnames = filter (`notElem` oldtagnames) tagnames
+  addTaggingT tag = newTagging (metadataKey mdata) (tagKey tag)
+  delTaggingT tag = deleteTagging (metadataKey mdata) (tagKey tag)
 
 --- Deletes an existing program from the database. This includes the deletion of
 --- the program metadata, all associated versions, all associated taggings, all

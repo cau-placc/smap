@@ -3,8 +3,8 @@
 --- the dashboard, list views for programs and tags and a web page with detailed
 --- information for each program.
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module BrowserView (
@@ -25,6 +25,7 @@ import Url
 import UserModel
 import Views
 import SmapHtml
+import Smap(showTagKey)
 
 --------------------------------------------------------------------------------
 -- Exported Browser views                                                     --
@@ -38,7 +39,7 @@ import SmapHtml
 --- @param popularTags     - a list of all tags sorted by popularity (sidebar)
 --- @param recentProgs     - a list of the most recent submissions
 --- @param popularProgs    - a list of the most favorited submissions
-dashboard :: SearchPanelData -> [Tag] -> [Program] -> [Program] -> View
+dashboard :: SearchPanelData -> [(Tag,Int)] -> [Program] -> [Program] -> View
 dashboard searchPanelData@(langs,_,_) popularTags recentProgs popularProgs =
   renderBrowser
     (renderStdSidebar searchPanelData popularTags allProgramsBaseUrl)
@@ -88,7 +89,7 @@ dashboard searchPanelData@(langs,_,_) popularTags recentProgs popularProgs =
 --- @param spData  - data for rendering the search panel
 --- @param pData   - data for rendering the pager
 programList
-  :: [Program] -> [Tag] -> Int -> SearchPanelData -> PagerData -> View
+  :: [Program] -> [(Tag,Int)] -> Int -> SearchPanelData -> PagerData -> View
 programList =
   renderProgramListView header breadcrumb
   where
@@ -103,7 +104,7 @@ programList =
 --- @param spData  - data for rendering the search panel
 --- @param pData   - data for rendering the pager
 userProgramList
-  :: [Program] -> [Tag] -> Int -> SearchPanelData -> PagerData -> View
+  :: [Program] -> [(Tag,Int)] -> Int -> SearchPanelData -> PagerData -> View
 userProgramList =
   renderProgramListView header breadcrumb
   where
@@ -118,7 +119,7 @@ userProgramList =
 --- @param spData  - data for rendering the search panel
 --- @param pData   - data for rendering the pager
 userFavoritesList
-  :: [Program] -> [Tag] -> Int -> SearchPanelData -> PagerData -> View
+  :: [Program] -> [(Tag,Int)] -> Int -> SearchPanelData -> PagerData -> View
 userFavoritesList =
   renderProgramListView header breadcrumb
   where
@@ -135,7 +136,7 @@ userFavoritesList =
 -- @param searchPanelData - data for rendering the search panel
 -- @param pagerData       - data for rendering the pager
 renderProgramListView
-  :: [HtmlExp] -> HtmlExp -> [Program] -> [Tag] -> Int -> SearchPanelData
+  :: [HtmlExp] -> HtmlExp -> [Program] -> [(Tag,Int)] -> Int -> SearchPanelData
   -> PagerData -> View
 renderProgramListView header 
                       breadcrumb 
@@ -183,10 +184,11 @@ renderProgramListView header
       else "Sorry, no results were found that match your search query."
 
 -- The list view for all tags in the database.
+-- @param azdata      - authentication data
 -- @param allTags     - the list of all tags
--- @param popularTags - top 25 popular tags
-tagList :: [Tag] -> [Tag] -> View
-tagList allTags popularTags =
+-- @param popularTags - popular tags sorted by their popularity (top first)
+tagList :: AuthZData -> [Tag] -> [(Tag,Int)] -> View
+tagList azdata allTags popularTags =
   renderBrowser
     [ol [class "breadcrumb"]
       [li [] [a [href dashboardUrl] [text "Browser"]]
@@ -194,7 +196,7 @@ tagList allTags popularTags =
     ,renderSidebarPanel
       [h4 [] [tagsIcon,text " Top 25 tags"]]
       [text "Click on a tag to search all related programs."]
-      (renderTagList $ take 25 popularTags)]
+      (renderTagList (const False) $ take 25 (map fst popularTags))]
     [h3 [] 
       [tagsIcon,text " All tags "
       ,small [] [text $ "("++show totalTags++" in total)"]]]
@@ -212,7 +214,10 @@ tagList allTags popularTags =
        in (toUpper currInit,p1):partitionTagListByInitial p2
     renderTagListPartitions =
       concatMap (\(i,ts) -> 
-        [b [] [text $ " "++[i]++" "],br []]++(renderTagList ts)++[br []])
+        [b [] [text $ " "++[i]++" "],br []]++
+        (renderTagList deleteButtonForTag ts)++[br []])
+    deleteButtonForTag tag = isAdmin azdata &&
+                             maybe False (==0) (lookup tag popularTags)
 
 --- The program page which shows all information to a given program.
 --- @param progVers    - program and displayed version
@@ -221,7 +226,7 @@ tagList allTags popularTags =
 ---   the currently authenticated user
 --- @param remFromFavs - controller that removes the program from the favorites
 ---   of the currently authenticated user
---- @param modifyProg  - controller that modifies title of the program
+--- @param modifyProg  - controller that modifies title/descr/tags of program
 --- @param deleteProg  - controller that deletes the program
 --- @param createCom   - controller that creates a comment
 --- @param authzData   - the current authorization data
@@ -230,7 +235,7 @@ programPage
   -> (Program -> Controller)
   -> (Program -> Controller)
   -> (Program -> Controller)
-  -> (Program -> Controller)
+  -> ([String] -> Program -> Controller)
   -> (Program -> Controller)
   -> ((String,Program) -> Controller)
   -> AuthZData
@@ -239,7 +244,7 @@ programPage (prog,versNum)
             makeVisible
             addToFavs
             remFromFavs
-            modifyProg
+            modifyProgAndTags
             deleteProg
             createCom
             authzData =
@@ -271,7 +276,7 @@ programPage (prog,versNum)
       [h4 [class "left"]  [tagsIcon,text " Tags"]
       ,h4 [class "right"] [tagCountHExp]]
       [text "Click on a tag to show all related programs."]
-      (renderTagList tags)
+      (renderTagList (const False) tags)
     ,renderSidebarPanel
       [h4 [class "left"]  [commentIcon,text " Comments"]
       ,h4 [class "right"] [comCountHExp]]
@@ -297,7 +302,7 @@ programPage (prog,versNum)
     ,confirmDeleteDialog]
     []    
   where
-    titleRef,descrRef,comRef free
+    titleRef,descrRef,tagsRef,comRef free
     -- getting program attributes
     key          = showProgramKey prog
     title        = programTitle prog
@@ -323,8 +328,9 @@ programPage (prog,versNum)
     makeVisibleHdlr _ = next $ makeVisible $ setProgramIsVisible True prog
     addFavHdlr      _ = next $ addToFavs   prog
     remFavHdlr      _ = next $ remFromFavs prog
-    modifyHdlr    env = next $ modifyProg $ setProgramTitle (env titleRef)
-                             $ setProgramDescription (env descrRef) prog
+    modifyHdlr    env = next $ modifyProgAndTags (words (env tagsRef))
+                                $ setProgramTitle (env titleRef)
+                                   $ setProgramDescription (env descrRef) prog
     deleteHdlr      _ = next $ deleteProg  prog
     creatComHdlr  env = next $ createCom   (env comRef,prog)
     -- HTML expressions for program attributes
@@ -415,7 +421,7 @@ programPage (prog,versNum)
 
     mModifyOption = 
       byAuthorization (browserOperation (ModifyProgram prog) authzData)
-        (linkLinkBtn "#" [modifiedIcon, text $ " Change title/description"]
+        (linkLinkBtn "#" [modifiedIcon, text $ " Change title/description/tags"]
           `addAttrs` [modalToggle,targetId "modify-modal"])
         (\_ -> empty)
     mModifyForm = 
@@ -424,6 +430,9 @@ programPage (prog,versNum)
         ,textarea [class "form-control",rows 1] titleRef title
         ,label [] [text "Description"]
         ,textarea [class "form-control",rows 5] descrRef descr
+        ,label [] [text "Tags (separated by spaces)"]
+        ,textarea [class "form-control",rows 3] tagsRef
+                  (unwords (map tagName tags))
         ,blueSubmitBtn modifyHdlr [text "Change!"]
         ,buttonButton [class "btn btn-default",modalDismiss]
           [text "Cancel"]]
@@ -436,6 +445,7 @@ programPage (prog,versNum)
     (deleteOption,confirmDeleteDialog) = withConfirmation 2
       (linkLinkBtn "#" [deleteIcon,text " Delete this program"])
       confirmDeleteMsg deleteHdlr
+
     mCommentForm =
       byAuthorization (browserOperation CreateComment authzData)
         [label [] [text "Write a new comment"]
@@ -512,17 +522,17 @@ renderSidebarPanel header info body =
 
 -- Standard rendering for the whole sidebar.
 -- @param searchPaneldata - data for rendering the search panel
--- @param popular Tags    - top 25 popular tags
+-- @param popular Tags    - tags ordered by their popularity
 -- @param baseUrl         - the base URL for program searches (depends on the
 --   type of program list, e.g. user programs)
-renderStdSidebar :: SearchPanelData -> [Tag] -> String -> [HtmlExp]
+renderStdSidebar :: SearchPanelData -> [(Tag,Int)] -> String -> [HtmlExp]
 renderStdSidebar searchPanelData popularTags baseUrl =
   [renderSearchPanel searchPanelData baseUrl
   ,renderSidebarPanel
     [h4 [class "left"] [tagsIcon,text " Top 25 tags"]
     ,a [href allTagsBaseUrl,class "right"] [text "all tags &raquo;"]]
     [text "Click on a tag to search all related programs."]
-    (renderTagList $ take 25 popularTags)]
+    (renderTagList (const False) $ take 25 (map fst popularTags))]
 
 -- Standard rendering for the options panel.
 -- @param options - contained options
@@ -650,7 +660,7 @@ renderProgramInList detailed prog =
           mDots = if (length tags) > count 
                   then [span [class "small"] [text "..."]]
                   else [empty]
-       in (renderTagList $ take count tags)++mDots
+       in (renderTagList (const False) $ take count tags)++mDots
     fstVersDateHExps = 
       if detailed
       then [createdIcon,text $ " "++showCalendarTime fstVersDate++" "]
@@ -671,13 +681,20 @@ renderProgramInList detailed prog =
       show y++"/"++show m++"/"++show d
 
 -- Renders a tag list as a list of hyperlinks.
-renderTagList :: [Tag] -> [HtmlExp]
-renderTagList = concatMap $ \tag ->
+-- The first argument is a function that is true for a tag if a delete button
+-- should be shown for this tag.
+renderTagList :: (Tag -> Bool) -> [Tag] -> [HtmlExp]
+renderTagList withdelete = concatMap $ \tag ->
   [a 
     [href $ allProgramsBaseUrl++"?q="++tagName tag++"&amp;targets=tags"
     ,class "small"]
-    [text $ "["++tagName tag++"]"]
-  ,text " "]
+    [text $ "["++tagName tag++"]"]] ++
+  (if withdelete tag then [deleteButton tag, nbsp] else []) ++
+  [text " "]
+ where
+  deleteButton tag =
+    a [href $ "?browser/deltag/"++showTagKey tag,class "small"]
+      [deleteIcon]
 
 --  Renders the comment list for the program page view.
 renderCommentList :: [Comment] -> HtmlExp

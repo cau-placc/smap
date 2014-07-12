@@ -6,8 +6,8 @@
 --- permitted) and therefore are considered to be part of its overall
 --- functionality.
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module SmapIEView (
@@ -301,7 +301,8 @@ wProgram = wSmap7Tuple
     [span [class "text-muted"] [userIcon,text $ ' ':userName user]]))
   wHidden
   (wSmapTextarea
-    ("tags",(4,0),False) "Enter a list of tags" "Tag1 Tag2 Tag3 ..."
+    ("tags",(4,0),False) "Enter a list of tags (separated by spaces)"
+                         "Tag1 Tag2 Tag3 ..."
     (tagsHelp,tagsErr)
   `withCondition` atLeast3TagsInList)
   where

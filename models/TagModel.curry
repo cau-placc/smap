@@ -9,15 +9,15 @@
 --- be found in the module `Smap` which should not be modified or imported for
 --- stackability reasons. Always modify or import `TagModel` instead.)
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module TagModel (
   Tag,TagKey,tagName,
 
-  getAllTags,getAllPopularTags,
-  leqTagName
+  getAllTagsAndPopularTags,getAllPopularTags,getTagNumber,getTagByKey,
+  deleteTag,leqTagName
 ) where
 
 import KeyDatabase
@@ -31,24 +31,46 @@ import Smap
 --------------------------------------------------------------------------------
 
 --- Returs all currently persisted tag entities in the database sorted by name
---- in ascending order.
-getAllTags :: IO [Tag]
-getAllTags =
+--- in ascending order together with a list of these tags sorted by their
+--- usage count (second component) in descending order.
+getAllTagsAndPopularTags :: IO ([Tag],[(Tag,Int)])
+getAllTagsAndPopularTags =
   do tags <- runQ queryAllTags
-     return $ mergeSort leqTagNameFunc tags
-  where leqTagNameFunc = snd leqTagName
+     weightedTags <- getAllPopularTagsFromTags tags
+     return (mergeSort (snd leqTagName) tags, weightedTags)
 
---- Returns a list of all tags sorted by their usage count in descending order.
-getAllPopularTags :: IO [Tag]
-getAllPopularTags =
-  do tags         <- runQ queryAllTags
-     tagns        <- runQ queryAllTaggings
-     weightedTags <- return $ map (\t -> (t,length$filter (cond t) tagns)) tags
+--- Returns a list of all tags sorted by their usage count  (second component)
+--- in descending order.
+getAllPopularTags :: IO [(Tag,Int)]
+getAllPopularTags = runQ queryAllTags >>= getAllPopularTagsFromTags
+
+--- Returns a list of all tags sorted by their usage count (second component)
+--- in descending order where the list of all tags is provided.
+getAllPopularTagsFromTags :: [Tag] -> IO [(Tag,Int)]
+getAllPopularTagsFromTags tags =
+  do tagns        <- runQ queryAllTaggings
+     weightedTags <- return $ map (\t -> (t,length $ filter (cond t) tagns)) tags
      sortedWTags  <- return $ quickSort geq weightedTags
-     return $ map fst sortedWTags
+     return sortedWTags
   where
     cond tag            = (tagKey tag==) . taggingTagTaggingKey 
     geq (_,n1) (_,n2) = n1 >= n2
+
+--- Returns the number of programs containing this tag.
+getTagNumber :: Tag -> IO Int
+getTagNumber tag = do
+  taggings <- runQ queryAllTaggings
+  return (length (filter ((==(tagKey tag)) . taggingTagTaggingKey) taggings))
+
+--- Returns a tag with the given database key. `Nothing` is returned if no
+--- such tag exists.
+--- @param tagkey - the key of the tag
+getTagByKey :: TagKey -> IO (Maybe Tag)
+getTagByKey tagkey = runT (getTag tagkey) >>= return . either Just (const Nothing)
+
+--- Deletes a tag.
+deleteTag :: Tag -> IO (Either () TError)
+deleteTag tag = runT (Smap.deleteTag tag)
 
 --------------------------------------------------------------------------------
 -- Predicates on tag entities                                                 --

@@ -7,8 +7,8 @@
 --- programs and listing all created and favorited programs of the currently
 --- authenticated user.
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module BrowserController (
@@ -38,6 +38,7 @@ import Controllers
 import Models
 import Url
 import Views
+import Smap(readTagKey)
 
 import BrowserView
 
@@ -56,6 +57,9 @@ browserController url@(path,_) =
     ["browser","myprograms"]    -> showUserProgramList   url
     ["browser","myfavorites"]   -> showUserFavoritesList url
     ["browser","tags"]          -> showTagList
+    ["browser","deltag",tagkey] -> validateKeyAndApply 
+                                     (readTagKey tagkey)
+                                     url doDeleteTag
     ["browser",progKey]         -> validateKeyAndApply 
                                      (readProgramKeyAndVersionNumber 
                                        (progKey,"0"))
@@ -141,7 +145,7 @@ showUserFavoritesList url =
 applySearchAndListPrograms  
   :: Url
   -> (ProgramQuery -> IO [Program])
-  -> ([Program] -> [Tag] -> Int -> SearchPanelData -> PagerData -> View)
+  -> ([Program] -> [(Tag,Int)] -> Int -> SearchPanelData -> PagerData -> View)
   -> Controller
 applySearchAndListPrograms url@(_,qStr) getProgs programListView =
   do (query,sets) <- getQueryAndSettingsFromQueryString qStr
@@ -169,10 +173,30 @@ applySearchAndListPrograms url@(_,qStr) getProgs programListView =
 -- by name in ascending order.
 showTagList :: Controller
 showTagList =
-  checkAuthorization (browserOperation ShowAllTags) $ \_ ->
-  do allTags     <- getAllTags
-     popularTags <- getAllPopularTags
-     return $ tagList allTags popularTags
+  checkAuthorization (browserOperation ShowAllTags) $ \azdata ->
+  do (allTags,popularTags) <- getAllTagsAndPopularTags
+     return $ tagList azdata allTags popularTags
+
+-- Returns a controller to delete the tag given as an argument.
+doDeleteTag :: TagKey -> Controller
+doDeleteTag tagkey =
+  getTagByKey tagkey >>=
+  maybe (showStdErrorPage "No tag found with this key")
+    (\tag -> checkAuthorization (browserOperation (DeleteTag tag)) $ \_ ->
+       do prognums <- getTagNumber tag
+          if prognums==0
+           then deleteTag tag >>=
+                either (\_ -> maybeSetAlert (successAlert tag) >> showTagList)
+                       (showTransactionErrorPage tagDeletionFailedErr)
+           else showStdErrorPage tagUndeletableErr)
+  where
+    successAlert tag = Just (SuccessAlert, "Tag '"++tagName tag++"' deleted")
+    tagDeletionFailedErr =
+      "The tag deletion failed due to an unexpected internal error. See the "++
+      "internal error message for additional details."
+    tagUndeletableErr =
+      "The tag cannot be deleted since it is now used in some program."
+
 
 -- Shows a specific version of an existing program in the Browser. In contrary
 -- to the information shown in the IE, this view also includes the description
@@ -211,7 +235,7 @@ showProgramPage (progKey,versNum) =
     goBack
       = showProgramPage (progKey,versNum)
     doMakeVisibleCtrl
-      = doUpdateProgram
+      = doUpdateProgramMetadata
         (const $ goBack,Just programVisibleSucceededAlert)
     doAddFavCtrl
       = doAddFavoritingForCurrentUser
@@ -222,7 +246,7 @@ showProgramPage (progKey,versNum) =
         (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
         (goBack                                              ,Nothing)
     doModifyProgCtrl
-      = doUpdateProgram
+      = doUpdateProgramMetadataWithTags
           (const $ goBack,Just programEditingSucceededAlert)
     doDeleteProgCtrl prog
       = doDeleteProgram

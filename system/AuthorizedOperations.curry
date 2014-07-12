@@ -13,7 +13,7 @@
 module AuthorizedOperations (
   SmapIEAccessType(..),BrowserAccessType(..),AuthNAccessType(..),
   AdminAccessType(..),
-  smapIEOperation,browserOperation,authNOperation,adminOperation
+  smapIEOperation,browserOperation,authNOperation,adminOperation,isAdmin
 ) where
 
 import Authorization
@@ -88,10 +88,12 @@ smapIEOperation accessType authzData =
 --- @cons ModifyProgram prog       - modify description of `prog`
 --- @cons DeleteProgram prog       - deletes `prog` from Smap
 --- @cons ShowAllTags              - shows all tags on Smap
+--- @cons DeleteTag tag            - delete a tag
 data BrowserAccessType 
   = ShowAllPrograms | ShowUserPrograms | ShowUserFavorites | ShowProgram Program
   | MakeVisible Program | AddToFavorites Program | RemoveFromFavorites Program 
-  | ModifyProgram Program | DeleteProgram Program | CreateComment | ShowAllTags
+  | ModifyProgram Program | DeleteProgram Program | CreateComment
+  | ShowAllTags | DeleteTag Tag
 
 --- Checks the authorization of browser operations
 --- @param accessType - the browser access type
@@ -152,6 +154,10 @@ browserOperation accessType authzData =
     CreateComment -> case authzData of
       Guest -> AccessDenied createCommentDeniedErr
       _     -> AccessGranted 
+    DeleteTag _ -> case authzData of
+      Guest      -> AccessDenied delTagDeniedErr
+      Standard _ -> AccessDenied delTagDeniedErr
+      Admin    _ -> AccessGranted 
     _ -> AccessGranted
   where
     showUserProgsDeniedErr =
@@ -187,6 +193,8 @@ browserOperation accessType authzData =
     delProgDeniedSErr =
       "You are not the author of this program. You are not allowed to delete "++
       "the programs of other users."
+    delTagDeniedErr = 
+      "You are not allowed to delete a tag."
     createCommentDeniedErr =
       "You need to <a href=\"?signin\">sign in</a> to write comments."
 
@@ -247,5 +255,12 @@ adminOperation _ authzData =
   where
     adminOpDeniedErr =
       "You have not the rights to proceed."
+
+--- Checks whether current user is administrator.
+--- @param authzData - the current authorization data
+isAdmin :: AuthZData -> Bool
+isAdmin authzData = case authzData of
+    Admin _ -> True
+    _       -> False
 
 --------------------------------------------------------------------------------

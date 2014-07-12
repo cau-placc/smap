@@ -8,12 +8,14 @@
 --- possibly given alert for the case of a successful operation where the
 --- controller usually is applicable on the result of this operation.
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module ProgramsController (
-  doCreateProgram,doCreateProgramVersion,doUpdateProgram,doDeleteProgram
+  doCreateProgram,doCreateProgramVersion,
+  doUpdateProgramMetadata,doUpdateProgramMetadataWithTags,
+  doDeleteProgram
 ) where
 
 import Char
@@ -49,9 +51,8 @@ doCreateProgram (successCtrl,mSuccessAlert)
             (showTransactionErrorPage programCreationFailedErr)
             tResult
   where
-    tagNames   = map (map toLower) $ filter (not . null) 
-                                   $ split isSpace tagNamesStr
-    isSpace c  = c==' ' || c=='\n' || c=='\r' || c=='\t'
+    tagNames = map (map toLower) (words tagNamesStr)
+
     programCreationFailedErr =
       "The program creation failed due to an unexpected internal error. See t"++
       "he internal error message for additional details."
@@ -84,21 +85,35 @@ doCreateProgramVersion (successCtrl,mSuccessAlert)
 --- page will be displayed.
 --- @param successData  - next controller and possibly given alert for the case
 ---   of an successful program editing
---- @param user         - the updated program
-doUpdateProgram
-  :: (Program -> Controller,Maybe Alert)
-  -> Program
-  -> Controller
-doUpdateProgram (successCtrl,mSuccessAlert) prog =
-  do transRes <- ProgramModel.updateProgram prog
+--- @param prog         - the updated program
+doUpdateProgramMetadata
+  :: (Program -> Controller,Maybe Alert) -> Program -> Controller
+doUpdateProgramMetadata (successCtrl,mSuccessAlert) prog =
+  do transRes <- ProgramModel.updateProgramMetadata prog
      either (\_ -> do maybeSetAlert mSuccessAlert
                       successCtrl prog)
             (showTransactionErrorPage programEditingFailedErr)
             transRes
-  where
-    programEditingFailedErr =
-      "The program update failed due to an unexpected internal error. See the"++
-      " internal error message for additional details."
+
+programEditingFailedErr =
+  "The program update failed due to an unexpected internal error. See the "++
+  "internal error message for additional details."
+
+--- Returns a controller that updates an existing program and proceeds with the
+--- given controller if the operation succeeds. Otherwise the transaction error
+--- page will be displayed.
+--- @param successData  - next controller and possibly given alert for the case
+---   of an successful program editing
+--- @param tagstring    - the string containing the updated tags
+--- @param prog         - the updated program
+doUpdateProgramMetadataWithTags
+  :: (Program -> Controller,Maybe Alert) -> [String] -> Program -> Controller
+doUpdateProgramMetadataWithTags (successCtrl,mSuccessAlert) tagstring prog =
+  do transRes <- ProgramModel.updateProgramMetadataWithTags tagstring prog
+     either (\_ -> do maybeSetAlert mSuccessAlert
+                      successCtrl prog)
+            (showTransactionErrorPage programEditingFailedErr)
+            transRes
 
 --- Returns a controller that deletes a given program. This includes the
 --- deletion of the associated metadata entity, all associated versions, all

@@ -1,9 +1,5 @@
 Some things to be done for Smap:
 
-- allow editing of program data (e.g., title, description, keywords, visibility)
-
 - Admin can
   - see/edit users
   - edit systems (e.g., change system name, URL)
-
-- Implement "Download source code" (in SmapIE and browser)
