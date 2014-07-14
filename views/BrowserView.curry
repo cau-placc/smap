@@ -686,10 +686,9 @@ renderProgramInList detailed prog =
 -- should be shown for this tag.
 renderTagList :: (Tag -> Bool) -> [Tag] -> [HtmlExp]
 renderTagList withdelete = concatMap $ \tag ->
-  [a 
-    [href $ allProgramsBaseUrl++"?q="++tagName tag++"&amp;targets=tags"
-    ,class "small"]
-    [text $ "["++tagName tag++"]"]] ++
+  [xsDefaultLinkBtn
+     (allProgramsBaseUrl++"?q="++tagName tag++"&amp;targets=tags")
+     [text $ tagName tag]] ++
   (if withdelete tag then [deleteButton tag, nbsp] else []) ++
   [text " "]
  where

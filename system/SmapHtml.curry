@@ -2,8 +2,8 @@
 --- This module provides application-specific HTML components and elements for
 --- the basic layout, WUI forms and views.
 ---
---- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module SmapHtml (
@@ -14,7 +14,8 @@ module SmapHtml (
   progInBrowserBaseUrl,allProgramsBaseUrl,userProgramsBaseUrl,
   userFavoritesBaseUrl,allTagsBaseUrl,
   smTextInput,
-  greyLinkBtn,blueLinkBtn,smGreenLinkBtn,greenLinkBtn,orangeLinkBtn,linkLinkBtn,
+  greyLinkBtn,blueLinkBtn,smGreenLinkBtn,xsDefaultLinkBtn,
+  greenLinkBtn,orangeLinkBtn,linkLinkBtn,
   blueSubmitBtn,orangeSubmitBtn,linkSubmitBtn,greyCancelBtn,
   aboutIcon,addIcon,browserIcon,codeIcon,commentIcon,createdIcon,dashboardIcon,
   deleteIcon,descriptionIcon,downloadIcon,executionIcon,execErrorIcon,
@@ -298,6 +299,12 @@ blueLinkBtn url = a [href url,class "btn btn-primary"]
 --- @param label - label HTML expressions
 smGreenLinkBtn :: String -> [HtmlExp] -> HtmlExp
 smGreenLinkBtn url = a [href url,class "btn btn-success btn-sm"]
+
+--- A hyperlink rendered as an extra small default button.
+--- @param url   - the hyperlink URL 
+--- @param label - label HTML expressions
+xsDefaultLinkBtn :: String -> [HtmlExp] -> HtmlExp
+xsDefaultLinkBtn url = a [href url,class "btn btn-default btn-xxs"]
 
 --- A hyperlink rendered as a green button.
 --- @param url   - the hyperlink URL 
