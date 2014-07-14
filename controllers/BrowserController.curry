@@ -99,8 +99,11 @@ showDashboard =
 -- @param url - the URL (may contain search settings in the query string)
 showProgramList :: Url -> Controller
 showProgramList url = 
-  checkAuthorization (browserOperation ShowAllPrograms) $ \_ ->
-  applySearchAndListPrograms url getAllProgramsWith programList
+  checkAuthorization (browserOperation ShowAllPrograms) $ \authzData ->
+  applySearchAndListPrograms url (getProgs authzData) programList
+ where
+  getProgs authzData =
+    getAllProgramsWith . withIsVisibleOnly (not (isAdmin authzData))
 
 -- Returns a controller that shows all programs (with possibly specified search
 -- settings applied) created by the currently authenticated user. Displays an 

@@ -52,6 +52,7 @@ getRoutes = return
   ,(Exact "signin"   ,AuthNController  )
   ,(Exact "signout"  ,AuthNController  )
   ,(Exact "forgot"   ,AuthNController  )
+  ,(Exact "passwd"   ,AuthNController  )
   ,(Exact "languages",AdminController  )
   ,(Exact "systems"  ,AdminController  )
   ,(Exact "new"      ,SmapIEController )

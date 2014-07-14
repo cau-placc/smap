@@ -7,8 +7,10 @@
 --------------------------------------------------------------------------------
 
 module AuthNView (
-  signUpPage,signInPage,forgotPasswordPage
+  signUpPage,signInPage,forgotPasswordPage,changePasswordForm
 ) where
+
+import Prelude hiding (div)
 
 import Controllers
 import SmapHtml
@@ -88,6 +90,41 @@ forgotPasswordPage senNewPassword = wuiFrame hExp wHdlr
               ,panelFooter
                 [text "Remember your password? "
                 ,a [href "?signin"] [text "Sign in &raquo;"]]]]]]]
+
+--- Supplies a WUI form to change the password of a user.
+changePasswordForm
+  :: User
+  -> ((String,String,String) -> User -> Controller)
+  -> View
+changePasswordForm user updateuser =
+ renderPasswordPage "Change my password"
+  [label [] [passwordIcon, text "Old password:"], br []
+  ,password oldref, br []
+  ,label [] [passwordIcon, text "New password (at least six characters):"]
+  ,br []
+  ,password newref, br []
+  ,label [] [passwordIcon, text "New password (type again):"], br []
+  ,password new2ref, br []]
+  (blueSubmitBtn chgpasswdHdlr [text "Change!"])
+ where
+  oldref,newref,new2ref free
+
+  chgpasswdHdlr env =
+    next $ updateuser (env oldref, env newref, env new2ref) user
+
+-- Rendering of the password change form.
+renderPasswordPage :: String -> [HtmlExp] -> HtmlExp -> [HtmlExp]
+renderPasswordPage title form submit = let mInternalMsg = Just "bla" in
+  [container
+    [row
+      [div [class "col-xs-6 col-xs-offset-3"]
+        [div [class "panel panel-info"]
+          [div [class "panel-heading"]
+            [h3 [class "panel-title"] 
+                [text title]]
+          ,div [class "panel-body"] $ form
+          ++[hr []
+            ,submit]]]]]]
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

@@ -21,7 +21,7 @@ module UserModel (
   User,UserKey,setUserName,userName,setUserEmail,userEmail,setUserHash,userHash,
   setUserIsAdmin,userIsAdmin,
 
-  createUser,updateUser,
+  createUser,updateUser,getStoredUser,
   getUserByName,getUserByNameWith,getUserByEmail,getUserByEmailWith,
   addFavoriting,removeFavoriting,
   authored,favorites
@@ -52,6 +52,12 @@ updateUser :: User -> IO (Either () TError)
 updateUser = runT . Smap.updateUser
 
 -- Reading user entities from the database
+
+--- Gets the user entity currently stored corresponding to a given user
+--- (which might be modified). `Nothing` is returned if no such user exists.
+--- @param user - the User object whose stored version should be retrieved
+getStoredUser :: User -> IO (Either User TError)
+getStoredUser user = runT (getUser (userKey user))
 
 --- Gets the user entity with the given name from the database. `Nothing` is
 --- returned (as an I/O action) if no such user exists.

@@ -226,7 +226,7 @@ tagList azdata allTags popularTags =
 ---   the currently authenticated user
 --- @param remFromFavs - controller that removes the program from the favorites
 ---   of the currently authenticated user
---- @param modifyProg  - controller that modifies title/descr/tags of program
+--- @param modifyProg  - controller that modifies metadata of the program
 --- @param deleteProg  - controller that deletes the program
 --- @param createCom   - controller that creates a comment
 --- @param authzData   - the current authorization data
@@ -383,12 +383,6 @@ programPage (prog,versNum)
                        else (" ",faverCount)
           msgPrefix  = mYou++show cnt++(if cnt==1 then " user " else " users ")
        in [favoriteIcon,text $ msgPrefix++"favorited this"]
-    -- modify modal
-    modifyModal =
-      stdModal "modify-modal" "comment-modal-title" 
-        [text "Modify metadata: "]
-        mModifyForm
-        []
     -- comment modal
     commentModal =
       stdModal "comment-modal" "comment-modal-title" 
@@ -419,19 +413,26 @@ programPage (prog,versNum)
       linkSubmitBtn remFavHdlr 
         [favoriteIcon,text " Remove from favorites"]
 
+    -- modify button
     mModifyOption = 
       byAuthorization (browserOperation (ModifyProgram prog) authzData)
-        (linkLinkBtn "#" [modifiedIcon, text $ " Change title/description/tags"]
+        (linkLinkBtn "#" [modifiedIcon, text $ " Change metadata"]
           `addAttrs` [modalToggle,targetId "modify-modal"])
         (\_ -> empty)
+    -- modify modal
+    modifyModal =
+      stdModal "modify-modal" "comment-modal-title" 
+        [text "Modify metadata: "]
+        mModifyForm
+        []
     mModifyForm = 
       byAuthorization (browserOperation (ModifyProgram prog) authzData)
-        [label [] [text "Title"]
+        [label [] [titleIcon, text " Title"]
         ,textarea [class "form-control",rows 1] titleRef title
-        ,label [] [text "Description"]
+        ,label [] [descriptionIcon, text " Description"]
         ,textarea [class "form-control",rows 5] descrRef descr
-        ,label [] [text "Tags (separated by spaces)"]
-        ,textarea [class "form-control",rows 3] tagsRef
+        ,label [] [tagsIcon, text " Tags (separated by spaces)"]
+        ,textarea [class "form-control",rows 2] tagsRef
                   (unwords (map tagName tags))
         ,blueSubmitBtn modifyHdlr [text "Change!"]
         ,buttonButton [class "btn btn-default",modalDismiss]
@@ -569,17 +570,17 @@ renderSearchPanel (langs,sortMenu,(mQ,(t,d,ts),mLang,mSort,mOrder)) baseUrl =
       [label []
         [input (("type","checkbox"):value "title":mChecked t)
         `addId` "search-panel-title-checkbox"]
-        ,titleIcon,text " Title"]
+        ,titleIcon, text " Title"]
     ,div [class "checkbox"]
       [label []
         [input (("type","checkbox"):value "descr":mChecked d)
         `addId` "search-panel-descr-checkbox"]
-        ,descriptionIcon,text " Description"]
+        ,descriptionIcon, text " Description"]
     ,div [class "checkbox"]
       [label []
         [input (("type","checkbox"):value "tags":mChecked ts)
         `addId` "search-panel-tags-checkbox"]
-        ,tagsIcon,text " Tags"]
+        ,tagsIcon, text " Tags"]
     ,label [] [text " Filter by language"]
     ,select [class "form-control input-sm"] _ langMenu lang
     `addId` "search-panel-lang-select"

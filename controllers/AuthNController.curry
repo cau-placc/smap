@@ -18,6 +18,7 @@ import Authorization
 import AuthorizedOperations
 import AuthNView
 import Controllers
+import StaticController(showLandingPage)
 import StaticView
 import Url
 import UserModel
@@ -37,6 +38,7 @@ authNController url@(path,_) =
     ["signin"]  -> showBlankSignInPage
     ["signout"] -> doSignOut
     ["forgot"]  -> showForgotPasswordPage
+    ["passwd"]  -> showChangePasswdForm
     _           -> showInvalidUrlErrorPage url
 
 --------------------------------------------------------------------------------
@@ -152,8 +154,54 @@ doSendNewPassword userEmail =
     content user newPassword =
       "Hello "++userName user++"!\n\nForgot your password? No problem. We res"++
       "tored your password. Here it is:\n\n"++newPassword++"\n\nYou can now u"++
-      "se this password to sign in to Smap."
+      "se this password to sign in to Smap (and to change it there again!)."
     updateUserFailedErr =
       "The new password could not be saved due to an unexpected internal error."
+
+--------------------------------------------------------------------------------
+-- Change password                                                            --
+--------------------------------------------------------------------------------
+
+--- Returns a controller to change the user's password.
+showChangePasswdForm =
+  checkAuthorization (authNOperation ChangePasswd) $ \authzData ->
+  do mUser <- maybe (return Nothing) getUserByName
+                    (getUsernameFromAuthZData authzData)
+     maybe (showStdErrorPage userNotFoundErr)
+           (\user -> return $ changePasswordForm user doChangePasswdCtrl)
+           mUser
+ where
+  doChangePasswdCtrl (oldpass,newpass,newpass2) user = do
+    oldpasshash <- getUserHash (userName user) oldpass
+    if oldpasshash /= userHash user
+     then setAlert wrongOldPasswordAlert >> showLandingPage
+     else
+      if newpass /= newpass2
+      then setAlert wrongPasswordRepeatAlert >> showLandingPage
+      else
+       if length newpass < 6
+       then setAlert passwordTooShortAlert >> showLandingPage
+       else do
+        newpasshash <- getUserHash (userName user) newpass
+        doUpdateUser
+          (const showLandingPage, Just nameNotUniqueErrAlert )
+          (const showLandingPage, Just emailNotUniqueErrAlert)
+          (const showLandingPage, Just changePasswdSucceededAlert)
+          (setUserHash user newpasshash)
+
+  nameNotUniqueErrAlert = 
+      (ErrorAlert,"This user name is already taken. Please try another one.")
+  emailNotUniqueErrAlert = 
+      (ErrorAlert,"This email address already exists. Please try another one.")
+  changePasswdSucceededAlert = 
+      (SuccessAlert,"Your password has been changed!")
+
+  wrongOldPasswordAlert = 
+      (ErrorAlert,"Old password is wrong. Nothing changed!")
+  wrongPasswordRepeatAlert = 
+      (ErrorAlert,"The new passwords are different. Nothing changed!")
+  passwordTooShortAlert =
+      (ErrorAlert,"Please choose a new password with at least 6 characters.")
+  userNotFoundErr = "Unexpectedly, no user was found with the signed-in user."
 
 --------------------------------------------------------------------------------

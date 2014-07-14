@@ -14,6 +14,7 @@ module AdminController (
 ) where
 
 import ExecEnvModel
+import UserModel
 
 import ExecEnvsController
 import StaticController

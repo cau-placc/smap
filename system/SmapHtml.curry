@@ -159,7 +159,10 @@ renderNavbar url langNames mAuthNData =
                   [userProgramsIcon,text " My programs"]]
               ,li []
                 [a [href userFavoritesBaseUrl] 
-                  [userFavoritesIcon,text " My favorites"]]]
+                  [userFavoritesIcon,text " My favorites"]]
+              ,li []
+                [a [href changePasswordBaseUrl] 
+                  [passwordIcon,text " Change my password"]]]
             ++(if userIsAdmin then adminMenu else [empty])
             ++[li [class "divider"] 
                 []
@@ -247,6 +250,10 @@ userProgramsBaseUrl = "?browser/myprograms"
 --- Base URL for a list of all user favorites.
 userFavoritesBaseUrl :: String
 userFavoritesBaseUrl = "?browser/myfavorites"
+
+--- Base URL for a list of all user favorites.
+changePasswordBaseUrl :: String
+changePasswordBaseUrl = "?passwd"
 
 --- Base URL for a list of all tags on Smap.
 allTagsBaseUrl :: String

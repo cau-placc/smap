@@ -6,8 +6,8 @@
 --- access results can be used to authorize controllers or define authorized
 --- elements on views.
 ---
---- @author Lasse Kristopher Meyer
---- @version March 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module AuthorizedOperations (
@@ -120,7 +120,7 @@ browserOperation accessType authzData =
       Standard name -> if (not $ programIsVisible prog) && name `authored` prog
                        then AccessGranted
                        else AccessDenied makeVisibleDeniedErr
-      Admin name    -> if (not $ programIsVisible prog) && name `authored` prog
+      Admin _       -> if not (programIsVisible prog)
                        then AccessGranted
                        else AccessDenied makeVisibleDeniedErr
     AddToFavorites prog -> case authzData of
@@ -208,7 +208,9 @@ browserOperation accessType authzData =
 --- @cons SignIn          - authenticates the current user
 --- @cons SignOut         - signs out the currently authenticated user
 --- @cons SendNewPassword - sends a new password to the users email address
-data AuthNAccessType  = SignUp | SignIn | SignOut | SendNewPassword
+--- @cons ChangePasswd    - change password of user which is signed in
+data AuthNAccessType = SignUp | SignIn | SignOut | SendNewPassword
+                     | ChangePasswd
 
 --- Checks the authorization of authentication operations.
 --- @param accessType - the authentication access type
@@ -225,6 +227,9 @@ authNOperation accessType authzData =
     SignOut -> case authzData of
       Guest -> AccessDenied signOutDeniedErr
       _     -> AccessGranted
+    ChangePasswd -> case authzData of
+      Guest -> AccessDenied modUserDeniedErr
+      _     -> AccessGranted
     _ -> AccessGranted
   where
     signUpDeniedErr =
@@ -234,6 +239,8 @@ authNOperation accessType authzData =
     signOutDeniedErr =
       "You are already signed in. <a href=\"?signout\">Sign out</a> to pe"++
           "rform this action."
+    modUserDeniedErr = 
+      "You are not signed in. <a href=\"?signin\">Sign in</a> to proceed."
 
 --------------------------------------------------------------------------------
 -- Administrational operations                                                --

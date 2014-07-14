@@ -93,25 +93,33 @@ doUpdateUser (nameNotUnqiueErrCtrl ,mNameNotUniqueErrAlert )
              (emailNotUniqueErrCtrl,mEmailNotUniqueErrAlert)
              (successCtrl          ,mSuccessAlert          )
              user =
-  do mUserByName <- getUserByName name
-     maybe (do mUserByEmail <- getUserByEmail email
-               maybe (do transRes <- UserModel.updateUser user
-                         either (\_ -> do maybeSetAlert mSuccessAlert
-                                          successCtrl user)
-                                (showTransactionErrorPage userEditingFailedErr)
-                                transRes)
-                     (\_ -> do maybeSetAlert mEmailNotUniqueErrAlert
-                               emailNotUniqueErrCtrl user)
-                     mUserByEmail)
-           (\_ -> do maybeSetAlert mNameNotUniqueErrAlert
-                     nameNotUnqiueErrCtrl user)
-           mUserByName
-  where
-    name  = userName  $ user
-    email = userEmail $ user
-    userEditingFailedErr =
-      "The user update failed due to an unexpected internal error. See the in"++
-      "ternal error message for additional details."
+  getStoredUser user >>=
+  either (\olduser ->
+    do nameok <- userNameOK olduser
+       if nameok
+        then do emailok <- userEmailOK olduser
+                if emailok
+                 then UserModel.updateUser user >>=
+                      either (\_ -> do maybeSetAlert mSuccessAlert
+                                       successCtrl user)
+                             (showTransactionErrorPage userEditingFailedErr)
+                 else do maybeSetAlert mEmailNotUniqueErrAlert
+                         emailNotUniqueErrCtrl user
+        else do maybeSetAlert mNameNotUniqueErrAlert
+                nameNotUnqiueErrCtrl user)
+    (showTransactionErrorPage userEditingFailedErr)
+ where
+  userNameOK olduser = if userName olduser == userName user
+                       then return True
+                       else getUserByName (userName user) >>=
+                            maybe (return True) (\_ -> return False)
+  userEmailOK olduser = if userEmail olduser == userEmail user
+                        then return True
+                        else getUserByEmail (userEmail user) >>=
+                             maybe (return True) (\_ -> return False)
+  userEditingFailedErr =
+    "The user update failed due to an unexpected internal error. See the in"++
+    "ternal error message for additional details."
 
 --------------------------------------------------------------------------------
 -- Adding and removing favoritings                                            --
