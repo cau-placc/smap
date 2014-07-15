@@ -2,4 +2,3 @@ Some things to be done for Smap:
 
 - Admin can
   - see/edit users
-  - edit systems (e.g., change system name, URL)

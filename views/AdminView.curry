@@ -7,16 +7,19 @@
 --------------------------------------------------------------------------------
 
 module AdminView (
-  languageCreationForm,systemCreationForm
+  languageCreationForm,systemCreationForm,listSystemView,editSystemView
 ) where
 
 import Prelude hiding (div)
+import Sort(mergeSort)
 
 import Controllers
 import ExecEnvModel
 import SmapHtml
 import SmapWui
 import Views
+import Smap
+--import SmapEntitiesToHtml
 
 --------------------------------------------------------------------------------
 -- Exported views                                                             --
@@ -43,6 +46,44 @@ systemCreationForm langs createSystem =
     [text "Add to Smap!"]
     []
     []
+
+--- Compares two System entities. This order is used in the list view.
+leqSystem :: System -> System -> Bool
+leqSystem x1 x2 =
+  (systemName x1,systemExecUrl x1) <= (systemName x2,systemExecUrl x2)
+
+--- Supplies a list view for a given list of System entities.
+--- Shows also show/edit/delete buttons if the user is logged in.
+--- The arguments are the session info and the list of System entities.
+listSystemView :: [System] -> [HtmlExp]
+listSystemView systems =
+  [panelWith 10
+     [text  "Execution Systems in Smap"]
+     [spTable ([[[b [] [text "Name"]],[b [] [text "Execution URL"]]]] ++
+               map listSystem (mergeSort leqSystem systems))] []]
+  where
+    listSystem :: System -> [[HtmlExp]]
+    listSystem system =
+         systemToListView system ++
+          ([[smBlueLinkBtn ("?systems/edit/" ++ showSystemKey system)
+                    [modifiedIcon, htxt " edit"]]
+           ,[smBlueLinkBtn ("?systems/delete/" ++ showSystemKey system)
+                    [deleteIcon, htxt " delete"]]
+           ])
+
+    systemToListView :: System -> [[HtmlExp]]
+    systemToListView system =
+      [[text (systemName system)],[text (systemExecUrl system)]]
+
+--- Supplies a WUI form to edit the given System entity.
+--- Takes also associated entities and a list of possible associations
+--- for every associated entity type.
+editSystemView
+ :: System -> Language -> [Language]
+  -> (System -> Controller) -> [HtmlExp]
+editSystemView system relatedLanguage possibleLanguages controller =
+  renderWuiForm (wSystemType system relatedLanguage possibleLanguages)
+                system controller [text "Edit System"]  [] [text "Change!"] [] []
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --
@@ -98,13 +139,31 @@ wSystem langs = wSmapTriple
     `withCondition` isRequired)
   (wSmapSelect "Choose the associated language" languageName langs)
   where
-    nameHelp =
-      ""
-    execUrlHelp =
-      ""
-    nameErr =
-      "Please enter the system name."
-    execUrlErr =
-      "Please enter the execution URL."
+    nameHelp    = ""
+    execUrlHelp = ""
+    nameErr     = "Please enter the system name."
+    execUrlErr  = "Please enter the execution URL."
+
+--- Transformation from data of a WUI form to entity type System.
+tuple2System :: System -> (String,String,Language) -> System
+tuple2System systemToUpdate (name ,execUrl ,language) =
+  setSystemName
+   (setSystemExecUrl
+     (setSystemLanguageLangImplKey systemToUpdate (languageKey language))
+     execUrl)
+   name
+
+--- Transformation from entity type System to a tuple
+--- which can be used in WUI specifications.
+system2Tuple :: Language -> System -> (String,String,Language)
+system2Tuple language system =
+  (systemName system,systemExecUrl system,language)
+
+--- WUI Type for editing or creating System entities.
+--- Includes fields for associated entities.
+wSystemType :: System -> Language -> [Language] -> WuiSpec System
+wSystemType system language languageList =
+  transformWSpec (tuple2System system,system2Tuple language)
+   (wSystem languageList)
 
 --------------------------------------------------------------------------------

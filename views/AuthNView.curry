@@ -92,39 +92,41 @@ forgotPasswordPage senNewPassword = wuiFrame hExp wHdlr
                 ,a [href "?signin"] [text "Sign in &raquo;"]]]]]]]
 
 --- Supplies a WUI form to change the password of a user.
-changePasswordForm
+changePasswordForm'
   :: User
   -> ((String,String,String) -> User -> Controller)
   -> View
-changePasswordForm user updateuser =
- renderPasswordPage "Change my password"
-  [label [] [passwordIcon, text "Old password:"], br []
-  ,password oldref, br []
-  ,label [] [passwordIcon, text "New password (at least six characters):"]
-  ,br []
-  ,password newref, br []
-  ,label [] [passwordIcon, text "New password (type again):"], br []
-  ,password new2ref, br []]
-  (blueSubmitBtn chgpasswdHdlr [text "Change!"])
+changePasswordForm' user updateuser =
+ [panelWith 6
+   [text "Change my password"]
+   [label [] [passwordIcon, text "Old password:"], br []
+   ,password oldref, br []
+   ,label [] [passwordIcon, text "New password (at least six characters):"]
+   ,br []
+   ,password newref, br []
+   ,label [] [passwordIcon, text "New password (type again):"], br []
+   ,password new2ref, br []]
+   [blueSubmitBtn chgpasswdHdlr [text "Change!"]]]
  where
   oldref,newref,new2ref free
 
   chgpasswdHdlr env =
     next $ updateuser (env oldref, env newref, env new2ref) user
 
--- Rendering of the password change form.
-renderPasswordPage :: String -> [HtmlExp] -> HtmlExp -> [HtmlExp]
-renderPasswordPage title form submit = let mInternalMsg = Just "bla" in
-  [container
-    [row
-      [div [class "col-xs-6 col-xs-offset-3"]
-        [div [class "panel panel-info"]
-          [div [class "panel-heading"]
-            [h3 [class "panel-title"] 
-                [text title]]
-          ,div [class "panel-body"] $ form
-          ++[hr []
-            ,submit]]]]]]
+changePasswordForm
+  :: User
+  -> ((String,String,String) -> User -> Controller)
+  -> View
+changePasswordForm user updateuser =
+  renderWuiForm wChgPasswords ("","","") chgpasswdHdlr
+    [h3 [] [passwordIcon,text " Change my password"]]
+    []
+    [text "Change!"]
+    []
+    []
+ where
+  chgpasswdHdlr passwds = updateuser passwds user
+
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --
@@ -139,38 +141,53 @@ wSignUpData = wSmap4Tuple
     `withCondition` isRequired)
   (wEmailAddress "Choose your email address" False emailHelp     emailErr
     `withCondition` isAValidEmailAddress)
-  (wPassword     "Choose your password"      False password1Help password1Err
+  (wPassword     "Choose your password"      False passwd1Help passwd1Err
     `withCondition` isAtLeast6CharactersLong)
-  (wPassword     "Repeat your password"      False password2Help password2Err
+  (wPassword     "Repeat your password"      False passwd2Help passwd2Err
     `withCondition` isRequired)
     `withErrorRendering` wSignUpDataErrorRendering passwordMatchErr
     `withCondition`      passwordsDoMatch
   where
-    isAtLeast6CharactersLong = (6<=) . length
     passwordsDoMatch (_,_,password1,password2) = password1 == password2
-    wSignUpDataErrorRendering err render hExps =
-      render hExps `addToClass` "has-error with-error"
-                   `addAttrs`   [tooltipToggle,title err]
     nameHelp = 
       "The user name is required for the authentication process and identifies"++
       " you throughout this web application."
     emailHelp = 
       "The email address is required when you forget your password."
-    password1Help = 
-      "The password is required for the authentication process. Choose a pass"++
-      "word that is at least 6 characters long."
-    password2Help =
-      "Repeat your password to make sure that you didn't made a typing error."
     nameErr =
       "Please choose a user name."
     emailErr =
       "Please choose a valid email address."
-    password1Err =
-      "Please choose a password with at least 6 characters."
-    password2Err =
-      "Please repeat your password."
-    passwordMatchErr =
-      "Passwords do not match. Please try again."
+
+isAtLeast6CharactersLong = (6<=) . length
+
+wSignUpDataErrorRendering err render hExps =
+  render hExps `addToClass` "has-error with-error"
+               `addAttrs`   [tooltipToggle,title err]
+
+passwd1Help = "The password is required for the authentication process. Choose a "++
+              "password that is at least 6 characters long."
+passwd2Help = "Repeat your password to make sure that you didn't made a typing error."
+passwd1Err  = "Please choose a password with at least 6 characters."
+passwd2Err  = "Please repeat your password."
+passwordMatchErr = "Passwords do not match. Please try again."
+
+-- The WUI specification for changing the password.
+wChgPasswords :: WuiSpec (String,String,String)
+wChgPasswords = wSmapTriple
+  (wPassword "Old password:"                           False passwdOHelp passwdOErr
+    `withCondition` isRequired)
+  (wPassword "New password (at least six characters):" False passwd1Help passwd1Err
+    `withCondition` isAtLeast6CharactersLong)
+  (wPassword "New password (type again):"              False passwd2Help passwd2Err
+    `withCondition` isRequired)
+   `withErrorRendering` wSignUpDataErrorRendering passwordMatchErr
+   `withCondition` passwordsDoMatch
+  where
+    passwdOHelp = "Your old password is required for changing the password."
+    passwdOErr = "Please enter your old password."
+    passwordsDoMatch (_,password1,password2) = password1 == password2
+
 
 -- The WUI specification for the authentication process (signing in). Autofocus
 -- on the username inout field is disabled if an initial username is given.

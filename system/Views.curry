@@ -67,8 +67,8 @@ withConfirmation dialogId trigger message hdlr =
 --- handles the form submission.
 --- @param wuiSpec - the associated WUI specification
 --- @param init    - initial data to be prefilled in the form
---- @param ctrl    - the controller that handles the for submission
---- @param header  - header HRML expressions
+--- @param ctrl    - the controller that handles the submission
+--- @param header  - header HTML expressions
 --- @param info    - info line HTML expressions
 --- @param label   - submit button label HTML expressions
 --- @param addNav  - additional navigation elements (placed right to the submit

@@ -7,7 +7,7 @@
 --- provides some helper functions for assigning attributes to HTML elements.
 ---
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module Html5 (
@@ -17,7 +17,7 @@ module Html5 (
   form,h1,h2,h3,h4,h5,h6,header,hr,i,img,input,label,li,meta,nav,ol,option,p,
   script,section,select,small,span,strong,text,textarea,ul,
   alt,autofocus,checked,class,cols,content,disabled,href,id,lang,name,onclick,
-  placeholder,rel,role,rows,src,style,tabindex,title,value,
+  placeholder,rel,role,rows,src,style,tabindex,target,targetBlank,title,value,
   buttonButton,resetButton,submitButton,selectInput,
   ariaHidden,ariaLabelledby,readonly,addId,
 
@@ -276,6 +276,14 @@ style styleVal = ("style",styleVal)
 
 tabindex :: Int -> HtmlAttr
 tabindex tabindexVal = ("tabindex",show tabindexVal)
+
+--- Target attribute.
+target :: String -> HtmlAttr
+target targetval = ("target",targetval)
+
+--- Attribute `target="_blank"`.
+targetBlank :: HtmlAttr
+targetBlank = target "_blank"
 
 title :: String -> HtmlAttr
 title titleVal = ("title",titleVal)

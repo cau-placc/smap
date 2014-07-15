@@ -56,4 +56,4 @@ readHelpFile fname = do
 -- The list of help text files (stored in public/static):
 helpTextFiles =
   map (\t -> "help"++t++".txt")
-      ["Smap","SmapIE","Browser","SignIn"]
+      ["Smap","SmapIE","Browser","SignIn","Languages"]

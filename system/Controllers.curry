@@ -5,7 +5,7 @@
 --- also exports the general type synonym for controllers.
 ---
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module Controllers (
@@ -13,7 +13,7 @@ module Controllers (
   showErrorPage,showStdErrorPage,showAccessDeniedErrorPage,
   showInvalidUrlErrorPage,showTransactionErrorPage,
   showNotYetImplementedErrorPage,stdErrorPageTitle,
-  validateKeyAndApply,next,nextFor,
+  validateKeyAndApply,validateKeyAndApplyOn,next,nextFor,
   getForm
 ) where
 
@@ -143,7 +143,20 @@ validateKeyAndApply mKey url applyController =
         applyController
         mKey
 
---- Runs the action of a controller and delivers the HTML form.
+--- Reads an entity for a given key and applies a controller to it.
+--- Checks if the result of a key reading function is a valid key and applies a
+--- controller on the corresponding entity.
+--- Shows the invalid URL error page if no key is given.
+--- @param mKey              - the result of the key reading function
+--- @param url               - the url that contains the key
+--- @param applyController   - the controller which can be applied on the key
+validateKeyAndApplyOn :: Maybe key -> Url -> (key -> Transaction en)
+                      -> (en -> Controller) -> Controller
+validateKeyAndApplyOn mKey url getentity applyController =
+  maybe (showInvalidUrlErrorPage url)
+        (\key -> runJustT (getentity key) >>= applyController)
+        mKey
+
 --- @param controller - the controller that will be executed
 next :: Controller -> IO HtmlForm
 next controller =

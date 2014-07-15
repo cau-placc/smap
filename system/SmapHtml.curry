@@ -9,12 +9,12 @@
 module SmapHtml (
   module Bootstrap3,module Html5,
   viewportMetaTag,favicon,jsHeadIncludes,cssIncludes,jsBodyIncludes,
-  renderNavbar,wrap,stickyFooter,
+  renderNavbar,wrap,stickyFooter,panelWith,
   landingPageUrl,newProgBaseUrl,openProgramBaseUrl,dashboardUrl,
   progInBrowserBaseUrl,allProgramsBaseUrl,userProgramsBaseUrl,
   userFavoritesBaseUrl,allTagsBaseUrl,
   smTextInput,
-  greyLinkBtn,blueLinkBtn,smGreenLinkBtn,xsDefaultLinkBtn,
+  greyLinkBtn,blueLinkBtn,smBlueLinkBtn,smGreenLinkBtn,xsDefaultLinkBtn,
   greenLinkBtn,orangeLinkBtn,linkLinkBtn,
   blueSubmitBtn,orangeSubmitBtn,linkSubmitBtn,greyCancelBtn,
   aboutIcon,addIcon,browserIcon,codeIcon,commentIcon,createdIcon,dashboardIcon,
@@ -23,7 +23,8 @@ module SmapHtml (
   modifiedIcon,nextIcon,notVisibleIcon,openIcon,optionsIcon,passwordIcon,
   previousIcon,recentIcon,reloadIcon,resetIcon,saveIcon,searchIcon,signInIcon,
   signUpIcon,smapIEIcon,sortIcon,tagsIcon,titleIcon,userIcon,userFavoritesIcon,
-  userProgramsIcon,versionIcon,visibleIcon,warningMessageIcon
+  userProgramsIcon,versionIcon,visibleIcon,warningMessageIcon,
+  spTable
 ) where
 
 import Bootstrap3
@@ -31,6 +32,7 @@ import Char
 import Html5 hiding (id)
 import List
 import Prelude hiding (div,span)
+import qualified Prelude(div)
 
 import Authentication
 import ExecEnvModel
@@ -192,7 +194,10 @@ renderNavbar url langNames mAuthNData =
           [addIcon,text " Add language"]]
       ,li []
         [a [href "?systems/new"] 
-          [addIcon,text " Add system"]]]
+          [addIcon,text " Add system"]]
+      ,li []
+        [a [href "?systems/list"] 
+          [modifiedIcon,text " Edit systems"]]]
     mAdmin b = if b then " admin" else ""
     navbarSearchTooltip =
       "Search all programs on Smap that contain the given keyword in either t"++
@@ -215,6 +220,20 @@ stickyFooter =
       [p [class "text-muted"]
         [text "&copy; 2014, Lasse Kristopher Meyer &bull; "
         ,a [href "?about"] [text " About"]]]]
+
+-- A panel with a width (in columns between 2 and 12), title, body, and footer.
+panelWith :: Int -> [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> HtmlExp
+panelWith colwidth title body footer =
+   container
+    [row
+      [div [class ("col-xs-"++show selectedwidth++" col-xs-offset-"++show offset)]
+        [div [class "panel panel-info"]
+          [panelHeading [h3 [class "panel-title"] title]
+          ,panelBody body
+          ,if null footer then empty else panelFooter footer]]]]
+ where
+   selectedwidth = if colwidth > 12 then 12 else colwidth
+   offset = (12 - selectedwidth) `Prelude.div` 2
 
 --------------------------------------------------------------------------------
 -- URLs                                                                       --
@@ -499,3 +518,7 @@ warningMessageIcon :: HtmlExp
 warningMessageIcon = glyphicon "warning-sign"
 
 --------------------------------------------------------------------------------
+--- Standard table in Smap.
+spTable :: [[[HtmlExp]]] -> HtmlExp
+spTable items = table items  `addClass` "table table-hover table-condensed"
+

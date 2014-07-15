@@ -1,0 +1,36 @@
+helpLanguages
+Which programming languages are supported?
+<p>
+In general, Smap can support any programming language
+provided that there exists some
+language mode for <a href="http://codemirror.net/">CodeMirror</a>
+and a safe execution environment via some web service.
+Since the latter is more easy to install for declarative programming
+languages, Smap currently supports the following languages:
+</p>
+<ul>
+<li>
+ <b>Curry</b>: There are two execution environments provided for
+ functional logic programs written in Curry: PAKCS, which is fairly fast
+ but computes only the first solution/value of the expression <tt>main</tt>,
+ and KiCS2, which computes all values of the expression <tt>main</tt>
+ but has a considerably larger compilation time.
+ Note that initial expressions <tt>main</tt> of type <tt>IO</tt>
+ are not allowed.
+</li>
+<li>
+ <b>Haskell</b>: Functionnal programs written in Haskell are executed by
+ <tt>runghc</tt>, which is part of the Glasgow Haskell Compiler.
+ Note that initial expressions <tt>main</tt> of type <tt>IO</tt>
+ are not allowed.
+</li>
+<li>
+ <b>Prolog</b>: Logic programs written in Prolog are executed by
+ SWI-Prolog. Programs are executed in a sandbox (see library
+ <tt>sandbox</tt> of SWI-Prolog).
+</li>
+</ul>
+<p>
+If you are are interested in the support for other languages,
+please contact the Smap administrator.
+</p>
