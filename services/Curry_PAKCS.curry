@@ -36,6 +36,7 @@ pakcsParams =
   ,"-Dparsermessages=no"
   ,"-Dshowfcyload=no"
   ,"-Dshowplload=no"
+  ,"-Dinteractive=no"
   ,"-Dmoresolutions=no"
   ,"-Dpakcsextensions=yes"
   ,"--set","-verbose"

@@ -2,3 +2,7 @@ Some things to be done for Smap:
 
 - Admin can
   - see/edit users
+
+- Upload programs via get:
+  ...smap.cgi?upload?lang=curry&program=....<urlencoded>
+  --> load program into SmapIE

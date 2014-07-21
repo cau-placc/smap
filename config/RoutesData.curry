@@ -56,6 +56,7 @@ getRoutes = return
   ,(Exact "languages",AdminController  )
   ,(Exact "systems"  ,AdminController  )
   ,(Exact "new"      ,SmapIEController )
+  ,(Exact "upload"   ,SmapIEController )
   ,(Always           ,SmapIEController )]
 
 --------------------------------------------------------------------------------

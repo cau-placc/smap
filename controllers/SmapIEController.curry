@@ -4,8 +4,8 @@
 --- displaying forms for program and version creation, performing the actual
 --- program and version creation and executing programs.
 ---
---- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module SmapIEController (
@@ -14,6 +14,7 @@ module SmapIEController (
 
 import Maybe
 import Time
+import HTML(urlencoded2string)
 
 import ExecEnvModel
 import ProgramModel
@@ -38,14 +39,22 @@ import Url
 --- module depending on the URL path.
 --- @param url - the current URL
 smapIEController :: Url -> Controller
-smapIEController url@(path,_) =
+smapIEController url@(path,params) =
   case path of
-    ["new",langName] -> showBlankSmapIE langName
-    [progKey]        -> validateKeyAndApply
-                          (readProgramKey progKey)
-                          url showProgramInSmapIE
-    _                -> showInvalidUrlErrorPage url
-
+    ["new",langname] -> showBlankSmapIE langname
+    ["upload"]       -> maybe (showInvalidUrlErrorPage url)
+                          (\langname ->
+                            maybe (showInvalidUrlErrorPage url)
+                              (\prog -> showUploadSmapIE langname
+                                          (urlencoded2string prog))
+                              (lookup "program" params))
+                          (lookup "lang" params)
+    [progKey]           -> validateKeyAndApply
+                             (readProgramKey progKey)
+                             url showProgramInSmapIE
+    _                   -> showInvalidUrlErrorPage url
+ where
+  
 --------------------------------------------------------------------------------
 -- SmapIE Controllers                                                         --
 --------------------------------------------------------------------------------
@@ -60,6 +69,26 @@ showBlankSmapIE langName =
      maybe (showStdErrorPage langNotFoundErr)
            (\execEnv -> showSmapIE Nothing execEnv Nothing 
                                    (initCode execEnv)
+                                   (initSystemKey execEnv))
+           mExecEnv
+  where 
+    initCode (lang,_)         = languageTemplate $ lang
+    initSystemKey (_,systems) = showSystemKey $ head $ systems
+    langNotFoundErr =
+      "Sorry, we could not find this language in our database. Choose <code>E"++
+      "ditor</code> in the navigation bar to get a list of all available lang"++
+      "uages."
+
+-- Returns a controller that shows the SmapIE for the given language
+-- with an initial program text (e.g., which is uploaded).
+-- Returns an error page if no language with the given name exists.
+-- @param langName - the name of the language the IE instance is attached to
+-- @param initcode - initial code shown in the program widget
+showUploadSmapIE :: String -> String -> Controller
+showUploadSmapIE langName initcode =
+  do mExecEnv <- getExecEnvByLanguageName langName
+     maybe (showStdErrorPage langNotFoundErr)
+           (\execEnv -> showSmapIE Nothing execEnv Nothing initcode
                                    (initSystemKey execEnv))
            mExecEnv
   where 
