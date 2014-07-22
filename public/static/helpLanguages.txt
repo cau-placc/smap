@@ -11,12 +11,17 @@ languages, Smap currently supports the following languages:
 <ul>
 <li>
  <b>Curry</b>: There are two execution environments provided for
- functional logic programs written in Curry: PAKCS, which is fairly fast
- but computes only the first solution/value of the expression <tt>main</tt>,
- and KiCS2, which computes all values of the expression <tt>main</tt>
- but has a considerably larger compilation time.
- Note that initial expressions <tt>main</tt> of type <tt>IO</tt>
- are not allowed.
+ functional logic programs written in Curry:
+ PAKCS, which compiles fairly fast, and
+ KiCS2, which requires a considerably larger compilation time
+ but is lazier for some features.
+ For PAKCS, you can select between two systems: one computes
+ all values of the initial expression <tt>main</tt> and the other one
+ computes only the first value of the initial expression.
+ KiCS2 always computes all values of the initial expression
+ <tt>main</tt>.
+ Note that initial expressions of type <tt>IO</tt>
+ are not allowed in all systems.
 </li>
 <li>
  <b>Haskell</b>: Functionnal programs written in Haskell are executed by

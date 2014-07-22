@@ -18,7 +18,8 @@ module SmapHtml (
   greenLinkBtn,orangeLinkBtn,linkLinkBtn,
   blueSubmitBtn,orangeSubmitBtn,linkSubmitBtn,greyCancelBtn,
   aboutIcon,addIcon,browserIcon,codeIcon,commentIcon,createdIcon,dashboardIcon,
-  deleteIcon,descriptionIcon,downloadIcon,executionIcon,execErrorIcon,
+  deleteIcon,descriptionIcon,downloadIcon,uploadIcon,
+  executionIcon,execErrorIcon,
   execSuccessIcon,favoriteIcon,filterIcon,helpIcon,idIcon,infoIcon,languageIcon,
   modifiedIcon,nextIcon,notVisibleIcon,openIcon,optionsIcon,passwordIcon,
   previousIcon,recentIcon,reloadIcon,resetIcon,saveIcon,searchIcon,signInIcon,
@@ -408,6 +409,9 @@ descriptionIcon = glyphicon "align-left"
 
 downloadIcon :: HtmlExp
 downloadIcon = glyphicon "download"
+
+uploadIcon :: HtmlExp
+uploadIcon = glyphicon "upload"
 
 executionIcon :: HtmlExp
 executionIcon = glyphicon "cog"

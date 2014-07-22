@@ -27,6 +27,7 @@ import ProgramModel
 import SmapHtml
 import SmapWui
 import Views
+import GenerateProgramURL
 
 --------------------------------------------------------------------------------
 -- Exported SmapIE views                                                      --
@@ -186,13 +187,15 @@ renderSmapIE mProg
                 [infoIcon,text " Program information"]]]]]]]]
   where
     codeRef,systemRef free
-    langName       = languageName $ lang
-    systemMenu     = map (\s -> (systemName s,showSystemKey s)) systems
-    execHdlr e     = next $ executeProg   (execEnv,e systemRef,getCode e,mProg)
-    downloadHdlr e = return (HtmlAnswer "text/plain" (removeCRs (getCode e)))
-    pcFormHdlr e   = next $ tryShowPCForm (execEnv,e systemRef,getCode e)
-    vcFormHdlr p e = next $ tryShowVCForm (execEnv,e systemRef,getCode e,p)
-    getCode e      = removeCRs $ e codeRef
+    langName        = languageName $ lang
+    systemMenu      = map (\s -> (systemName s,showSystemKey s)) systems
+    execHdlr e      = next $ executeProg   (execEnv,e systemRef,getCode e,mProg)
+    downloadHdlr e  = return (HtmlAnswer "text/plain" (removeCRs (getCode e)))
+    uploadUrlHdlr e = return (uploadLinkPage
+                               (generateUploadURL langName (getCode e)))
+    pcFormHdlr e    = next $ tryShowPCForm (execEnv,e systemRef,getCode e)
+    vcFormHdlr p e  = next $ tryShowVCForm (execEnv,e systemRef,getCode e,p)
+    getCode e       = removeCRs $ e codeRef
     (execResType,execResInfo,res) =
       maybe 
       ("",[text "No execution result yet."],"")
@@ -208,7 +211,10 @@ renderSmapIE mProg
       ++[li [class "divider"] []
         ,li []
           [submitButton [class "btn btn-link",("formtarget","_blank")]
-             downloadHdlr [downloadIcon,text " Download source code"]]]
+             downloadHdlr [downloadIcon,text " Download source code"]]
+        ,li []
+          [submitButton [class "btn btn-link",("formtarget","_blank")]
+             uploadUrlHdlr [uploadIcon,text " Generate upload URL"]]]
     noProgOpts =
       [li []
         [a [href $ newProgBaseUrl++"/"++(map toLower langName)]
@@ -272,6 +278,12 @@ renderSmapIE mProg
         [div [class "pull-left" ] name
         ,div [class "pull-right"] [span [class "text-muted"] [text value]]]
 
+--- Create form to show upload link:
+uploadLinkPage uplnk =
+  HtmlForm "Upload Link" []
+   [text "Remember ",
+    a [href uplnk] [text "this link"],
+    text " for uploading your program to Smap in some future time."]
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

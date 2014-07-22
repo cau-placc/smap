@@ -8,5 +8,5 @@ To install all current web services on www-ps:
 
 4. > cd public_html/smap/exec
 
-5. > cp ~mh/smap/exec/*.cgi .
+5. > cp ~mh/public_html/smap/exec/*.cgi .
 

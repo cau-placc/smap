@@ -9,3 +9,12 @@ If you want to keep it private for some time, you can also
 set its status to private (and make it later visible with the
 [Browser](help-03)).
 </p>
+<p>
+If you don't want to sign in but use SmapIE just
+to try out some program, you cannot store your program in Smap.
+However, you can generate a URL to upload your program
+at some later time to SmapIE.
+For this purpose, generate an upload URL in SmapIE
+(via the "Options" menu) and copy the generated link.
+</p>
+

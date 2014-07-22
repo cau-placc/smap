@@ -36,7 +36,6 @@ pakcsParams =
   ,"-Dparsermessages=no"
   ,"-Dshowfcyload=no"
   ,"-Dshowplload=no"
-  ,"-Dinteractive=no"
   ,"-Dmoresolutions=no"
   ,"-Dpakcsextensions=yes"
   ,"--set","-verbose"
@@ -54,10 +53,10 @@ timeLimit = "5"
 --- Executes a Curry program with PAKCS and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparam - ignored
+--- @param urlparam - if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithPAKCS :: String -> String -> IO String
-executeWithPAKCS _ prog =
+executeWithPAKCS urlparam prog =
   do pid <- getPID
      let execDir  = "tmpPAKCSEXEC_"++show pid
          modName  = getModuleName prog
@@ -72,12 +71,13 @@ executeWithPAKCS _ prog =
        then do setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
-       else do result <- evalCmd timeout (
-                                         [timeLimit,addBinPath,pakcs]
-                                          ++pakcsParams++
-                                         [":load",modName]
-                                         )
-                                         "main"
+       else do result <- evalCmd timeout
+                           ([timeLimit,addBinPath,pakcs,
+                             "-Dinteractive=" ++
+                             if urlparam=="all" then "no" else "yes"] ++
+                            pakcsParams ++
+                            [":load",modName])
+                           "main"
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult result
