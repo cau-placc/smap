@@ -64,9 +64,9 @@ showLanguageCreationForm =
     doCreateLanguageCtrl = doCreateLanguage
       (const $ showLandingPage,Just langCreationSucceededAlert)
     langCreationSucceededAlert =
-      (SuccessAlert,"The new language was successfully added to Smap. Enable "++
+     SuccessAlert $ "The new language was successfully added to Smap. Enable "++
       "the creation of new programs of this language by adding an associated "++
-      "language implementation system.")
+      "language implementation system."
 
 -- Returns a controller that displays a WUI form to create a new system.
 showSystemCreationForm :: Controller
@@ -78,8 +78,8 @@ showSystemCreationForm =
     doCreateSystemCtrl = doCreateSystem
       (const $ showLandingPage,Just systemCreationSucceededAlert)
     systemCreationSucceededAlert =
-      (SuccessAlert,"The new system was successfully added to Smap. It is now"++
-      " available as a new execution system for the choosen language.")
+      SuccessAlert $ "The new system was successfully added to Smap. It is "++
+         "now available as a new execution system for the choosen language."
 
 --- Shows a form to edit the given System entity.
 editSystemController :: System -> Controller
@@ -100,7 +100,7 @@ updateSystemController system =
      either (\ _ -> setAlert editSuccess >> listSystemController)
       (\ error -> showStdErrorPage (showTError error)) transResult
  where
-  editSuccess = (SuccessAlert, "System data successfully changed.")
+  editSuccess = SuccessAlert "System data successfully changed."
 
 --- Lists all System entities with buttons to delete or edit an entity.
 listSystemController :: Controller
@@ -139,7 +139,7 @@ deleteSystemController system =
        either (\ _ -> setAlert deleteSuccess >> listSystemController)
         (\ error -> showStdErrorPage (showTError error)) transResult)
  where
-  deleteSuccess = (SuccessAlert, "System '"++systemName system++"' removed.")
+  deleteSuccess = SuccessAlert $ "System '"++systemName system++"' removed."
 
 --- Gets the associated Language entity for a given System entity.
 getLangImplLanguage :: System -> Transaction Language

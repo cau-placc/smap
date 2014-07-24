@@ -28,6 +28,7 @@ import SmapHtml
 import SmapWui
 import Views
 import GenerateProgramURL
+import Alerts
 
 --------------------------------------------------------------------------------
 -- Exported SmapIE views                                                      --
@@ -191,8 +192,10 @@ renderSmapIE mProg
     systemMenu      = map (\s -> (systemName s,showSystemKey s)) systems
     execHdlr e      = next $ executeProg   (execEnv,e systemRef,getCode e,mProg)
     downloadHdlr e  = return (HtmlAnswer "text/plain" (removeCRs (getCode e)))
-    uploadUrlHdlr e = return (uploadLinkPage
-                               (generateUploadURL langName (getCode e)))
+    uploadUrlHdlr e = setAlert (InfoAlert $ uploadLinkText (getCode e)) >>
+                      next (return $ smapIE mProg execEnv mExecRes (getCode e)
+                                       initSystemKey executeProg tryShowPCForm
+                                       tryShowVCForm authzData)
     pcFormHdlr e    = next $ tryShowPCForm (execEnv,e systemRef,getCode e)
     vcFormHdlr p e  = next $ tryShowVCForm (execEnv,e systemRef,getCode e,p)
     getCode e       = removeCRs $ e codeRef
@@ -213,7 +216,7 @@ renderSmapIE mProg
           [submitButton [class "btn btn-link",("formtarget","_blank")]
              downloadHdlr [downloadIcon,text " Download source code"]]
         ,li []
-          [submitButton [class "btn btn-link",("formtarget","_blank")]
+          [submitButton [class "btn btn-link"]
              uploadUrlHdlr [uploadIcon,text " Generate upload URL"]]]
     noProgOpts =
       [li []
@@ -278,12 +281,11 @@ renderSmapIE mProg
         [div [class "pull-left" ] name
         ,div [class "pull-right"] [span [class "text-muted"] [text value]]]
 
---- Create form to show upload link:
-uploadLinkPage uplnk =
-  HtmlForm "Upload Link" []
-   [text "Remember ",
-    a [href uplnk] [text "this link"],
-    text " for uploading your program to Smap in some future time."]
+    --- Create text for upload link:
+    uploadLinkText progcode =
+     "Remember <strong><a href=\""++generateUploadURL langName progcode++"\">"++
+     "this link</a></strong> for uploading your program to Smap "++
+     "in some future time."
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

@@ -193,7 +193,7 @@ doDeleteTag tagkey =
                        (showTransactionErrorPage tagDeletionFailedErr)
            else showStdErrorPage tagUndeletableErr)
   where
-    successAlert tag = Just (SuccessAlert, "Tag '"++tagName tag++"' deleted")
+    successAlert tag = Just (SuccessAlert $ "Tag '"++tagName tag++"' deleted")
     tagDeletionFailedErr =
       "The tag deletion failed due to an unexpected internal error. See the "++
       "internal error message for additional details."
@@ -265,12 +265,12 @@ showProgramPage (progKey,versNum) =
       "We couldn't find the version you requested (see <a href=?browser/"++
       showProgramKey prog++">latest version</a> instead)."
     programVisibleSucceededAlert =
-      (SuccessAlert,"This program is now available for everyone on Smap.")
+      SuccessAlert $ "This program is now available for everyone on Smap."
     programEditingSucceededAlert =
-      (SuccessAlert,"The program metadata has been modified.")
+      SuccessAlert $ "The program metadata has been modified."
     programDeletionSucceededAlert prog =
-      (SuccessAlert,"\"<code>"++programTitle prog++"</code>\" was successfull"++
-      "y deleted from Smap and is no longer available.")
+      SuccessAlert $ "\"<code>"++programTitle prog++"</code>\" was "++
+       "successfully deleted from Smap and is no longer available."
 
 --------------------------------------------------------------------------------
 -- Handling query string search settings                                      --

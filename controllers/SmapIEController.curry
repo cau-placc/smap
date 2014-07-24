@@ -172,13 +172,13 @@ tryShowProgramCreationForm (execEnv@(lang,systems),execSystemKey,code) =
     userNotFoundErr =
       "Unexpectedly, no user was found with this username."
     executionFailedErrAlert = 
-      (ErrorAlert,"<strong>Execution failed!</strong> Only executable source "++
+      ErrorAlert $"<strong>Execution failed!</strong> Only executable source "++
       "code can be added to Smap. Check the execution result panel, debug you"++
-      "r code and try again!")
+      "r code and try again!"
     programCreationSucceededErrAlert =
-      (SuccessAlert,"<strong>Yippee!</strong> Your program was successfully s"++
+      SuccessAlert $"<strong>Yippee!</strong> Your program was successfully s"++
       "aved and is now available on Smap. Choose <code>\"Options > View in Br"++
-      "owser\"</code> to view the Browser page of your program.")
+      "owser\"</code> to view the Browser page of your program."
 
 -- Returns a controller that displays a WUI form to create a new version if the
 -- given code executes successfully with the choosen execution system.
@@ -209,14 +209,14 @@ tryShowVersionCreationForm (execEnv@(_,systems),execSystemKey,code,prog) =
       (const $ showProgramInSmapIE $ programKey prog
       ,Just programVersionCreationSucceededErr)
     executionFailedAlert = 
-      (ErrorAlert,"<strong>Execution failed!</strong> Only executable source "++
+      ErrorAlert $"<strong>Execution failed!</strong> Only executable source "++
       "code can be added to Smap. Check the execution result panel, debug you"++
-      "r code and try again!")
+      "r code and try again!"
     programVersionCreationSucceededErr =
-      (SuccessAlert,"<strong>Hooray!</strong> You successfully added a new ve"++
+      SuccessAlert $"<strong>Hooray!</strong> You successfully added a new ve"++
       "rsion to your program. Previous versions can be viewed in the Browser "++
       "- just choose a version from the select menu in the version panel on t"++
-      "he left!")
+      "he left!"
 
 -- Executes source code with a given execution system and returns to the IE with
 -- the execution result.

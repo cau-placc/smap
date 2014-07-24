@@ -60,12 +60,12 @@ showSignUpPage initCreationData =
                         (showSignInPage . Just,Just signUpSucceededAlert  )
   where
     nameNotUniqueErrAlert = 
-      (ErrorAlert,"This user name is already taken. Please try another one.")
+      ErrorAlert $ "This user name is already taken. Please try another one."
     emailNotUniqueErrAlert = 
-      (ErrorAlert,"This email address already exists. Please try another one.")
+      ErrorAlert $ "This email address already exists. Please try another one."
     signUpSucceededAlert = 
-      (SuccessAlert,"You can now sign in to Smap with your user name and "++
-      "password!")
+      SuccessAlert $ "You can now sign in to Smap with your user name and "++
+      "password!"
 
 --------------------------------------------------------------------------------
 -- Signing in                                                                 --
@@ -97,8 +97,8 @@ doSignIn (userName,password) =
            mUser
   where
     signInFailedAlert =
-      (ErrorAlert,"<strong>Oh snap!</strong> Your attempt to sign in failed d"++
-      "ue to an unknown user name and password combination. Try again!")
+     ErrorAlert $ "<strong>Oh snap!</strong> Your attempt to sign in failed "++
+      "due to an unknown user name and password combination. Try again!"
 
 -- Signs out an user and deletes the associated authentication data from the
 -- session (see module `Authentication`).
@@ -144,11 +144,11 @@ doSendNewPassword userEmail =
            mUser
   where
     emailNotFoundErrAlert = 
-      (ErrorAlert,"This email address is not associated with an user account."++
-      " Please try again.")
+     ErrorAlert $ "This email address is not associated with an user account."++
+      " Please try again."
     sendingInProcessAlert =
-      (SuccessAlert,"An email with a new password will be sent to your email "++
-      "address in the next few minutes.")
+     SuccessAlert $ "An email with a new password will be sent to your email "++
+      "address in the next few minutes."
     subject =
       "Your new password for Smap!"
     content user newPassword =
@@ -190,18 +190,18 @@ showChangePasswdForm =
           (setUserHash user newpasshash)
 
   nameNotUniqueErrAlert = 
-      (ErrorAlert,"This user name is already taken. Please try another one.")
+    ErrorAlert "This user name is already taken. Please try another one."
   emailNotUniqueErrAlert = 
-      (ErrorAlert,"This email address already exists. Please try another one.")
+    ErrorAlert "This email address already exists. Please try another one."
   changePasswdSucceededAlert = 
-      (SuccessAlert,"Your password has been changed!")
+    SuccessAlert "Your password has been changed!"
 
   wrongOldPasswordAlert = 
-      (ErrorAlert,"Old password is wrong. Nothing changed!")
+    ErrorAlert "Old password is wrong. Nothing changed!"
   wrongPasswordRepeatAlert = 
-      (ErrorAlert,"The new passwords are different. Nothing changed!")
+    ErrorAlert "The new passwords are different. Nothing changed!"
   passwordTooShortAlert =
-      (ErrorAlert,"Please choose a new password with at least 6 characters.")
+    ErrorAlert "Please choose a new password with at least 6 characters."
   userNotFoundErr = "Unexpectedly, no user was found with the signed-in user."
 
 --------------------------------------------------------------------------------

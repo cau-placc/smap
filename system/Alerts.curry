@@ -3,12 +3,12 @@
 --- sessions, getting active alerts from the current session data and rendering 
 --- alerts in views (alerts are comparable with Spicey's default page messages).
 ---
---- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version July 2014
 --------------------------------------------------------------------------------
 
 module Alerts (
-  Alert,AlertType(..),
+  Alert(..),
   setAlert,getAlert,
   maybeSetAlert,
   renderAlert
@@ -19,6 +19,7 @@ import Global
 import Html5
 
 import Session
+import SmapHtml
 
 --------------------------------------------------------------------------------
 -- General definition                                                         --
@@ -30,14 +31,15 @@ import Session
 --- - an alert message (may contain HTML markup).
 --- The definition of alerts is independent from their rendering which is 
 --- specified in the function `renderAlert`.
-type Alert = (AlertType,String)
-
---- Currently available alert types.
+--- Currently available alert types:
 --- @cons ErrorAlert   - type for error alerts
 --- @cons InfoAlert    - type for info alerts  (no styling support yet)
 --- @cons SuccessAlert - type for success alerts
 --- @cons WarningAlert - type for warning alerts (no styling support yet)
-data AlertType = ErrorAlert | InfoAlert | SuccessAlert | WarningAlert
+data Alert = ErrorAlert String
+           | InfoAlert String
+           | SuccessAlert String
+           | WarningAlert String
 
 --------------------------------------------------------------------------------
 -- Storing alerts in sessions                                                 --
@@ -79,7 +81,7 @@ maybeSetAlert = maybe done setAlert
 --- styles are specified in `public/css/smap.css`.
 --- @param alert - the current alert
 renderAlert :: Alert -> HtmlExp
-renderAlert (alertType,alertMsg) =
+renderAlert alert =
   stdModal modalId labelId
     [icon,text $ ' ':header]
     [text alertMsg]
@@ -88,13 +90,11 @@ renderAlert (alertType,alertMsg) =
   where 
     modalId = "alert-"++alertTypeStr++"-dialog-box"
     labelId = "alert-dialog-box-title"
-    (alertTypeStr,header,icon) = 
-      case alertType of
-        ErrorAlert -> ("error"  
-                      ,"Oops, an error occured!"
-                      ,glyphicon "exclamation-sign")
-        _          -> ("success"
-                      ,"Success!"
-                      ,glyphicon "ok-sign")
+    (alertTypeStr,alertMsg,header,icon) = 
+      case alert of
+        ErrorAlert   s -> ("error",s,"Oops, an error occured!",execErrorIcon)
+        InfoAlert    s -> ("success",s,"For your information:",infoIcon)
+        SuccessAlert s -> ("success",s,"Success!",execSuccessIcon)
+        WarningAlert s -> ("success",s,"Warning:",execSuccessIcon)
 
 --------------------------------------------------------------------------------
