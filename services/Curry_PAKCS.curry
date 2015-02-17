@@ -84,7 +84,8 @@ executeWithPAKCS urlparam prog =
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
        else do result <- evalCmd timeout
-                           ([timeLimit,addBinPath,pakcs] ++ pakcsParams ++
+                           ([timeLimit,addBinPath,timeout,timeLimit,pakcs]
+                            ++ pakcsParams ++
                             [":set " ++
                              (if urlparam=="all" then "-" else "+") ++ "first",
                              ":set safe",":load",modName])

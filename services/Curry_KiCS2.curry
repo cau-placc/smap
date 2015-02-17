@@ -76,7 +76,8 @@ executeWithKiCS2 _ prog =
                return $ parseResult (exit1,out1,err1)
        else do
          result <- evalCmd timeout
-                           ([timeLimit,addBinPath,kics2] ++ kics2Params++
+                           ([timeLimit,addBinPath,timeout,timeLimit,kics2]
+                            ++ kics2Params++
                             [":load",modName,":eval","main",":quit"]) ""
          setCurrentDirectory currDir
          system $ "/bin/rm -r "++execDir
