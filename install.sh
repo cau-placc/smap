@@ -24,7 +24,7 @@ fi
 sudo chown -R `id -u -n` $WWWDIR
 sudo chgrp -R `id -g -n` $WWWDIR
 # deploy current version:
-scripts/deploy.sh $WWWDIR
+make deploy WEBSERVERDIR=$WWWDIR
 # change the owner to www-data:
 sudo chown -R www-data $WWWDIR
 sudo chgrp -R www-data $WWWDIR
