@@ -23,14 +23,26 @@ main = runServiceAsCGI executeWithPAKCS
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries.
+pakcsHome :: String
 pakcsHome = "/opt/pakcs/pakcs-1.11.4"
+
+pakcsBin :: String
 pakcsBin  = pakcsHome </> "bin"
+
+pakcsLib :: String
 pakcsLib  = pakcsHome </> "lib"
+
+pakcs :: String
 pakcs     = pakcsBin </> "pakcs"
+
+cymake :: String
 cymake    = pakcsBin </> "cymake"
+
+timeout :: String
 timeout   = "/usr/bin/timeout"
 
 --- Parameters for execution with PAKCS.
+pakcsParams :: [String]
 pakcsParams =
   ["--quiet"
   ,"-Dparsermessages=no"
@@ -43,6 +55,7 @@ pakcsParams =
   ,":set","-interactive"]
 
 --- Time limit for execution with PAKCS.
+timeLimit :: String
 timeLimit = "5"
 
 --------------------------------------------------------------------------------

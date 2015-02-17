@@ -79,6 +79,7 @@ partitionUrl purl = let (protocol,url) = splitAt 7 purl in
         pnr = readNat pnrs
 
 --- validate given url
+isValidUrl :: String -> Bool
 isValidUrl = isJust . partitionUrl
 
 -- An I/O action that shows the answer of a web server to the
@@ -97,6 +98,7 @@ httpPost hostname docpath portnum input = do
  return (readContent result)
 
 -- yield content (i.e., the string following the first empty line)
+readContent :: String -> String
 readContent s = case break (=='\n') s of
     (_,'\n':'\r':'\n':conts) -> conts
     (_,'\n':'\n':conts) -> conts
@@ -105,7 +107,9 @@ readContent s = case break (=='\n') s of
 
 ------------------------------------------------------------------------
 -- Example:
+execURL :: String
 execURL = "http://giscours.informatik.uni-kiel.de/~pakcs/smap/exec/PAKCS.cgi"
 
+test1 :: IO ()
 test1 = connectToCGI execURL "main = 3+4" >>= putStrLn
 

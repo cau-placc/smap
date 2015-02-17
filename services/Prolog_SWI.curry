@@ -22,13 +22,18 @@ main = runServiceAsCGI executeWithSWI
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries.
+swi :: String
 swi      = "/opt/swiprolog/bin/swipl"
+
+timeout :: String
 timeout  = "/usr/bin/timeout"
 
 --- Parameters for execution with SWI.
+swiParams :: [String]
 swiParams = ["--quiet"]
 
 --- Time limit for execution with SWI.
+timeLimit :: String
 timeLimit = "5"
 
 --------------------------------------------------------------------------------

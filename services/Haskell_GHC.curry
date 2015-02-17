@@ -22,13 +22,18 @@ main = runServiceAsCGI executeWithGHC
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries.
+runghc :: String
 runghc   = "/opt/ghc/bin/runghc"
+
+timeout :: String
 timeout  = "/usr/bin/timeout"
 
 --- Parameters for execution with GHC.
+ghcParams :: [String]
 ghcParams = ["--quiet"]
 
 --- Time limit for execution with GHC.
+timeLimit :: String
 timeLimit = "5"
 
 --------------------------------------------------------------------------------

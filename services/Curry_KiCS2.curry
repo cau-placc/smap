@@ -22,18 +22,31 @@ main = runServiceAsCGI executeWithKiCS2
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries and libraries.
-kics2Home = "/opt/kics2/kics2-0.3.1"
+kics2Home :: String
+kics2Home = "/opt/kics2/kics2-0.3.2"
 --kics2Home = "/opt/kics2/kics2"
+
+kics2Bin :: String
 kics2Bin  = kics2Home </> "bin"
+
+kics2Lib :: String
 kics2Lib  = kics2Home </> "lib"
+
+kics2 :: String
 kics2     = kics2Bin </> "kics2"
+
+cymake :: String
 cymake    = kics2Bin </> "cymake"
+
+timeout :: String
 timeout  = "/usr/bin/timeout"
 
 --- Parameters for execution with KiCS2.
+kics2Params :: [String]
 kics2Params = [":set","v0",":set","+time",":set","safe"]
 
 --- Time limit for execution with KiCS2.
+timeLimit :: String
 timeLimit = "15"
 
 --------------------------------------------------------------------------------
