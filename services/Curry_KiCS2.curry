@@ -43,7 +43,7 @@ timeout  = "/usr/bin/timeout"
 
 --- Parameters for execution with KiCS2.
 kics2Params :: [String]
-kics2Params = [":set","v0",":set","+time",":set","safe"]
+kics2Params = [":set","v0",":set","+time"]
 
 --- Time limit for execution with KiCS2.
 timeLimit :: String
@@ -56,10 +56,10 @@ timeLimit = "15"
 --- Executes a Curry program with KiCS2 and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparam - ignored
+--- @param urlparam - if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithKiCS2 :: String -> String -> IO String
-executeWithKiCS2 _ prog =
+executeWithKiCS2 urlparam prog =
   do pid <- getPID
      let execDir  = "tmpKiCS2EXEC_"++show pid
          modName  = getModuleName prog
@@ -76,15 +76,18 @@ executeWithKiCS2 _ prog =
                return $ parseResult (exit1,out1,err1)
        else do
          result <- evalCmd timeout
-                           ([timeLimit,addBinPath,timeout,timeLimit,kics2]
+                           ([timeLimit,"/bin/sh","-c '",addBinPath,kics2]
                             ++ kics2Params++
-                            [":load",modName,":eval","main",":quit"]) ""
+                            [":set " ++
+                             (if urlparam=="all" then "-" else "+") ++ "first",
+                             ":set safe",
+                             ":load",modName,":eval","main",":quit '"]) ""
          setCurrentDirectory currDir
          system $ "/bin/rm -r "++execDir
          return $ parseResult result
  where
-   -- shell command to add the Curry system bin directory in the path
-   addBinPath = "echo -n '' && PATH="++kics2Bin++":$PATH && export PATH && "
+   -- add the Curry system bin directory to the path
+   addBinPath = "PATH="++kics2Bin++":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.

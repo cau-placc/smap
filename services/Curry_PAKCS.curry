@@ -84,18 +84,18 @@ executeWithPAKCS urlparam prog =
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
        else do result <- evalCmd timeout
-                           ([timeLimit,addBinPath,timeout,timeLimit,pakcs]
+                           ([timeLimit,"/bin/sh","-c '",addBinPath,pakcs]
                             ++ pakcsParams ++
                             [":set " ++
                              (if urlparam=="all" then "-" else "+") ++ "first",
-                             ":set safe",":load",modName])
-                           "main"
+                             ":set safe",":load",modName,":eval","main",":quit '"])
+                           ""
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult result
  where
    -- shell command to add the Curry system bin directory in the path
-   addBinPath = "echo -n '' && PATH="++pakcsBin++":$PATH && export PATH && "
+   addBinPath = "PATH="++pakcsBin++":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.
