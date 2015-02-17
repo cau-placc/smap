@@ -88,13 +88,13 @@ executeWithPAKCS urlparam prog =
                             ++ pakcsParams ++
                             [":set " ++
                              (if urlparam=="all" then "-" else "+") ++ "first",
-                             ":set safe",":load",modName,":eval","main",":quit '"])
-                           ""
+                             ":set safe",":load",modName,
+                             ":eval","main",":quit '"]) ""
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult result
  where
-   -- shell command to add the Curry system bin directory in the path
+   -- add the Curry system bin directory to the path
    addBinPath = "PATH="++pakcsBin++":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
