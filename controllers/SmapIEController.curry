@@ -147,7 +147,7 @@ showSmapIE mProg execEnv mExecRes initCode initSystemKey =
 tryShowProgramCreationForm :: (ExecEnv,String,String) -> Controller
 tryShowProgramCreationForm (execEnv@(lang,systems),execSystemKey,code) =
   checkAuthorization (smapIEOperation CreateProgram) $ \authzData ->
-  do execRes <- execute code execSystem
+  do execRes <- execute code lang execSystem
      case execRes of
        ExecSuccess _ -> -- execution successful
          do mUser <- maybe (return Nothing) getUserByName $ mUserName authzData
@@ -185,9 +185,9 @@ tryShowProgramCreationForm (execEnv@(lang,systems),execSystemKey,code) =
 -- Otherwise, an error message will be displayed.
 -- @param ctrlData - execution environment, system key, source code and program
 tryShowVersionCreationForm :: (ExecEnv,String,String,Program) -> Controller
-tryShowVersionCreationForm (execEnv@(_,systems),execSystemKey,code,prog) =
+tryShowVersionCreationForm (execEnv@(lang,systems),execSystemKey,code,prog) =
   checkAuthorization (smapIEOperation $ CreateVersion prog) $ \authzData ->
-  do execRes <- execute code execSystem
+  do execRes <- execute code lang execSystem
      case execRes of
        ExecSuccess _ -> -- execution successful
          return $ versionCreationForm number code prog 
@@ -222,9 +222,9 @@ tryShowVersionCreationForm (execEnv@(_,systems),execSystemKey,code,prog) =
 -- the execution result.
 -- @param execData - execution environment, source code, system key and program
 doExecuteProgram :: (ExecEnv,String,String,Maybe Program) -> Controller
-doExecuteProgram (execEnv@(_,systems),execSystemKey,code,mProg) =
+doExecuteProgram (execEnv@(lang,systems),execSystemKey,code,mProg) =
   checkAuthorization (smapIEOperation $ ExecuteProgram) $ \authzData ->
-  do execRes <- execute code $ getExecSystem execSystemKey systems
+  do execRes <- execute code lang $ getExecSystem execSystemKey systems
      return $ smapIE mProg execEnv (Just execRes) code execSystemKey
                      doExecuteProgram tryShowProgramCreationForm
                      tryShowVersionCreationForm authzData

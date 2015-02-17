@@ -18,6 +18,11 @@ import Maybe
 import Read
 import ReadNumeric
 import Socket
+import Directory
+import Time
+import System
+import List(last)
+import IOExts(connectToCommand)
 
 import ExecEnvModel
 
@@ -37,10 +42,11 @@ data ExecResult = ExecSuccess String | ExecError String
 --- system is given an `ExecError` is returned.
 --- @param code    - the program to be executed
 --- @param mSystem - a possibly given execution system
-execute :: String -> Maybe System -> IO ExecResult
-execute code mSystem =
+execute :: String -> Language -> Maybe System -> IO ExecResult
+execute code lang mSystem =
   maybe (return $ ExecError noSystemFoundErr)
-        (\s -> do (exitCode,result) <- connectToCGI (systemExecUrl s) code
+        (\s -> do logProgram code (languageFilenameExt lang) (systemName s)
+                  (exitCode,result) <- connectToCGI (systemExecUrl s) code
                   execResult        <- getExecResult exitCode (header s++result)
                   return execResult)
         mSystem
@@ -68,7 +74,7 @@ getExecResult exitCode output = return $
 -- Sends an input string to given CGI URL and retrieves the output of the script
 -- execution.
 -- @param url   - the URL of the execution web service
--- @param input - the source code tp be executed
+-- @param input - the source code to be executed
 -- @author Michael Hanus, Lasse Kristopher Meyer
 connectToCGI :: String -> String -> IO (Int,String)
 connectToCGI url input = 
@@ -132,4 +138,35 @@ readContent s = case break (=='\n') s of
   (_,'\n':noconts)         -> readContent noconts
   _                        -> "error: no content read"
 
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+-- Directory where executed programs are logged
+logDir = "executed_programs"
+
+-- log every executed program:
+logProgram prog fnameextension sysname = do
+  ensureDirectoryExists logDir
+  ct <- getLocalTime
+  let progdirname = logDir ++"/"++ show (ctYear ct) ++"_"++ show (ctMonth ct)
+  ensureDirectoryExists progdirname
+  let fname = progdirname++"/prog" ++
+              concatMap (\f->'_':show (f ct))
+                        [ctYear,ctMonth,ctDay,ctHour,ctMin,ctSec] ++
+              "." ++ fnameextension
+  raddr <- getEnviron "REMOTE_ADDR"
+  rhost <- if null raddr then return "???" else getHostnameForIP raddr
+  writeFile fname
+            ("-- From: "++rhost++"\n"++"-- System: "++sysname++"\n"++prog++"\n")
+
+--- Get symbolic name of ip address:
+getHostnameForIP :: String -> IO String
+getHostnameForIP ipaddr = (flip catch) (\_ -> return "") $ do
+  h <- connectToCommand $ "host " ++ ipaddr
+  b <- hIsEOF h
+  if b then return ""
+       else hGetLine h >>= return . last . words
+
+ensureDirectoryExists dir = do
+  exdir <- doesDirectoryExist dir
+  if exdir then done else createDirectory dir
+
+------------------------------------------------------------------------------

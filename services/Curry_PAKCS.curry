@@ -23,7 +23,7 @@ main = runServiceAsCGI executeWithPAKCS
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries.
-pakcsHome = "/opt/pakcs/pakcs-1.11.3"
+pakcsHome = "/opt/pakcs/pakcs-1.11.4"
 pakcsBin  = pakcsHome </> "bin"
 pakcsLib  = pakcsHome </> "lib"
 pakcs     = pakcsBin </> "pakcs"
@@ -36,12 +36,11 @@ pakcsParams =
   ,"-Dparsermessages=no"
   ,"-Dshowfcyload=no"
   ,"-Dshowplload=no"
-  ,"-Dmoresolutions=no"
   ,"-Dpakcsextensions=yes"
-  ,"--set","-verbose"
-  ,"--set","+time"
-  ,"--set","printdepth 0"
-  ,"--safe"]
+  ,":set","-verbose"
+  ,":set","+time"
+  ,":set","printdepth 0"
+  ,":set","-interactive"]
 
 --- Time limit for execution with PAKCS.
 timeLimit = "5"
@@ -72,11 +71,10 @@ executeWithPAKCS urlparam prog =
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
        else do result <- evalCmd timeout
-                           ([timeLimit,addBinPath,pakcs,
-                             "-Dinteractive=" ++
-                             if urlparam=="all" then "no" else "yes"] ++
-                            pakcsParams ++
-                            [":load",modName])
+                           ([timeLimit,addBinPath,pakcs] ++ pakcsParams ++
+                            [":set " ++
+                             (if urlparam=="all" then "-" else "+") ++ "first",
+                             ":set safe",":load",modName])
                            "main"
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir

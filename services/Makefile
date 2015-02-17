@@ -1,5 +1,6 @@
 # The Curry system used to compile the web service script:
 CURRYSYSTEM=/opt/pakcs/bin/pakcs
+CURRYOPTS=:set -time
 # The main directory of the smap installation:
 SMAPDIR=$(HOME)/public_html/smap
 # The directory containing the executable service scripts:
@@ -23,16 +24,16 @@ uninstall:
 	cd $(CGIDIR) && rm -f PAKCS.cgi KiCS2.cgi GHC.cgi SWI.cgi $(SWILOAD)
 
 Curry_PAKCS: Curry_PAKCS.curry SimpleWebService.curry
-	$(CURRYSYSTEM) :load Curry_PAKCS.curry :save :quit
+	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_PAKCS.curry :save :quit
 
 Curry_KiCS2: Curry_KiCS2.curry SimpleWebService.curry
-	$(CURRYSYSTEM) :load Curry_KiCS2.curry :save :quit
+	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_KiCS2.curry :save :quit
 
 Haskell_GHC: Haskell_GHC.curry SimpleWebService.curry
-	$(CURRYSYSTEM) :load Haskell_GHC.curry :save :quit
+	$(CURRYSYSTEM) $(CURRYOPTS) :load Haskell_GHC.curry :save :quit
 
 Prolog_SWI: Prolog_SWI.curry SimpleWebService.curry
-	$(CURRYSYSTEM) :load Prolog_SWI.curry :save :quit
+	$(CURRYSYSTEM) $(CURRYOPTS) :load Prolog_SWI.curry :save :quit
 
 .PHONY: clean
 clean: uninstall
