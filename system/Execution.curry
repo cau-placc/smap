@@ -89,7 +89,8 @@ connectToCGI url input =
 -- @param postResponse - the response to the POST request as plain text
 readResult :: String -> (Int,String)
 readResult postResponse =
-  maybe (1,"No exit code found.")
+  maybe (1,"No exit code found in answer from execution service:\n"++
+           postResponse)
         (\(exitCode,_) -> (exitCode,drop 1 rest))
         (ReadNumeric.readNat fstLn)
   where

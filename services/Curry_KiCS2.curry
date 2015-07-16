@@ -23,8 +23,8 @@ main = runServiceAsCGI executeWithKiCS2
 
 --- Paths to required binaries and libraries.
 kics2Home :: String
-kics2Home = "/opt/kics2/kics2-0.3.2"
---kics2Home = "/opt/kics2/kics2"
+--kics2Home = "/opt/kics2/kics2-0.3.2"
+kics2Home = "/opt/kics2/kics2-0.4.0"
 
 kics2Bin :: String
 kics2Bin  = kics2Home </> "bin"
@@ -64,24 +64,31 @@ executeWithKiCS2 urlparam prog =
      let execDir  = "tmpKiCS2EXEC_"++show pid
          modName  = getModuleName prog
          filename = modName <.> "curry"
+         shFile   = "./PAKCSCALL"
      currDir <- getCurrentDirectory
      createDirectoryIfMissing True execDir
      setCurrentDirectory execDir
      writeFile filename prog
-     (exit1,out1,err1) <- evalCmd addBinPath
-                         [cymake,"--flat","--extended","-i",kics2Lib,modName] ""
+     writeFile shFile
+               ("#!/bin/sh\n"++
+                unwords [addBinPath,
+                         cymake,"--flat","--extended","-i",kics2Lib,modName])
+     (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
      if exit1 > 0
        then do setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
        else do
-         result <- evalCmd timeout
-                           ([timeLimit,"/bin/sh","-c '",addBinPath,kics2]
-                            ++ kics2Params++
-                            [":set " ++
-                             (if urlparam=="all" then "-" else "+") ++ "first",
-                             ":set safe",
-                             ":load",modName,":eval","main",":quit '"]) ""
+         writeFile shFile
+                   ("#!/bin/sh\n"++
+                    unwords ([addBinPath,kics2]
+                             ++ kics2Params++
+                             [":set " ++
+                              (if urlparam=="all" then "-" else "+") ++ "first",
+                              ":set safe",
+                              ":load",modName,":eval","main",":quit"]))
+         system $ "chmod 755 "++shFile
+         result <- evalCmd timeout [timeLimit,shFile] ""
          setCurrentDirectory currDir
          system $ "/bin/rm -r "++execDir
          return $ parseResult result

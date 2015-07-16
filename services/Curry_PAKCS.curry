@@ -24,7 +24,8 @@ main = runServiceAsCGI executeWithPAKCS
 
 --- Paths to required binaries.
 pakcsHome :: String
-pakcsHome = "/opt/pakcs/pakcs-1.11.4"
+--pakcsHome = "/opt/pakcs/pakcs-1.11.4"
+pakcsHome = "/opt/pakcs/pakcs-1.12.0"
 
 pakcsBin :: String
 pakcsBin  = pakcsHome </> "bin"
@@ -73,23 +74,30 @@ executeWithPAKCS urlparam prog =
      let execDir  = "tmpPAKCSEXEC_"++show pid
          modName  = getModuleName prog
          filename = modName <.> "curry"
+	 shFile   = "./PAKCSCALL"
      currDir <- getCurrentDirectory
      createDirectoryIfMissing True execDir
      setCurrentDirectory execDir
      writeFile filename prog
-     (exit1,out1,err1) <- evalCmd addBinPath
-                         [cymake,"--flat","--extended","-i",pakcsLib,modName] ""
+     writeFile shFile
+               ("#!/bin/sh\n"++
+	        unwords [addBinPath,
+                        cymake,"--flat","--extended","-i",pakcsLib,modName])
+     (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
      if exit1 > 0
        then do setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult (exit1,out1,err1)
-       else do result <- evalCmd timeout
-                           ([timeLimit,"/bin/sh","-c '",addBinPath,pakcs]
+       else do writeFile shFile
+                 ("#!/bin/sh\n"++
+		   unwords ([addBinPath,pakcs]
                             ++ pakcsParams ++
                             [":set " ++
                              (if urlparam=="all" then "-" else "+") ++ "first",
                              ":set safe",":load",modName,
-                             ":eval","main",":quit '"]) ""
+                             ":eval","main",":quit"]))
+	       system $ "chmod 755 "++shFile
+               result <- evalCmd timeout [timeLimit,shFile] ""
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult result
@@ -103,7 +111,7 @@ executeWithPAKCS urlparam prog =
 parseResult :: (Int,String,String) -> String
 parseResult (exit,out,err)
   | exit == 0   = show exit++"\n"++dropWarning out++err
-  | exit == 2   =           "0\n"++dropWarning out -- no more solutions
+  | exit == 2   =           "0\n"++dropWarning out++err -- no more solutions
   | exit == 124 = "124\nTIME OUT (after "++timeLimit++" seconds)!"
   | otherwise   = show exit++"\n"++
                   "ERROR (exit code: "++show exit++")\n"++out++dropWarning err
