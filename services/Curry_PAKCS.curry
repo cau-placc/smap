@@ -23,24 +23,23 @@ main = runServiceAsCGI executeWithPAKCS
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries.
-pakcsHome :: String
---pakcsHome = "/opt/pakcs/pakcs-1.11.4"
-pakcsHome = "/opt/pakcs/pakcs-1.12.0"
+pakcsHome :: String -> String
+pakcsHome version = "/opt/pakcs/pakcs-" ++ version
 
-pakcsBin :: String
-pakcsBin  = pakcsHome </> "bin"
+pakcsBin :: String -> String
+pakcsBin version = pakcsHome version </> "bin"
 
-pakcsLib :: String
-pakcsLib  = pakcsHome </> "lib"
+pakcsLib :: String -> String
+pakcsLib version = pakcsHome version </> "lib"
 
-pakcs :: String
-pakcs     = pakcsBin </> "pakcs"
+pakcs :: String -> String
+pakcs version = pakcsBin version </> "pakcs"
 
-cymake :: String
-cymake    = pakcsBin </> "cymake"
+cymake :: String -> String
+cymake version = pakcsBin version </> "cymake"
 
 timeout :: String
-timeout   = "/usr/bin/timeout"
+timeout = "/usr/bin/timeout"
 
 --- Parameters for execution with PAKCS.
 pakcsParams :: [String]
@@ -66,7 +65,8 @@ timeLimit = "5"
 --- Executes a Curry program with PAKCS and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparam - if "all", show all solutions
+--- @param urlparam - first argument: version number,
+---                   second argument: if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithPAKCS :: String -> String -> IO String
 executeWithPAKCS urlparam prog =
@@ -74,15 +74,20 @@ executeWithPAKCS urlparam prog =
      let execDir  = "tmpPAKCSEXEC_"++show pid
          modName  = getModuleName prog
          filename = modName <.> "curry"
-	 shFile   = "./PAKCSCALL"
+         (urlp1,urlp2) = break (=='&') urlparam
+         version  = if null urlp1 || null urlp2 then "1.12.0" else urlp1
+         allsols  = urlparam=="all" || urlp2=="&all"
+         shFile   = "./PAKCSCALL.sh"
      currDir <- getCurrentDirectory
      createDirectoryIfMissing True execDir
      setCurrentDirectory execDir
      writeFile filename prog
      writeFile shFile
                ("#!/bin/sh\n"++
-	        unwords [addBinPath,
-                        cymake,"--flat","--extended","-i",pakcsLib,modName])
+                unwords [addBinPath version,
+                         cymake version,
+                         "--flat", "--extended",
+                         "-i", pakcsLib version, modName])
      (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
      if exit1 > 0
        then do setCurrentDirectory currDir
@@ -90,20 +95,20 @@ executeWithPAKCS urlparam prog =
                return $ parseResult (exit1,out1,err1)
        else do writeFile shFile
                  ("#!/bin/sh\n"++
-		   unwords ([addBinPath,pakcs]
+                   unwords ([addBinPath version, pakcs version]
                             ++ pakcsParams ++
                             [":set " ++
-                             (if urlparam=="all" then "-" else "+") ++ "first",
+                             (if allsols then "-" else "+") ++ "first",
                              ":set safe",":load",modName,
                              ":eval","main",":quit"]))
-	       system $ "chmod 755 "++shFile
+               system $ "chmod 755 "++shFile
                result <- evalCmd timeout [timeLimit,shFile] ""
                setCurrentDirectory currDir
                system $ "/bin/rm -r "++execDir
                return $ parseResult result
  where
    -- add the Curry system bin directory to the path
-   addBinPath = "PATH="++pakcsBin++":$PATH && export PATH && "
+   addBinPath v = "PATH="++pakcsBin v++":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.
