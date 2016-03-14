@@ -33,4 +33,4 @@ Install the execution services:
 
 - Login as pakcs@siran
 - > cd smap/services
-- > make
+- Follow the instructions "INSTALL.txt"

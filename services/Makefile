@@ -19,6 +19,7 @@ install: Curry_PAKCS Curry_KiCS2 Haskell_GHC Prolog_SWI
 	mv Haskell_GHC $(CGIDIR)/GHC.cgi
 	mv Prolog_SWI  $(CGIDIR)/SWI.cgi
 	cp $(SWILOAD) $(CGIDIR)
+	chmod 644 $(CGIDIR)/$(SWILOAD)
 	chmod 755 $(CGIDIR)/*.cgi
 
 .PHONY: uninstall
