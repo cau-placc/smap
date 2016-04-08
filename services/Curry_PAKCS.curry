@@ -44,11 +44,11 @@ timeout = "/usr/bin/timeout"
 --- Parameters for execution with PAKCS.
 pakcsParams :: [String]
 pakcsParams =
-  ["--quiet"
-  ,"-Dparsermessages=no"
+  ["-Dparsermessages=no"
   ,"-Dshowfcyload=no"
   ,"-Dshowplload=no"
   ,"-Dpakcsextensions=yes"
+  ,"--quiet"
   ,":set","-verbose"
   ,":set","+time"
   ,":set","printdepth 0"
@@ -75,7 +75,7 @@ executeWithPAKCS urlparam prog =
          modName  = getModuleName prog
          filename = modName <.> "curry"
          (urlp1,urlp2) = break (=='&') urlparam
-         version  = if null urlp1 || null urlp2 then "1.12.0" else urlp1
+         version  = if null urlparam then "1.14.0" else urlp1
          allsols  = urlparam=="all" || urlp2=="&all"
          shFile   = "./PAKCSCALL.sh"
      currDir <- getCurrentDirectory
