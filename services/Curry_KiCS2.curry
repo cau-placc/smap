@@ -22,21 +22,20 @@ main = runServiceAsCGI executeWithKiCS2
 --------------------------------------------------------------------------------
 
 --- Paths to required binaries and libraries.
-kics2Home :: String
---kics2Home = "/opt/kics2/kics2-0.3.2"
-kics2Home = "/opt/kics2/kics2-0.4.0"
+kics2Home :: String -> String
+kics2Home version = "/opt/kics2/kics2-" ++ version
 
-kics2Bin :: String
-kics2Bin  = kics2Home </> "bin"
+kics2Bin :: String -> String
+kics2Bin version = kics2Home version </> "bin"
 
-kics2Lib :: String
-kics2Lib  = kics2Home </> "lib"
+kics2Lib :: String -> String
+kics2Lib version = kics2Home version </> "lib"
 
-kics2 :: String
-kics2     = kics2Bin </> "kics2"
+kics2 :: String -> String
+kics2 version = kics2Bin version </> "kics2"
 
-cymake :: String
-cymake    = kics2Bin </> "cymake"
+cymake :: String -> String
+cymake version = kics2Bin version </> "cymake"
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
@@ -56,45 +55,50 @@ timeLimit = "15"
 --- Executes a Curry program with KiCS2 and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparam - if "all", show all solutions
+--- @param urlparam - first argument: version number,
+---                   second argument: if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithKiCS2 :: String -> String -> IO String
-executeWithKiCS2 urlparam prog =
-  do pid <- getPID
-     let execDir  = "tmpKiCS2EXEC_"++show pid
-         modName  = getModuleName prog
-         filename = modName <.> "curry"
-         shFile   = "./PAKCSCALL"
-     currDir <- getCurrentDirectory
-     createDirectoryIfMissing True execDir
-     setCurrentDirectory execDir
-     writeFile filename prog
-     writeFile shFile
-               ("#!/bin/sh\n"++
-                unwords [addBinPath,
-                         cymake,"--flat","--extended","-i",kics2Lib,modName])
-     (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
-     if exit1 > 0
-       then do setCurrentDirectory currDir
-               system $ "/bin/rm -r "++execDir
-               return $ parseResult (exit1,out1,err1)
-       else do
-         writeFile shFile
-                   ("#!/bin/sh\n"++
-                    unwords ([addBinPath,kics2]
-                             ++ kics2Params++
-                             [":set " ++
-                              (if urlparam=="all" then "-" else "+") ++ "first",
-                              ":set safe",
-                              ":load",modName,":eval","main",":quit"]))
-         system $ "chmod 755 "++shFile
-         result <- evalCmd timeout [timeLimit,shFile] ""
-         setCurrentDirectory currDir
-         system $ "/bin/rm -r "++execDir
-         return $ parseResult result
+executeWithKiCS2 urlparam prog = do
+  pid <- getPID
+  let execDir  = "tmpKiCS2EXEC_"++show pid
+      modName  = getModuleName prog
+      filename = modName <.> "curry"
+      (urlp1,urlp2) = break (=='&') urlparam
+      version  = if null urlparam then "0.5.0" else urlp1
+      allsols  = urlparam=="all" || urlp2=="&all"
+      shFile   = "./KICS2CALL.sh"
+  currDir <- getCurrentDirectory
+  createDirectoryIfMissing True execDir
+  setCurrentDirectory execDir
+  writeFile filename prog
+  writeFile shFile
+            ("#!/bin/sh\n"++
+             unwords [ addBinPath version
+                     , cymake version
+                     ,  "--flat", "--extended"
+                     , "-i", kics2Lib version, modName])
+  (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
+  if exit1 > 0
+    then do setCurrentDirectory currDir
+            system $ "/bin/rm -r "++execDir
+            return $ parseResult (exit1,out1,err1)
+    else do writeFile shFile
+              ("#!/bin/sh\n"++
+               unwords ([addBinPath version, kics2 version]
+                        ++ kics2Params++
+                        [":set " ++
+                         (if allsols then "-" else "+") ++ "first",
+                         ":set safe",
+                         ":load",modName,":eval","main",":quit"]))
+            system $ "chmod 755 "++shFile
+            result <- evalCmd timeout [timeLimit,shFile] ""
+            setCurrentDirectory currDir
+            system $ "/bin/rm -r "++execDir
+            return $ parseResult result
  where
    -- add the Curry system bin directory to the path
-   addBinPath = "PATH="++kics2Bin++":$PATH && export PATH && "
+   addBinPath v = "PATH=" ++ kics2Bin v ++ ":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.

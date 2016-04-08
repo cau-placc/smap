@@ -69,46 +69,46 @@ timeLimit = "5"
 ---                   second argument: if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithPAKCS :: String -> String -> IO String
-executeWithPAKCS urlparam prog =
-  do pid <- getPID
-     let execDir  = "tmpPAKCSEXEC_"++show pid
-         modName  = getModuleName prog
-         filename = modName <.> "curry"
-         (urlp1,urlp2) = break (=='&') urlparam
-         version  = if null urlparam then "1.14.0" else urlp1
-         allsols  = urlparam=="all" || urlp2=="&all"
-         shFile   = "./PAKCSCALL.sh"
-     currDir <- getCurrentDirectory
-     createDirectoryIfMissing True execDir
-     setCurrentDirectory execDir
-     writeFile filename prog
-     writeFile shFile
-               ("#!/bin/sh\n"++
-                unwords [addBinPath version,
-                         cymake version,
-                         "--flat", "--extended",
-                         "-i", pakcsLib version, modName])
-     (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
-     if exit1 > 0
-       then do setCurrentDirectory currDir
-               system $ "/bin/rm -r "++execDir
-               return $ parseResult (exit1,out1,err1)
-       else do writeFile shFile
-                 ("#!/bin/sh\n"++
-                   unwords ([addBinPath version, pakcs version]
-                            ++ pakcsParams ++
-                            [":set " ++
-                             (if allsols then "-" else "+") ++ "first",
-                             ":set safe",":load",modName,
-                             ":eval","main",":quit"]))
-               system $ "chmod 755 "++shFile
-               result <- evalCmd timeout [timeLimit,shFile] ""
-               setCurrentDirectory currDir
-               system $ "/bin/rm -r "++execDir
-               return $ parseResult result
+executeWithPAKCS urlparam prog = do
+  pid <- getPID
+  let execDir  = "tmpPAKCSEXEC_"++show pid
+      modName  = getModuleName prog
+      filename = modName <.> "curry"
+      (urlp1,urlp2) = break (=='&') urlparam
+      version  = if null urlparam then "1.14.0" else urlp1
+      allsols  = urlparam=="all" || urlp2=="&all"
+      shFile   = "./PAKCSCALL.sh"
+  currDir <- getCurrentDirectory
+  createDirectoryIfMissing True execDir
+  setCurrentDirectory execDir
+  writeFile filename prog
+  writeFile shFile
+            ("#!/bin/sh\n"++
+             unwords [addBinPath version,
+                      cymake version,
+                      "--flat", "--extended",
+                      "-i", pakcsLib version, modName])
+  (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
+  if exit1 > 0
+    then do setCurrentDirectory currDir
+            system $ "/bin/rm -r "++execDir
+            return $ parseResult (exit1,out1,err1)
+    else do writeFile shFile
+              ("#!/bin/sh\n"++
+                unwords ([addBinPath version, pakcs version]
+                         ++ pakcsParams ++
+                         [":set " ++
+                          (if allsols then "-" else "+") ++ "first",
+                          ":set safe",":load",modName,
+                          ":eval","main",":quit"]))
+            system $ "chmod 755 "++shFile
+            result <- evalCmd timeout [timeLimit,shFile] ""
+            setCurrentDirectory currDir
+            system $ "/bin/rm -r "++execDir
+            return $ parseResult result
  where
    -- add the Curry system bin directory to the path
-   addBinPath v = "PATH="++pakcsBin v++":$PATH && export PATH && "
+   addBinPath v = "PATH=" ++ pakcsBin v ++ ":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.
