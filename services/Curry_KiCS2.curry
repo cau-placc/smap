@@ -44,7 +44,7 @@ timeout  = "/usr/bin/timeout"
 
 --- Parameters for execution with KiCS2.
 kics2Params :: [String]
-kics2Params = [":set","v0",":set","+time"]
+kics2Params = ["--nocypm", ":set", "v0", ":set", "+time"]
 
 --- Time limit for execution with KiCS2.
 timeLimit :: String
@@ -67,7 +67,7 @@ executeWithKiCS2 urlparam inputprog = do
       modName  = getModuleName prog
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
-      version  = if null urlparams then "0.5.0" else head urlparams
+      version  = if null urlparams then "0.6.0" else head urlparams
       allsols  = (not (null urlparams) && head urlparams == "all") ||
                  (length urlparams > 1 && urlparams!!1 == "all")
       prog = if null inputprog && not (null urlparams)
@@ -78,11 +78,12 @@ executeWithKiCS2 urlparam inputprog = do
   createDirectoryIfMissing True execDir
   setCurrentDirectory execDir
   writeFile filename prog
+  let target = if "0." `isPrefixOf` version then "--flat" else "--typed-flat"
   writeFile shFile
             ("#!/bin/sh\n"++
              unwords [ addBinPath version
                      , kics2Frontend version
-                     ,  "--flat", "--extended"
+                     , target, "--extended"
                      , "-i", kics2Lib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
   if exit1 > 0

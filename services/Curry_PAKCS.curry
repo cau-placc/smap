@@ -59,7 +59,7 @@ pakcsParams =
 
 --- Time limit for execution with PAKCS.
 timeLimit :: String
-timeLimit = "5"
+timeLimit = "15"
 
 --------------------------------------------------------------------------------
 -- Execution with PAKCS                                                       --
@@ -78,7 +78,7 @@ executeWithPAKCS urlparam inputprog = do
       modName  = getModuleName prog
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
-      version  = if null urlparams then "1.14.0" else head urlparams
+      version  = if null urlparams then "1.15.0" else head urlparams
       allsols  = (not (null urlparams) && head urlparams == "all") ||
                  (length urlparams > 1 && urlparams!!1 == "all")
       prog = if null inputprog && not (null urlparams)
@@ -108,10 +108,10 @@ executeWithPAKCS urlparam inputprog = do
                           (if allsols then "-" else "+") ++ "first",
                           ":set safe",":load",modName,
                           ":eval","main",":quit"]))
-            system $ "chmod 755 "++shFile
+            system $ "chmod 755 " ++ shFile
             result <- evalCmd timeout [timeLimit,shFile] ""
             setCurrentDirectory currDir
-            system $ "/bin/rm -r "++execDir
+            system $ "/bin/rm -r " ++ execDir
             return $ parseResult result
  where
    -- add the Curry system bin directory to the path
