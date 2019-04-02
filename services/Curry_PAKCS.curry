@@ -7,7 +7,9 @@ import FilePath
 import IOExts
 import List
 import System
-import SimpleWebService(runServiceAsCGI)
+
+import HTML.Base        ( urlencoded2string )
+import SimpleWebService ( runServiceAsCGI )
 
 --------------------------------------------------------------------------------
 -- Installing the web service                                                 --
@@ -35,8 +37,8 @@ pakcsLib version = pakcsHome version </> "lib"
 pakcs :: String -> String
 pakcs version = pakcsBin version </> "pakcs"
 
-cymake :: String -> String
-cymake version = pakcsBin version </> "cymake"
+pakcsFrontend :: String -> String
+pakcsFrontend version = pakcsBin version </> "pakcs-frontend"
 
 timeout :: String
 timeout = "/usr/bin/timeout"
@@ -49,6 +51,7 @@ pakcsParams =
   ,"-Dshowplload=no"
   ,"-Dpakcsextensions=yes"
   ,"--quiet"
+  ,"--nocypm"
   ,":set","-verbose"
   ,":set","+time"
   ,":set","printdepth 0"
@@ -69,14 +72,18 @@ timeLimit = "5"
 ---                   second argument: if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithPAKCS :: String -> String -> IO String
-executeWithPAKCS urlparam prog = do
+executeWithPAKCS urlparam inputprog = do
   pid <- getPID
   let execDir  = "tmpPAKCSEXEC_"++show pid
       modName  = getModuleName prog
       filename = modName <.> "curry"
-      (urlp1,urlp2) = break (=='&') urlparam
-      version  = if null urlparam then "1.14.0" else urlp1
-      allsols  = urlparam=="all" || urlp2=="&all"
+      urlparams = split (\c -> c =='&' || c=='?') urlparam
+      version  = if null urlparams then "1.14.0" else head urlparams
+      allsols  = (not (null urlparams) && head urlparams == "all") ||
+                 (length urlparams > 1 && urlparams!!1 == "all")
+      prog = if null inputprog && not (null urlparams)
+               then urlencoded2string (last urlparams)
+               else inputprog
       shFile   = "./PAKCSCALL.sh"
   currDir <- getCurrentDirectory
   createDirectoryIfMissing True execDir
@@ -85,7 +92,7 @@ executeWithPAKCS urlparam prog = do
   writeFile shFile
             ("#!/bin/sh\n"++
              unwords [addBinPath version,
-                      cymake version,
+                      pakcsFrontend version,
                       "--flat", "--extended",
                       "-i", pakcsLib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""

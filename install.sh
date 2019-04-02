@@ -11,8 +11,8 @@ if [ "`hostname -s`" != "giscours" ] ; then
 fi
 
 echo "Current sessionAuthData file:"
-ls -l $WWWDIR/sessionAuthData
-cat $WWWDIR/sessionAuthData
+ls -l $WWWDIR/data/sessionAuthData
+cat $WWWDIR/data/sessionAuthData
 echo "Proceed (y/n)?"
 read ANSWER
 if [ "$ANSWER" != "y" ] ; then
@@ -20,11 +20,12 @@ if [ "$ANSWER" != "y" ] ; then
   exit 1
 fi
 
+make install
 # change the owner from www-data to myself:
 sudo chown -R `id -u -n` $WWWDIR
 sudo chgrp -R `id -g -n` $WWWDIR
 # deploy current version:
-make deploy WEBSERVERDIR=$WWWDIR
+export PATH=$HOME/.cpm/bin_kics2:$PATH && make deploy WEBSERVERDIR=$WWWDIR
 # change the owner to www-data:
 sudo chown -R www-data $WWWDIR
 sudo chgrp -R www-data $WWWDIR

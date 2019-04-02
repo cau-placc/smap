@@ -7,7 +7,9 @@ import FilePath
 import IOExts
 import List
 import System
-import SimpleWebService(runServiceAsCGI)
+
+import HTML.Base        ( urlencoded2string )
+import SimpleWebService ( runServiceAsCGI )
 
 --------------------------------------------------------------------------------
 -- Installing the web service                                                 --
@@ -34,8 +36,8 @@ kics2Lib version = kics2Home version </> "lib"
 kics2 :: String -> String
 kics2 version = kics2Bin version </> "kics2"
 
-cymake :: String -> String
-cymake version = kics2Bin version </> "cymake"
+kics2Frontend :: String -> String
+kics2Frontend version = kics2Bin version </> "kics2-frontend"
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
@@ -46,7 +48,7 @@ kics2Params = [":set","v0",":set","+time"]
 
 --- Time limit for execution with KiCS2.
 timeLimit :: String
-timeLimit = "15"
+timeLimit = "30"
 
 --------------------------------------------------------------------------------
 -- Execution with KiCS2                                                       --
@@ -59,15 +61,19 @@ timeLimit = "15"
 ---                   second argument: if "all", show all solutions
 --- @param prog - the Curry program to be executed
 executeWithKiCS2 :: String -> String -> IO String
-executeWithKiCS2 urlparam prog = do
+executeWithKiCS2 urlparam inputprog = do
   pid <- getPID
   let execDir  = "tmpKiCS2EXEC_"++show pid
       modName  = getModuleName prog
       filename = modName <.> "curry"
-      (urlp1,urlp2) = break (=='&') urlparam
-      version  = if null urlparam then "0.5.0" else urlp1
-      allsols  = urlparam=="all" || urlp2=="&all"
-      shFile   = "./KICS2CALL.sh"
+      urlparams = split (\c -> c =='&' || c=='?') urlparam
+      version  = if null urlparams then "0.5.0" else head urlparams
+      allsols  = (not (null urlparams) && head urlparams == "all") ||
+                 (length urlparams > 1 && urlparams!!1 == "all")
+      prog = if null inputprog && not (null urlparams)
+               then urlencoded2string (last urlparams)
+               else inputprog
+      shFile   = "./KiCS2CALL.sh"
   currDir <- getCurrentDirectory
   createDirectoryIfMissing True execDir
   setCurrentDirectory execDir
@@ -75,7 +81,7 @@ executeWithKiCS2 urlparam prog = do
   writeFile shFile
             ("#!/bin/sh\n"++
              unwords [ addBinPath version
-                     , cymake version
+                     , kics2Frontend version
                      ,  "--flat", "--extended"
                      , "-i", kics2Lib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""

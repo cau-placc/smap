@@ -7,7 +7,9 @@ import FilePath
 import IOExts
 import List
 import System
-import SimpleWebService(runServiceAsCGI)
+
+import HTML.Base        ( urlencoded2string )
+import SimpleWebService ( runServiceAsCGI )
 
 ------------------------------------------------------------------------------
 -- Installing the web service                                                 
@@ -23,7 +25,7 @@ main = runServiceAsCGI executeWithGHC
 
 --- Paths to required binaries.
 runghc :: String
-runghc   = "/opt/ghc/bin/runghc"
+runghc   = "/opt/ghc/8.4.3/bin/runghc"
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
@@ -43,31 +45,36 @@ timeLimit = "5"
 --- Executes a Haskell program with GHC and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparameter - ignored
+--- @param urlparameter - contains the URL encoded program if the
+---                       second parameter is empty
 --- @param prog - the Haskell program to be executed
 executeWithGHC :: String -> String -> IO String
-executeWithGHC _ prog =
-  do pid <- getPID
-     let execDir  = "tmpGHCEXEC_"++show pid
-         modName  = findModuleName prog
-         fileName = maybe "Prog" id modName ++ ".hs"
-         moduleHeader = maybe "module Prog where\n\n" (const "") modName
-         mainProg = let mname = maybe "Prog" id modName
-                     in "import qualified "++mname++
-                        "\n\nmain = print "++mname++".main\n"
-     currDir <- getCurrentDirectory
-     createDirectoryIfMissing True execDir
-     setCurrentDirectory execDir
-     writeFile fileName (moduleHeader ++ prog)
-     writeFile "Main.hs" mainProg
-     result <- if containsUnsafe prog
-               then return (1,"","Program contains unsafe operations!")
-               else evalCmd timeout
-                            [timeLimit,runghc,"Main.hs"]
-                            ""
-     setCurrentDirectory currDir
-     system $ "/bin/rm -r "++execDir
-     return $ parseResult result
+executeWithGHC urlparam inputprog = do
+  pid <- getPID
+  let execDir  = "tmpGHCEXEC_"++show pid
+      prog = if null inputprog && not (null urlparam)
+               then urlencoded2string urlparam
+               else inputprog
+      modName  = findModuleName prog
+      fileName = maybe "Prog" id modName ++ ".hs"
+      moduleHeader = maybe "module Prog where\n\n" (const "") modName
+      mainProg = let mname = maybe "Prog" id modName
+                  in "import qualified "++mname++
+                     "\n\nmain = print "++mname++".main\n"
+  currDir <- getCurrentDirectory
+  setEnviron "HOME" currDir -- since GHC requires HOME for getAppUserDataDirectory
+  createDirectoryIfMissing True execDir
+  setCurrentDirectory execDir
+  writeFile fileName (moduleHeader ++ prog)
+  writeFile "Main.hs" mainProg
+  result <- if containsUnsafe prog
+            then return (1,"","Program contains unsafe operations!")
+            else evalCmd timeout
+                         [timeLimit,runghc,"Main.hs"]
+                         ""
+  setCurrentDirectory currDir
+  system $ "/bin/rm -r "++execDir
+  return $ parseResult result
 
 
 --- Turns the result of the GHC execution into the proper plain text

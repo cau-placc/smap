@@ -1,49 +1,85 @@
 # Generic Makefile for Spicey applications
 
+CURRYOPTIONS=:set -time
+
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored:
 WEBSERVERDIR=$(HOME)/public_html/smap
 
 # Definition of the Curry installation bin directory to be used:
-#export CURRYBIN=/opt/pakcs/bin
-export CURRYBIN=/opt/kics2/bin
+export CURRYBIN=/opt/pakcs/bin
+#export CURRYBIN=/opt/kics2/bin
 
-# The root directory of the sources of the Spicey application:
-SRCDIR := $(CURDIR)
-# The load path for the Spicey application:
-export CURRYPATH := $(SRCDIR)/views:$(SRCDIR)/controllers:$(SRCDIR)/models:$(SRCDIR)/system:$(SRCDIR)/config:$(SRCDIR)/lib
+# Executable of the Curry Package Manager CPM:
+CPM := $(CURRYBIN)/cypm
+
+# Executable of CPNSD:
+CPNSD := $(shell which curry-cpnsd)
+# Executable of the CGI registry and submission form:
+CURRYCGI := $(shell which curry-cgi)
+# Executable of the makecgi:
+MAKECGI := $(shell which curry-makecgi)
+
+############################################################################
 
 .PHONY: all
 all:
-	@echo "make: deploy compile load run clean?"
+	@echo "make: deploy install compile load run clean?"
 
-# Deploy the generated Spicey application, i.e., install it in the
-# web pages:
-.PHONY: deploy
-deploy:
-	$(CURRYBIN)/makecurrycgi -standalone -m main -o $(WEBSERVERDIR)/spicey.cgi Main.curry
-	# copy other files (style sheets, images,...)
-	cp -r $(SRCDIR)/public/* $(WEBSERVERDIR)
-	chmod -R go+rX $(WEBSERVERDIR)
+# Install the packages required by the generated Spicey application:
+.PHONY: install
+install:
+	$(CPM) install
+
+# check presence of tools required for deployment and install them:
+.PHONY: checkdeploy
+checkdeploy:
+	@if [ ! -x "$(CPNSD)" ] ; then \
+	   echo "Installing required executable 'curry-cpnsd'..." ; \
+           $(CPM) install cpns ; fi
+	@if [ ! -x "$(CURRYCGI)" ] ; then \
+	   echo "Installing required executable 'curry-cgi'..." ; \
+           $(CPM) install html-cgi ; fi
+	@if [ ! -x "$(MAKECGI)" ] ; then \
+	   echo "Installing required executable 'curry-makecgi'..." ; \
+           $(CPM) install html ; fi
 
 # Compile the generated Spicey application:
 .PHONY: compile
 compile:
-	$(CURRYBIN)/curry :load Main :quit
+	$(CURRYBIN)/curry $(CURRYOPTIONS) :load Main :quit
 
 # Load the generated Spicey application into the Curry system so that
 # one can evaluate some expressions:
 .PHONY: load
 load:
-	$(CURRYBIN)/curry :load Main
+	$(CURRYBIN)/curry $(CURRYOPTIONS) :load Main
 
 # Runs the generated Spicey application by evaluating the main expression.
 # This might be useful to test only the initial web page without a web server
 .PHONY: run
 run:
-	$(CURRYBIN)/curry :load Main :eval main :quit
+	$(CURRYBIN)/curry $(CURRYOPTIONS) :load Main :eval main :q
 
-# clean up generated programs
+# Deploy the generated Spicey application, i.e., install it in the
+# web pages:
+.PHONY: deploy
+deploy: checkdeploy
+	mkdir -p $(WEBSERVERDIR)
+	$(CPM) exec $(MAKECGI) --standalone -m main -o $(WEBSERVERDIR)/smap.cgi Main.curry
+	# copy other files (style sheets, images,...)
+	cp -r public/* $(WEBSERVERDIR)
+	mkdir -p $(WEBSERVERDIR)/data # create private data dir
+	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
+	chmod -R go+rX $(WEBSERVERDIR)
+
+# clean up generated the package directory
 .PHONY: clean
 clean: 
-	$(CURRYBIN)/cleancurry -r
+	$(CPM) clean
+
+# clean everything, including the deployed files (be sure to save the
+# database files first!)
+.PHONY: cleanall
+cleanall: clean
+	/bin/rm -rf $(WEBSERVERDIR)

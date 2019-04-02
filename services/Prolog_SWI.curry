@@ -7,7 +7,9 @@ import FilePath
 import IOExts
 import List
 import System
-import SimpleWebService(runServiceAsCGI)
+
+import HTML.Base        ( urlencoded2string )
+import SimpleWebService ( runServiceAsCGI )
 
 ------------------------------------------------------------------------------
 -- Installing the web service                                                 
@@ -43,23 +45,27 @@ timeLimit = "5"
 --- Executes a Prolog program with SWI and returns an I/O action that contains
 --- the exit status (first line) and the execution output/error (rest) as plain
 --- text.
---- @param urlparameter - ignored
+--- @param urlparameter - contains the URL encoded program if the
+---                       second parameter is empty
 --- @param prog - the Prolog program to be executed
 executeWithSWI :: String -> String -> IO String
-executeWithSWI _ prog =
-  do pid <- getPID
-     let execDir  = "tmpSWIEXEC_"++show pid
-         filename = "test.pl"
-     currDir <- getCurrentDirectory
-     createDirectoryIfMissing True execDir
-     setCurrentDirectory execDir
-     writeFile filename prog
-     result <- evalCmd timeout
-                       ([timeLimit,swi]++swiParams)
-                       ("compile('../safeload'). safe_exec('"++filename++"').")
-     setCurrentDirectory currDir
-     system $ "/bin/rm -r "++execDir
-     return $ parseResult result
+executeWithSWI urlparam inputprog = do
+  pid <- getPID
+  let execDir  = "tmpSWIEXEC_"++show pid
+      filename = "test.pl"
+      prog = if null inputprog && not (null urlparam)
+               then urlencoded2string urlparam
+               else inputprog
+  currDir <- getCurrentDirectory
+  createDirectoryIfMissing True execDir
+  setCurrentDirectory execDir
+  writeFile filename prog
+  result <- evalCmd timeout
+                    ([timeLimit,swi]++swiParams)
+                    ("compile('../safeload'). safe_exec('"++filename++"').")
+  setCurrentDirectory currDir
+  system $ "/bin/rm -r "++execDir
+  return $ parseResult result
 
 
 --- Turns the result of the SWI execution into the proper plain text

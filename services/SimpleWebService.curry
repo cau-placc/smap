@@ -7,16 +7,17 @@
 --- such a web services.
 ---
 --- @author Michael Hanus
---- @version May 2014
+--- @version April 2019
 ------------------------------------------------------------------------
 
 module SimpleWebService(runServiceAsCGI,connectToCGI) where
 
-import System
 import IO
-import Read
-import Socket
-import Maybe
+import Maybe  ( isJust )
+import Read   ( readNat )
+import System ( getEnviron )
+
+import Network.Socket
 
 ------------------------------------------------------------------------
 --- Installing a web service:
