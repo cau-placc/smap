@@ -39,6 +39,11 @@ kics2 version = kics2Bin version </> "kics2"
 kics2Frontend :: String -> String
 kics2Frontend version = kics2Bin version </> "kics2-frontend"
 
+-- A CPM bin directory appropriate for the KiCS2 version
+cpmBin :: String -> String
+cpmBin version = "/net/medoc/home/kics2/.cpm/bin_kics" ++
+                 (if "0." `isPrefixOf` version then "1" else [head version])
+
 timeout :: String
 timeout  = "/usr/bin/timeout"
 
@@ -104,8 +109,9 @@ executeWithKiCS2 urlparam inputprog = do
             system $ "/bin/rm -r "++execDir
             return $ parseResult result
  where
-   -- add the Curry system bin directory to the path
-   addBinPath v = "PATH=" ++ kics2Bin v ++ ":$PATH && export PATH && "
+  -- add the Curry system bin directory and a CPM bin directory to the path
+  addBinPath v = "PATH=" ++ kics2Bin v ++ ":" ++ cpmBin v ++
+                 ":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.

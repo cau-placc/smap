@@ -40,6 +40,10 @@ pakcs version = pakcsBin version </> "pakcs"
 pakcsFrontend :: String -> String
 pakcsFrontend version = pakcsBin version </> "pakcs-frontend"
 
+-- A CPM bin directory appropriate for the PAKCS version
+cpmBin :: String -> String
+cpmBin version = "/net/medoc/home/pakcs/.cpm/bin_pakcs" ++ [head version]
+
 timeout :: String
 timeout = "/usr/bin/timeout"
 
@@ -114,8 +118,9 @@ executeWithPAKCS urlparam inputprog = do
             system $ "/bin/rm -r " ++ execDir
             return $ parseResult result
  where
-   -- add the Curry system bin directory to the path
-   addBinPath v = "PATH=" ++ pakcsBin v ++ ":$PATH && export PATH && "
+  -- add the Curry system bin directory and a CPM bin directory to the path
+  addBinPath v = "PATH=" ++ pakcsBin v ++ ":" ++ cpmBin v ++
+                 ":$PATH && export PATH && "
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.
