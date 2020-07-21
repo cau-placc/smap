@@ -8,6 +8,8 @@ SMAPDIR=$(HOME)/public_html/smap
 CGIDIR=$(SMAPDIR)/exec
 # Auxiliary Prolog program for sandbox execution:
 SWILOAD=safeload.pl
+# Directory containing standard libraries for PAKCS2
+STDLIBDIR=curry_libs
 
 .PHONY: install
 install: Curry_PAKCS Curry_KiCS2 Haskell_GHC Prolog_SWI
@@ -15,6 +17,8 @@ install: Curry_PAKCS Curry_KiCS2 Haskell_GHC Prolog_SWI
 	chmod 755 $(CGIDIR)
 	$(MAKE) uninstall
 	mv Curry_PAKCS $(CGIDIR)/PAKCS.cgi
+	cp -a $(STDLIBDIR) $(CGIDIR)/$(STDLIBDIR)
+	chmod -R go+rX $(CGIDIR)/$(STDLIBDIR)
 	mv Curry_KiCS2 $(CGIDIR)/KiCS2.cgi
 	mv Haskell_GHC $(CGIDIR)/GHC.cgi
 	mv Prolog_SWI  $(CGIDIR)/SWI.cgi
@@ -25,6 +29,7 @@ install: Curry_PAKCS Curry_KiCS2 Haskell_GHC Prolog_SWI
 .PHONY: uninstall
 uninstall:
 	cd $(CGIDIR) && rm -f PAKCS.cgi KiCS2.cgi GHC.cgi SWI.cgi $(SWILOAD)
+	cd $(CGIDIR) && rm -rf $(STDLIBDIR)
 
 Curry_PAKCS: Curry_PAKCS.curry SimpleWebService.curry
 	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_PAKCS.curry :save :quit

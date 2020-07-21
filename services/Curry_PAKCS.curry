@@ -4,11 +4,13 @@
 
 import Directory
 import FilePath
+import IO
 import IOExts
 import List
 import System
 
 import HTML.Base        ( urlencoded2string )
+
 import SimpleWebService ( runServiceAsCGI )
 
 --------------------------------------------------------------------------------
@@ -91,6 +93,7 @@ executeWithPAKCS urlparam inputprog = do
       shFile   = "./PAKCSCALL.sh"
   currDir <- getCurrentDirectory
   createDirectoryIfMissing True execDir
+  copyStandardLibs execDir
   setCurrentDirectory execDir
   writeFile filename prog
   writeFile shFile
@@ -102,7 +105,7 @@ executeWithPAKCS urlparam inputprog = do
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
   if exit1 > 0
     then do setCurrentDirectory currDir
-            system $ "/bin/rm -r "++execDir
+            system $ "/bin/rm -r " ++ execDir
             return $ parseResult (exit1,out1,err1)
     else do writeFile shFile
               ("#!/bin/sh\n"++
@@ -121,6 +124,13 @@ executeWithPAKCS urlparam inputprog = do
   -- add the Curry system bin directory and a CPM bin directory to the path
   addBinPath v = "PATH=" ++ pakcsBin v ++ ":" ++ cpmBin v ++
                  ":$PATH && export PATH && "
+
+--- Copies some standard libraries (e.g., for set functions, default rules)
+--- to the given directory.
+copyStandardLibs :: String -> IO ()
+copyStandardLibs dir = do
+  c <- system $ "/bin/cp -a " ++ "curry_libs/* " ++ dir
+  when (c > 0) $ hPutStrLn stderr "Cannot copy standard libraries!"
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.
