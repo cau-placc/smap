@@ -10,7 +10,7 @@ or keywords occurring in the title, decsription, or tags.
 <p>
 </p>
 Once you found an interesting program, you can open it
-in the browser or with [SmapIE](help-02) in order to execute and play with them.
+in the browser or with [SmapIE](help-02) in order to execute and play with it.
 If you open a program in the browser, you see more details
 like a short description or the source code.
 <p>

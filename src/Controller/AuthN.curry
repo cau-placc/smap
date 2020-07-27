@@ -12,10 +12,12 @@ module Controller.AuthN (
 ) where
 
 import Global
-import Mail
 import Maybe     ( isNothing )
+
+import Mail      ( sendMail )
 import WUI
 
+import Config.Smap        ( smapEmail )
 import System.Alerts
 import System.Authentication
 import System.Authorization
@@ -188,22 +190,21 @@ forgotPWStore =
 -- @param userEmail - the entered email address
 doSendNewPassword :: String -> Controller
 doSendNewPassword userEmail =
-  checkAuthorization (authNOperation SendNewPassword) $ \_ ->
-  do mUser <- getUserByEmail userEmail
-     maybe (do setAlert emailNotFoundErrAlert
-               showForgotPasswordPage)
-           (\user -> do newPassword <- randomPassword 6
-                        userHash    <- getUserHash (userName user) newPassword
-                        tResult     <- updateUser $ setUserHash user userHash
-                        either (\_ -> do sendMail "Smap" 
-                                                  userEmail
-                                                  subject
-                                                  (content user newPassword)
-                                         setAlert sendingInProcessAlert
-                                         showSignInPage Nothing)
-                               (showTransactionErrorPage updateUserFailedErr)
-                               tResult)
-           mUser
+  checkAuthorization (authNOperation SendNewPassword) $ \_ -> do
+    mUser <- getUserByEmail userEmail
+    maybe (do setAlert emailNotFoundErrAlert
+              showForgotPasswordPage)
+          (\user -> do
+              newPassword <- randomPassword 6
+              userHash    <- getUserHash (userName user) newPassword
+              tResult     <- updateUser $ setUserHash user userHash
+              either (\_ -> do sendMail smapEmail userEmail subject
+                                        (content user newPassword)
+                               setAlert sendingInProcessAlert
+                               showSignInPage Nothing)
+                     (showTransactionErrorPage updateUserFailedErr)
+                     tResult)
+          mUser
   where
     emailNotFoundErrAlert = 
      ErrorAlert $ "This email address is not associated with an user account."++

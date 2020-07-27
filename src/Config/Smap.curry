@@ -12,3 +12,7 @@ smapDataDir = "data"
 --- Location of the database.
 smapDB :: String
 smapDB = smapDataDir </> "Smap.db"
+
+--- Email address of mail sender.
+smapEmail :: String
+smapEmail = "smap@curry-lang.org"

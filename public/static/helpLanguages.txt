@@ -18,13 +18,13 @@ languages, Smap currently supports the following languages:
  For PAKCS, you can select between two systems: one computes
  all values of the initial expression <tt>main</tt> and the other one
  computes only the first value of the initial expression.
- KiCS2 always computes all values of the initial expression
- <tt>main</tt>.
+ KiCS2 can be used in a similar manner but has long execution
+ times (which might cause a time out).
  Note that initial expressions of type <tt>IO</tt>
  are not allowed in all systems.
 </li>
 <li>
- <b>Haskell</b>: Functionnal programs written in Haskell are executed by
+ <b>Haskell</b>: Functional programs written in Haskell are executed by
  <tt>runghc</tt>, which is part of the Glasgow Haskell Compiler.
  Note that initial expressions <tt>main</tt> of type <tt>IO</tt>
  are not allowed.

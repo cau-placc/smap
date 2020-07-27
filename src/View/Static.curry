@@ -47,15 +47,15 @@ landingPage =
     headerText =
       "Smap is primarily an interactive source code editor that lets you writ"++
       "e programs and execute them online in various programming languages. I"++
-      "n addition, Smap allows you to save and manage your creations and make"++
+      "n addition, Smap allows you to save and manage your programs and make"++
       " them available to other users."
     smapIEInfo =
-      "Write, execute and save programs and code snippets using SmapIE - an i"++
-      "nteractive source code editor that lets you run your code while develo"++
-      "ping it."
+      "Write, execute, and save programs and code snippets using SmapIE - " ++
+      "an interactive source code editor that lets you run your code while " ++
+      "developing it."
     browserInfo =
       "Use the Browser to search and preview submitted programs for specific "++
-      "programming tasks and try out the creations from other users by loadin"++
+      "programming tasks and try out the programs from other users by loadin"++
       "g them to SmapIE."
     usersInfo =
       "Sign in and add your own programs to Smap or save your mostly used pro"++

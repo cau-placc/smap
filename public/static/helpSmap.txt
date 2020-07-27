@@ -4,7 +4,7 @@ What is Smap?
 Smap (a portmanteau for "<b>sma</b>ll <b>p</b>rograms") is primarily
 an interactive source code editor that lets you write programs and
 execute them online in various programming languages. In addition, Smap 
-allows you to save and manage your creations and make them available
+allows you to save and manage your programs and make them available
 to other users.
 For these purposes Smap provides two core components:
 the [SmapIE](help-02) and the [Browser](help-03).
