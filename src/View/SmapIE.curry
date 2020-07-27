@@ -7,12 +7,12 @@
 --- functionality.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version November 2018
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module View.SmapIE (
-  smapIE,programCreationForm,versionCreationForm, removeCRs
-) where
+  smapIEPage, removeCRs, wProgram, wVersion
+ ) where
 
 import Char
 import List
@@ -31,75 +31,6 @@ import GenerateProgramURL
 import System.Alerts
 
 --------------------------------------------------------------------------------
--- Exported SmapIE views                                                      --
---------------------------------------------------------------------------------
-
---- The general view of the interactive editor (SmapIE)!
---- @param mProg         - a possibly given existing program
---- @param execEnv       - the associated execution environment
---- @param mExecRes      - a possibly given execution result
---- @param initCode      - initial content of the editor
---- @param initSystemKey - key of the initially selected execution system
---- @param executeProg   - a controller for executing programs
---- @param tryShowPCForm - a controller that tries to show the program creation
----   form (which may fail if the source code is not executable) 
---- @param tryShowVCForm - a controller that tries to show the version creation
----   form (which may fail if the source code is not executable)
---- @param authzData     - the current authorization data
-smapIE
-  :: Maybe Program -> ExecEnv -> Maybe ExecResult -> String -> String 
-  -> ((ExecEnv,String,String,Maybe Program) -> Controller) 
-  -> ((ExecEnv,String,String) -> Controller) -> ((ExecEnv,String,String,Program)
-  -> Controller) -> AuthZData -> View
-smapIE = renderSmapIE
-
---- Supplies a WUI form to create a new program. The form expects additional
---- source code metadata and a list of tags to classify the program.
---- @param lang         - the implementation language
---- @param user         - the author
---- @param code         - the program source code
---- @param createProg   - the controller that performs the program creation
---- @param backToSmapIE - a controller to return to the IE without losing data
-programCreationForm 
-  :: Language -> User -> String
-  -> ((String,String,Bool,Language,User,String,String) -> Controller)
-  -> Controller -> View
-programCreationForm lang user code createProg backToSmapIE =
-  renderWuiForm wProgram ("","",True,lang,user,code,"") createProg
-    [h3 [] [saveIcon,text " Save program to Smap"]]
-    [text info]
-    [text "Save to Smap!"]
-    [orangeSubmitBtn backHdlr [smapIEIcon,text " Go back &raquo;"]]
-    []
-  where
-    backHdlr _ = next $ backToSmapIE
-    info =
-      "Add some metadata information to your program to complete the saving p"++
-      "rocess!"
-
---- Supplies a WUI form to create a new version. The form expects a version
---- message that specifies the changes to the previous version.
---- @param number       - the version number
---- @param code         - the version source code
---- @param prog         - the corresponding program
---- @param createVers   - the controller that performs the version creation
---- @param backToSmapIE - a controller to return to the IE without losing data
-versionCreationForm 
-  :: Int -> String -> Program -> ((Int,String,String,Program) -> Controller) 
-  -> Controller -> View
-versionCreationForm number code prog createVers backToSmapIE =
-  renderWuiForm wVersion (number,code,"",prog) createVers
-    [h3 [] [saveIcon,text " Save as new version"]]
-    [text info]
-    [text "Save to Smap!"]
-    [orangeSubmitBtn backHdlr [smapIEIcon,text " Go back &raquo;"]]
-    []
-  where
-    backHdlr _ = next $ backToSmapIE
-    info =
-      "Just add a version message to complete the saving process!"
-
---------------------------------------------------------------------------------
 -- HTML components for SmapIE views                                           --
 --------------------------------------------------------------------------------
 
@@ -116,13 +47,17 @@ versionCreationForm number code prog createVers backToSmapIE =
 --   form (which may fail if the source code is not executable) 
 -- @param tryShowVCForm - the controller that tries to show the version creation
 --   form (which may fail if the source code is not executable)
+-- @param smapCtrl      - a controller for the SmapIE
 -- @param authzData     - the current authorization data
-renderSmapIE
+smapIEPage
   :: Maybe Program -> ExecEnv -> Maybe ExecResult -> String -> String 
   -> ((ExecEnv,String,String,Maybe Program) -> Controller)
-  -> ((ExecEnv,String,String) -> Controller) -> ((ExecEnv,String,String,Program)
-  -> Controller) -> AuthZData -> [HtmlExp]
-renderSmapIE mProg 
+  -> ((ExecEnv,String,String) -> Controller)
+  -> ((ExecEnv,String,String,Program) -> Controller)
+  -> (Maybe Program -> ExecEnv -> Maybe ExecResult -> String -> String
+                    -> Controller)
+  -> AuthZData -> [HtmlExp]
+smapIEPage   mProg 
              execEnv@(lang,systems)
              mExecRes
              initCode 
@@ -130,9 +65,9 @@ renderSmapIE mProg
              executeProg
              tryShowPCForm
              tryShowVCForm
+             smapCtrl
              authzData =
-  [input [("type","hidden"),value "smap-ie"] -- for styling purposes
-  ,(container `withId` "smap-ie")
+  [(container `withId` "smap-ie")
     [row
       [panelDefault
         [panelBody
@@ -145,7 +80,7 @@ renderSmapIE mProg
               ,div [classA "pull-right"]
                 [span [classA "text-muted"] [text "Language: "]
                 ,labelDefault [text langName]]]
-            ,textarea [] codeRef initCode
+            ,textArea [] codeRef initCode
             `addId` "editor"
             ,script [] [text codeMirrorInstance]]
           -- execution result, button bar and program information
@@ -157,16 +92,17 @@ renderSmapIE mProg
                     [label [] [executionIcon,text " Execution result"]]
                   ,div [classA "pull-right"]
                     [span [classA "help-block"] execResInfo]]
-                ,textarea [classA "form-control",readonly] _ res
+                ,textArea [classA "form-control",readonly] _ res
                 `addId` "execution-result"
                 ,select [classA "form-control input-sm"]
                   systemRef systemMenu initSystemKey]]
             ,row
               [(div [classA "clearfix"] `withId` "button-bar")
                 [div [classA "pull-left"]
-                  [submitButton 
-                    [classA "btn btn-success",title runButtonTooltip] execHdlr
-                    [executionIcon,text " Run"]
+                  [formSubmitButton 
+                    [classA "btn btn-success",title runButtonTooltip]
+                    "Run" execHdlr
+                    --[executionIcon,text " Run"]
                   `addId` "run-button"
                   ,div [classA "btn-group"]
                     [buttonButton
@@ -190,12 +126,11 @@ renderSmapIE mProg
     codeRef,systemRef free
     langName        = languageName $ lang
     systemMenu      = map (\s -> (systemName s,showSystemKey s)) systems
-    execHdlr e      = next $ executeProg   (execEnv,e systemRef,getCode e,mProg)
+    execHdlr e      = next $ executeProg (execEnv,e systemRef,getCode e,mProg)
     downloadHdlr e  = return (HtmlAnswer "text/plain" (removeCRs (getCode e)))
-    uploadUrlHdlr e = setAlert (InfoAlert $ uploadLinkText (getCode e)) >>
-                      next (return $ smapIE mProg execEnv mExecRes (getCode e)
-                                       initSystemKey executeProg tryShowPCForm
-                                       tryShowVCForm authzData)
+    uploadUrlHdlr e = do setAlert (InfoAlert $ uploadLinkText (getCode e))
+                         next $ smapCtrl mProg execEnv mExecRes (getCode e)
+                                         initSystemKey
     pcFormHdlr e    = next $ tryShowPCForm (execEnv,e systemRef,getCode e)
     vcFormHdlr p e  = next $ tryShowVCForm (execEnv,e systemRef,getCode e,p)
     getCode e       = removeCRs $ e codeRef
@@ -213,11 +148,13 @@ renderSmapIE mProg
         maybe noProgOpts progOpts mProg
       ++[li [classA "divider"] []
         ,li []
-          [submitButton [classA "btn btn-link",("formtarget","_blank")]
-             downloadHdlr [downloadIcon,text " Download source code"]]
+          [--downloadIcon,
+           formSubmitButton [classA "btn btn-link",("formtarget","_blank")]
+             "Download source code" downloadHdlr]
         ,li []
-          [submitButton [classA "btn btn-link"]
-             uploadUrlHdlr [uploadIcon,text " Generate upload URL"]]]
+          [--uploadIcon,
+           formSubmitButton [classA "btn btn-link"]
+             "Generate upload URL" uploadUrlHdlr]]
     noProgOpts =
       [li []
         [a [href $ newProgBaseUrl++"/"++(map toLower langName)]
@@ -225,7 +162,7 @@ renderSmapIE mProg
       byAuthorization (smapIEOperation CreateProgram authzData)
         [li [classA "divider"] []
         ,li [] 
-          [linkSubmitBtn pcFormHdlr [saveIcon,text " Save program to Smap"]]]
+          [linkSubmitBtn "Save program to Smap" pcFormHdlr]]
         (\_ -> [empty])
     progOpts prog =
       [li []
@@ -240,8 +177,7 @@ renderSmapIE mProg
       byAuthorization (smapIEOperation (CreateVersion prog) authzData)
         [li [classA "divider"] []
         ,li [] 
-          [linkSubmitBtn (vcFormHdlr prog)
-            [saveIcon,text " Save as new version"]]]
+          [linkSubmitBtn "Save as new version" (vcFormHdlr prog)]]
         (\_ -> [empty])
     codeMirrorInstance =
       "var code = CodeMirror.fromTextArea(document.getElementById('editor'), "++

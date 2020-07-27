@@ -1,41 +1,50 @@
---------------------------------------------------------------------------------
---- This module implements the management of sessions. In particular, it defines
---- a cookie that must be sent to the client in order to enable the handling of
---- sessions. Based on session, this module defines also a session store that
---- can be used by various parts of the application in order to hold some
---- session-specific data.
---------------------------------------------------------------------------------
+--------------------------------------------------------------------------
+--- This module implements the management of sessions.
+--- In particular, it defines a cookie that must be sent to the client
+--- in order to enable the handling of sessions.
+--- Based on sessions, this module also defines a session store
+--- that can be used by various parts of the application in order
+--- to hold some session-specific data.
+--------------------------------------------------------------------------
 
-module System.Session (
-  sessionCookie,
-  SessionStore,emptySessionStore,
-  getSessionData,putSessionData,removeSessionData
-) where
+module System.Session
+  ( inDataDir
+  , sessionCookie, doesSessionExist, withSessionCookie, withSessionCookieInfo
+  , SessionStore, emptySessionStore
+  , getSessionMaybeData, getSessionData, putSessionData, removeSessionData
+  , updateSessionData
+  ) where
 
 import FilePath ( (</>) )
 import Global
-import List
-import Time
+import List         ( findIndex, replace )
+import Maybe        ( fromMaybe )
+import Time         ( ClockTime, addMinutes, clockTimeToInt, getClockTime )
 
-import Config.Smap ( smapDataDir )
+import Config.Smap  ( smapDataDir )
 import HTML.Html5
-import System.Crypto
+import Crypto.Hash  ( randomString )
 
---------------------------------------------------------------------------------
--- Session IDs                                                                --
---------------------------------------------------------------------------------
+--- Prefix a file name with the directory where session data,
+--- e.g., cookie information, is stored during run time.
+--- As a default, it is the CGI execution directory but this should
+--- be adapted to a non-public readable directory for security reasons.
+inDataDir :: String -> String
+inDataDir filename = smapDataDir </> filename
 
---- The life span in minutes to store data in sessions. Thus, older data is
---- deleted by a clean up that is initiated whenever new data is stored in a
---- session.
+--- The life span in minutes to store data in sessions.
+--- Thus, older data is deleted by a clean up that is initiated
+--- whenever new data is stored in a session.
+sessionLifespan :: Int
 sessionLifespan = 60
 
 --- The name of the persistent global where the last session id is stored.
+sessionCookieName :: String
 sessionCookieName = "spiceySessionId"
 
 --- This global value saves time and last session id.
 lastId :: Global (Int, Int)
-lastId = global (0, 0) (Persistent (smapDataDir </> sessionCookieName))
+lastId = global (0, 0) (Persistent (inDataDir sessionCookieName))
 
 
 --- The abstract type to represent session identifiers.
@@ -48,7 +57,7 @@ getId (SessionId i) = i
 --- Creates a new unused session id.
 getUnusedId :: IO SessionId
 getUnusedId = do
-  (ltime,lsid) <- readGlobal lastId
+  (ltime,lsid) <- safeReadGlobal lastId (0,0)
   clockTime <- getClockTime
   if clockTimeToInt clockTime /= ltime
     then writeGlobal lastId (clockTimeToInt clockTime, 0)
@@ -56,8 +65,15 @@ getUnusedId = do
   rans <- randomString 30
   return (SessionId (show (clockTimeToInt clockTime) ++ show (lsid+1) ++ rans))
 
---- Gets the id of the current user session. If this is a new session, a new id
---- is created and returned.
+--- Checks whether the current user session is initialized,
+--- i.e., whether a session cookie has been already set.
+doesSessionExist :: IO Bool
+doesSessionExist = do
+    cookies <- getCookies
+    return $ maybe False (const True) (lookup sessionCookieName cookies)
+
+--- Gets the id of the current user session.
+--- If this is a new session, a new id is created and returned.
 getSessionId :: IO SessionId
 getSessionId = do
     cookies <- getCookies
@@ -65,67 +81,104 @@ getSessionId = do
       Just sessionCookieValue -> return (SessionId sessionCookieValue)
       Nothing                 -> getUnusedId
 
---- Creates a cookie to hold the current session id. This cookie should be sent
---- to the client together with every form.
-sessionCookie :: IO FormParam
+--- Creates a cookie to hold the current session id.
+--- This cookie should be sent to the client together with every HTML page.
+sessionCookie :: IO PageParam
 sessionCookie = do
-    sessionId <- getSessionId
-    clockTime <- getClockTime
-    return (FormCookie sessionCookieName (getId (sessionId))
-                       [CookiePath "/",
-                        CookieExpire (addMinutes sessionLifespan clockTime)])
+  sessionId <- getSessionId
+  clockTime <- getClockTime
+  return $ PageCookie sessionCookieName (getId (sessionId))
+                      [CookiePath "/",
+                       CookieExpire (addMinutes sessionLifespan clockTime)]
 
---------------------------------------------------------------------------------
--- Implementation of session stores
---------------------------------------------------------------------------------
+--- Decorates an HTML page with session cookie.
+withSessionCookie :: HtmlPage -> IO HtmlPage
+withSessionCookie p = do
+  cookie <- sessionCookie
+  return $ (p `addPageParam` cookie)
 
---- The type of a session store that holds particular data used in a session. A
---- session store consists of list of data items for each session in the system
---- together with the clock time of the last access. The clock time is used to
---- remove old data in the store.
-data SessionStore a = SStore [(SessionId, Int, a)]
+--- Decorates an HTML page with session cookie and shows an information
+--- page when the session cookie is not set.
+withSessionCookieInfo :: HtmlPage -> IO HtmlPage
+withSessionCookieInfo p = do
+  hassession <- doesSessionExist
+  if hassession then withSessionCookie p
+                else cookieInfoPage
+
+-- Returns HTML page with information about the use of cookies.
+cookieInfoPage :: IO HtmlPage
+cookieInfoPage = do
+  urlparam <- getUrlParameter
+  withSessionCookie $ standardPage "Cookie Info"
+    [ par [ htxt $ "This web site uses cookies for navigation and user " ++
+                   "inputs and preferences. In order to proceed, "
+          , bold [a [href ('?' : urlparam)] [text "please click here."]]]]
+
+----------------------------------------------------------------------------
+-- Implementation of session stores.
+
+--- The type of a session store that holds particular data used in a session.
+--- A session store consists of a list of data items for each session in the
+--- system together with the clock time of the last access.
+--- The clock time is used to remove old data in the store.
+data SessionStore a = SessionStore [(SessionId, Int, a)]
 
 --- An initial value for the empty session store.
-emptySessionStore = SStore []
+emptySessionStore :: SessionStore _
+emptySessionStore = SessionStore []
 
 --- Retrieves data for the current user session stored in a session store.
-getSessionData :: Global (SessionStore a) -> IO (Maybe a)
-getSessionData sessionData = do
+--- Returns `Nothing` if there is no data for the current session.
+getSessionMaybeData :: Global (SessionStore a) -> IO (Maybe a)
+getSessionMaybeData sessionData = do
     sid <- getSessionId
-    SStore sdata <- readGlobal sessionData
+    SessionStore sdata <- safeReadGlobal sessionData emptySessionStore
     return (findInSession sid sdata)
   where
     findInSession si ((id, _, storedData):rest) =
       if getId id == getId si
-      then Just storedData
-      else findInSession si rest
+        then Just storedData
+        else findInSession si rest
     findInSession _ [] = Nothing
       
+--- Retrieves data for the current user session stored in a session store
+--- where the second argument is returned if there is no data
+--- for the current session.
+getSessionData :: Global (SessionStore a) -> a -> IO a
+getSessionData sessionData defaultdata =
+  getSessionMaybeData sessionData >>= return . fromMaybe defaultdata
+
 --- Stores data related to the current user session in a session store.
-putSessionData :: a -> Global (SessionStore a) -> IO ()
-putSessionData newData sessionData = do
+putSessionData :: Global (SessionStore a) -> a -> IO ()
+putSessionData sessionData newData = do
   sid <- getSessionId
-  SStore sdata <- readGlobal sessionData
+  SessionStore sdata <- safeReadGlobal sessionData emptySessionStore
   currentTime <- getClockTime
   case findIndex (\ (id, _, _) -> id == sid) sdata of
     Just i ->
       writeGlobal sessionData
-                  (SStore (replace (sid, clockTimeToInt currentTime, newData) i
-                                   (cleanup currentTime sdata)))
+        (SessionStore (replace (sid, clockTimeToInt currentTime, newData) i
+                               (cleanup currentTime sdata)))
     Nothing ->
       writeGlobal sessionData
-                  (SStore ((sid, clockTimeToInt currentTime, newData)
-                           : cleanup currentTime sdata))
+                  (SessionStore ((sid, clockTimeToInt currentTime, newData)
+                                  : cleanup currentTime sdata))
+
+--- Updates the data of the current user session.
+updateSessionData :: Global (SessionStore a) -> a -> (a -> a) -> IO ()
+updateSessionData sessiondata defaultdata upd = do
+  sd <- getSessionData sessiondata defaultdata
+  putSessionData sessiondata (upd sd)
 
 --- Removes data related to the current user session from a session store.
 removeSessionData :: Global (SessionStore a) -> IO ()
 removeSessionData sessionData = do
   sid <- getSessionId
-  SStore sdata <- readGlobal sessionData
+  SessionStore sdata <- safeReadGlobal sessionData emptySessionStore
   currentTime <- getClockTime
   writeGlobal sessionData
-              (SStore (filter (\ (id, _, _) -> id /= sid)
-                              (cleanup currentTime sdata)))
+              (SessionStore (filter (\ (id, _, _) -> id /= sid)
+                                    (cleanup currentTime sdata)))
 
 -- expects that clockTimeToInt converts time into ascending integers!
 -- we should write our own conversion-function

@@ -23,22 +23,22 @@ import View.SmapIE(removeCRs)
 
 --- The download controller delegates its work to the `showDownloadPage`
 --- controller.
-downloadController :: Url -> IO HtmlForm
+downloadController :: Url -> IO HtmlPage
 downloadController url@(path,_) = 
   case path of
     ["download",progKey]         ->
-        maybe (showInvalidUrlErrorPage url >>= getForm)
+        maybe (showInvalidUrlErrorPage url >>= getPage)
               (\k -> showDownloadPage k >>= toAnswer)
               (readProgramKeyAndVersionNumber (progKey,"0"))
     ["download",progKey,versNum] ->
-        maybe (showInvalidUrlErrorPage url >>= getForm)
+        maybe (showInvalidUrlErrorPage url >>= getPage)
               (\k -> showDownloadPage k >>= toAnswer)
               (readProgramKeyAndVersionNumber (progKey,versNum))
-    _ -> showInvalidUrlErrorPage url >>= getForm
+    _ -> showInvalidUrlErrorPage url >>= getPage
  where
   toAnswer hexps = case hexps of
     [HtmlText s] -> return $ HtmlAnswer "text/plain" (removeCRs s)
-    _ -> getForm hexps
+    _ -> getPage hexps
 
 -- Shows a specific version of an existing program as HtmlText. Returns
 -- an error page if no program exists for the given key or if the version

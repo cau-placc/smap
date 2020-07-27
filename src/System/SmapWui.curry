@@ -10,16 +10,15 @@
 --- `WUI` where error renderings are allowed instead of just error messages. The
 --- modified module can be found in `../lib`)
 ---
---- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.SmapWui (
   module WUI,
   wSmapConstant,wSmapString,wSmapTextarea,wSmapSelect,wSmapSelectBool,wSmapPair,
   wSmapTriple,wSmap4Tuple,wSmap5Tuple,wSmap6Tuple,wSmap7Tuple,
-  isRequired,
-  greyWuiBtn,blueWuiBtn
+  isRequired
 ) where
 
 import HTML.Bootstrap3
@@ -249,23 +248,5 @@ smapTupleRendering = div [classA "form-widget"]
 --- @param input - the input to be checked
 isRequired :: String -> Bool
 isRequired = not . null
-
---------------------------------------------------------------------------------
--- WUI form submit buttons                                                    --
---------------------------------------------------------------------------------
-
---- A WUI submit button rendered as a grey button.
---- @param wHdlr - the WUI handler
---- @param label - the button label
-greyWuiBtn :: WuiHandler -> [HtmlExp] -> HtmlExp
-greyWuiBtn (WHandler hdlr) label =
-  submitButton [classA "btn btn-default"] hdlr label
-
---- A WUI submit button rendered as a blue button.
---- @param wHdlr - the WUI handler
---- @param label - the button label
-blueWuiBtn :: WuiHandler -> [HtmlExp] -> HtmlExp
-blueWuiBtn (WHandler hdlr) label =
-  submitButton [classA "btn btn-primary"] hdlr label
 
 --------------------------------------------------------------------------------

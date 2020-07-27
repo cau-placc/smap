@@ -1,24 +1,23 @@
 # Generic Makefile for Spicey applications
 
+# Definition of the root of the Curry system to be used:
+SYSTEM=/home/mh/pakcs
+#SYSTEM=/opt/kics2/kics2
+
+# Curry bin directory to be used:
+export CURRYBIN=$(SYSTEM)/bin
+
 CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored:
 WEBSERVERDIR=$(HOME)/public_html/smap
 
-# Definition of the Curry installation bin directory to be used:
-export CURRYBIN=/opt/pakcs/bin
-#export CURRYBIN=/opt/kics2/bin
-
 # Executable of the Curry Package Manager CPM:
 CPM := $(CURRYBIN)/cypm
 
-# Executable of CPNSD:
-CPNSD := $(shell which curry-cpnsd)
-# Executable of the CGI registry and submission form:
-CURRYCGI := $(shell which curry-cgi)
-# Executable of the makecgi:
-MAKECGI := $(shell which curry-makecgi)
+# Executable of the curry2cgi:
+CURRY2CGI := $(shell which curry2cgi)
 
 ############################################################################
 
@@ -34,15 +33,9 @@ install:
 # check presence of tools required for deployment and install them:
 .PHONY: checkdeploy
 checkdeploy:
-	@if [ ! -x "$(CPNSD)" ] ; then \
-	   echo "Installing required executable 'curry-cpnsd'..." ; \
-           $(CPM) install cpns ; fi
-	@if [ ! -x "$(CURRYCGI)" ] ; then \
-	   echo "Installing required executable 'curry-cgi'..." ; \
-           $(CPM) install html-cgi ; fi
-	@if [ ! -x "$(MAKECGI)" ] ; then \
-	   echo "Installing required executable 'curry-makecgi'..." ; \
-           $(CPM) install html ; fi
+	@if [ ! -x "$(CURRY2CGI)" ] ; then \
+	   echo "Installing required executable 'curry2cgi'..." ; \
+           $(CPM) install html2 ; fi
 
 # Compile the generated Spicey application:
 .PHONY: compile
@@ -66,12 +59,21 @@ run:
 .PHONY: deploy
 deploy: checkdeploy
 	mkdir -p $(WEBSERVERDIR)
-	$(CPM) exec $(MAKECGI) --standalone -m main -o $(WEBSERVERDIR)/smap.cgi Main.curry
+	$(MAKE) $(WEBSERVERDIR)/smap.cgi
 	# copy other files (style sheets, images,...)
 	cp -r public/* $(WEBSERVERDIR)
-	mkdir -p $(WEBSERVERDIR)/data # create private data dir
-	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
 	chmod -R go+rX $(WEBSERVERDIR)
+	mkdir -p $(WEBSERVERDIR)/data # create private data dir
+	chmod 700 $(WEBSERVERDIR)/data
+	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
+
+$(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
+	$(CPM) exec $(CURRY2CGI) --system="$(SYSTEM)" \
+	  -i Controller.Admin \
+	  -i Controller.AuthN \
+	  -i Controller.Browser \
+	  -i Controller.SmapIE \
+	  -o $@ Main.curry
 
 # clean up generated the package directory
 .PHONY: clean
@@ -82,4 +84,4 @@ clean:
 # database files first!)
 .PHONY: cleanall
 cleanall: clean
-	/bin/rm -rf $(WEBSERVERDIR)
+	/bin/rm -f $(WEBSERVERDIR)/smap.cgi*

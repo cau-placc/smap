@@ -55,12 +55,12 @@ alert = global emptySessionStore Temporary
 --- Sets the alert of the current session.
 --- @param nAlert - the next alert
 setAlert :: Alert -> IO ()
-setAlert nAlert = putSessionData nAlert alert
+setAlert nAlert = putSessionData alert nAlert
 
 --- Gets the current alert and deletes it from the session.
 getAlert :: IO (Maybe Alert)
 getAlert = 
-  do mAlert <- getSessionData alert
+  do mAlert <- getSessionMaybeData alert
      removeSessionData alert
      return mAlert
 

@@ -561,6 +561,7 @@ label {
   position: absolute;
 }
 
+.dropdown-menu > li > input,
 .dropdown-menu > li > button {
   border: none;
   display: block;
@@ -577,6 +578,7 @@ label {
 
 /* -- Rendering submit buttons in dropdown menus as hyperlinks -- */
 
+.dropdown-menu > li > input:hover,
 .dropdown-menu > li > button:hover,
 .dropdown-menu > li > button:focus {
   background-color: #e8e8e8;
@@ -587,6 +589,7 @@ label {
   text-decoration: none;
 }
 
+.dropdown-menu > .active > input,
 .dropdown-menu > .active > button,
 .dropdown-menu > .active > button:hover,
 .dropdown-menu > .active > button:focus {
@@ -599,6 +602,7 @@ label {
   text-decoration: none;
 }
 
+.dropdown-menu > .disabled > input,
 .dropdown-menu > .disabled > button,
 .dropdown-menu > .disabled > button:hover,
 .dropdown-menu > .disabled > button:focus {

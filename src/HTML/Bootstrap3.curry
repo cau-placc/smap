@@ -203,7 +203,9 @@ addToAttr (HtmlStruct tag ats hexps) (n,v) =
         addToAttr' ((n',v'):ats') | n' == n   = (n',v'++" "++v):ats'
                                   | otherwise = (n',v'):(addToAttr' ats')
 addToAttr (HtmlCRef hexp cref)       at    = HtmlCRef  (addToAttr hexp at) cref
-addToAttr (HtmlEvent hexp hdlr)      at    = HtmlEvent (addToAttr hexp at) hdlr
+addToAttr (HtmlEvent hexp cref hdlr) at    =
+  HtmlEvent (addToAttr hexp at) cref hdlr
+addToAttr (HtmlAction act) _               = HtmlAction act
 
 addToClass :: HtmlExp -> String -> HtmlExp
 addToClass hexp cvalue = addToAttr hexp ("class",cvalue)

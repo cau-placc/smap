@@ -2,12 +2,14 @@
 --- This modules provides views for the module `AdminController` and primarily
 --- exports pages with WUI forms for entity creation (languages and systems).
 ---
---- @author Lasse Kristopher Meyer
---- @version November 2018
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module View.Admin (
-  languageCreationForm,systemCreationForm,listSystemView,editSystemView
+  languageCreationRendering, systemCreationRendering, editSystemRendering,
+  listSystemView,
+  wLanguage, wSystem, wSystemType
 ) where
 
 import Prelude hiding (div)
@@ -25,27 +27,33 @@ import Model.Smap
 -- Exported views                                                             --
 --------------------------------------------------------------------------------
 
---- Supplies a WUI form to create a new language.
---- @param createLang - the controller that handles the language creation
-languageCreationForm :: ((String,String,String) -> Controller) -> View
-languageCreationForm createLang =
-  renderWuiForm wLanguage ("","","") createLang 
-    [h3 [] [addIcon,text " Add a new language to Smap"]]
+--- A rendering for a WUI form to create a new language.
+languageCreationRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+languageCreationRendering =
+  renderWui
+    [h3 [] [addIcon, text " Add a new language to Smap"]]
     []
-    [text "Add to Smap!"]
+    "Add to Smap!"
     []
     []
 
---- Supplies a WUI form to create a new system.
---- @param createSystem - the comntroller that handles the system creation
-systemCreationForm :: [Language] -> ((String,String,Language) -> Controller) -> View
-systemCreationForm langs createSystem =
-  renderWuiForm (wSystem langs) ("","",head langs) createSystem
-    [h3 [] [addIcon,text " Add a new system to Smap"]]
+--- A rendering for a WUI form to create a new system.
+systemCreationRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+systemCreationRendering =
+  renderWui
+    [h3 [] [addIcon, text " Add a new system to Smap"]]
     []
-    [text "Add to Smap!"]
+    "Add to Smap!"
     []
     []
+
+--- Supplies a WUI form to edit the given System entity.
+--- Takes also associated entities and a list of possible associations
+--- for every associated entity type.
+editSystemRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+editSystemRendering =
+  renderWui [text "Edit System"]  [] "Change!" [] []
+
 
 --- Compares two System entities. This order is used in the list view.
 leqSystem :: System -> System -> Bool
@@ -74,16 +82,6 @@ listSystemView systems =
     systemToListView :: System -> [[HtmlExp]]
     systemToListView system =
       [[text (systemName system)],[text (systemExecUrl system)]]
-
---- Supplies a WUI form to edit the given System entity.
---- Takes also associated entities and a list of possible associations
---- for every associated entity type.
-editSystemView
- :: System -> Language -> [Language]
-  -> (System -> Controller) -> [HtmlExp]
-editSystemView system relatedLanguage possibleLanguages controller =
-  renderWuiForm (wSystemType system relatedLanguage possibleLanguages)
-                system controller [text "Edit System"]  [] [text "Change!"] [] []
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

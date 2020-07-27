@@ -95,6 +95,7 @@ doUpdateProgramMetadata (successCtrl,mSuccessAlert) prog =
             (showTransactionErrorPage programEditingFailedErr)
             transRes
 
+programEditingFailedErr :: String
 programEditingFailedErr =
   "The program update failed due to an unexpected internal error. See the "++
   "internal error message for additional details."

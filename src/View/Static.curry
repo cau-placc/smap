@@ -3,7 +3,7 @@
 --- page, the help page or the about page).
 ---
 --- @author Lasse Kristopher Meyer
---- @version April 2019
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module View.Static (
@@ -65,7 +65,7 @@ landingPage =
       "more information."
 
 --- The help page view.
---helpPage :: View
+helpPage :: [(String,String,String)] -> View
 helpPage helpTexts =
   [(container `withId` "help-page")
     [row
@@ -103,10 +103,14 @@ helpPage helpTexts =
 -- Replaces in a text occurrences of "[name](ref)" by (repfun name ref),
 -- where repfun is the first argument.
 replaceLinks :: (String -> String -> String) -> String -> String
-replaceLinks repfun s = let reps = set2 replaceLink repfun s in
-  if isEmpty reps then s else replaceLinks repfun (selectValue reps)
+replaceLinks repfun s =
+  if isEmpty reps then s
+                  else replaceLinks repfun (selectValue reps)
+ where
+  reps = set2 replaceLink repfun s
 
-replaceLink repfun (pre++"["++name++"]("++ref++")"++suf) =
+replaceLink :: (String -> String -> String) -> String -> String
+replaceLink repfun (pre ++ "[" ++ name ++ "](" ++ ref ++ ")" ++ suf) =
   pre ++ repfun name ref ++ suf
 
 --- The about page view.
@@ -118,7 +122,7 @@ aboutPage =
         [panelDefault
           [panelBody
             [pageHeader [h3 [] [aboutIcon,text " About"]]
-            ,h4 [] [glyphicon "user",text " Developed by"]
+            ,h4 [] [glyphicon "user",text " Initially developed by"]
             ,span [classA "text-muted"] 
               [text "Lasse Kristopher Meyer "
             ,a [href $ "mailto:"++mail] [glyphicon "envelope"]]

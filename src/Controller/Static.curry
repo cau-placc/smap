@@ -56,6 +56,7 @@ readHelpFile fname = do
   return (key,title,tail txt)
 
 -- The list of help text files (stored in public/static):
+helpTextFiles :: [String]
 helpTextFiles =
-  map (\t -> "help"++t++".txt")
+  map (\t -> "help" ++ t ++ ".txt")
       ["Smap","SmapIE","Browser","SignIn","Languages"]

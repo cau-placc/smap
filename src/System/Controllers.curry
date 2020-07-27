@@ -14,7 +14,7 @@ module System.Controllers (
   showInvalidUrlErrorPage,showTransactionErrorPage,
   showNotYetImplementedErrorPage,stdErrorPageTitle,
   validateKeyAndApply,validateKeyAndApplyOn,next,nextFor,
-  getForm
+  getPage
 ) where
 
 import KeyDatabase
@@ -158,19 +158,19 @@ validateKeyAndApplyOn mKey url getentity applyController =
         mKey
 
 --- @param controller - the controller that will be executed
-next :: Controller -> IO HtmlForm
+next :: Controller -> IO HtmlPage
 next controller =
   do view <- controller
-     getForm view
+     getPage view
 
 --- Runs the action of a controller which takes an additional argument and
 --- delivers the HTML form.
 --- @param controller - the controller that will be executed
 --- @param arg        - the additional argument 
-nextFor :: (a -> Controller) -> a -> IO HtmlForm
+nextFor :: (a -> Controller) -> a -> IO HtmlPage
 nextFor controller arg =
   do view <- controller arg
-     getForm view
+     getPage view
 
 --------------------------------------------------------------------------------
 -- Building the HTML form                                                     --
@@ -180,13 +180,13 @@ nextFor controller arg =
 --- form parameters and the basic layout (including the navigation bar and
 --- sticky footer).
 --- @param view - the view returned by the last active controller
-getForm :: [HtmlExp] -> IO HtmlForm
-getForm view = 
+getPage :: [HtmlExp] -> IO HtmlPage
+getPage view = 
   do cookie <- sessionCookie
      body   <- addLayoutToView
      langs  <- getAllLanguages
-     return $ HtmlForm "Smap"
-                ([viewportMetaTag,cookie,favicon,MultipleHandlers]
+     return $ HtmlPage "Smap"
+                ([viewportMetaTag, cookie, favicon]
                 ++(jsHeadIncludes $ map languageName langs)
                 ++cssIncludes)
                 (body++jsBodyIncludes)
@@ -203,7 +203,7 @@ getForm view =
            ++view]++
            [stickyFooter]
     styleAttrs = case view of -- adds styles for specific pages
-      [HtmlStruct "input" [("type","hidden"),("value","smap-ie")] [],_] ->
+      HtmlStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
         [style "height: 100%;"]
       _ -> []
 

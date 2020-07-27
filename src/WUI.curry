@@ -1,43 +1,54 @@
 ------------------------------------------------------------------------------
 --- A library to support the type-oriented construction of Web User Interfaces
---- (WUIs). In contrast to the original WUI library, this library does
---- not use functional patterns and, thus, has a different interface.
+--- (WUIs).
 ---
 --- The ideas behind the application and implementation of WUIs are
 --- described in a paper that is available via
 --- [this web page](http://www.informatik.uni-kiel.de/~pakcs/WUI).
 ---
 --- @author Michael Hanus
---- @version November 2018
+--- @version October 2019
 ------------------------------------------------------------------------------
 
-module WUI(--WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
-           --states2state,state2states,altstate2state,state2altstate,
-           Rendering,WuiSpec,
-           withRendering,withError,withCondition,adaptWSpec,transformWSpec,
-           wHidden,wConstant,wInt,
-           wString,wStringSize,wRequiredString,wRequiredStringSize,wTextArea,
-           wSelect,wSelectInt,wSelectBool,wRadioSelect,wRadioBool,wCheckBool,
-           wMultiCheckSelect,
-           wPair,wTriple,w4Tuple,w5Tuple,w6Tuple,w7Tuple,w8Tuple,
-           w9Tuple,w10Tuple,w11Tuple,w12Tuple,
-           --wCons2,wCons3,wCons4,wCons5,wCons6,wCons7,wCons8,
-           --wCons9,wCons10,wCons11,wCons12,
-           wJoinTuple,wMaybe,wCheckMaybe,wRadioMaybe,
-           wList,wListWithHeadings,wHList,wMatrix,wEither,
-           WTree(..),wTree,
-           WuiHandler(..),wuiHandler2button,
-           renderTuple,renderTaggedTuple,renderList,
-           mainWUI,wui2html,wuiInForm,wuiWithErrorForm,
-           ErrorRendering,withErrorRendering)
+{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+
+module WUI
+  ( --WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
+    --states2state,state2states,altstate2state,state2altstate,
+    Rendering,WuiSpec,
+    withRendering,withError,withCondition,adaptWSpec,transformWSpec,
+    wHidden,wConstant,wInt,
+    wString,wStringSize,wRequiredString,wRequiredStringSize,wTextArea,
+    wSelect,wSelectInt,wSelectBool,wRadioSelect,wRadioBool,wCheckBool,
+    wMultiCheckSelect,
+    wPair,wTriple,w4Tuple,w5Tuple,w6Tuple,w7Tuple,w8Tuple,
+    w9Tuple,w10Tuple,w11Tuple,w12Tuple,w13Tuple,w14Tuple,
+  
+    -- these parameterized constructor combinators cause
+    -- non-determinism in KiCS2:
+    wCons2,wCons3,wCons4,wCons5,wCons6,wCons7,wCons8,
+    wCons9,wCons10,wCons11,wCons12,wCons13,wCons14,
+  
+    wJoinTuple,wMaybe,wCheckMaybe,wRadioMaybe,
+    wList,wListWithHeadings,wHList,wMatrix,wEither,
+    WTree(..),wTree,
+    WuiHandler,wuiHandler2button,
+    renderTuple,renderTaggedTuple,renderList,
+    WuiStore, setWuiStore, wui2FormDef, setParWuiStore, pwui2FormDef,
+    wuiSimpleRenderer, ErrorRendering, withErrorRendering
+  )
  where
 
-import HTML.Base
-import Read(readNat)
+import Char(isDigit,isSpace)
+import FunctionInversion (invf1)
+import Global
 import List(elemIndex)
 import Maybe
-import Char(isDigit,isSpace)
+import Read(readNat)
 import ReadShowTerm
+
+import HTML.Base
+import System.Session
 
 infixl 0 `withRendering`
 infixl 0 `withErrorRendering`
@@ -91,15 +102,19 @@ type ErrorRendering = Rendering -> Rendering
 --- * the standard rendering
 --- * an error message shown in case of illegal inputs
 --- * a condition to specify legal input values
+--type WuiParams a = (Rendering, String, a -> Bool)
 -- !!! changed String to ErrorRendering !!!
 type WuiParams a = (Rendering, ErrorRendering, a->Bool)
 
+renderOf :: WuiParams a -> Rendering
 renderOf (render,_,_) = render
 
 -- !!! deleted errorOf, added errorRenderOf !!!
+errorRenderOf :: WuiParams a -> ErrorRendering
 errorRenderOf (_,erender,_) = erender
 
-conditionOf (_,_,cond) = cond
+conditionOf :: WuiParams a -> (a -> Bool)
+conditionOf (_,_,c) = c
 
 ------------------------------------------------------------------------------
 --- The type HtmlSate are values consisting of an HTML expression
@@ -123,46 +138,49 @@ wuiHandler2button title (WHandler handler) = button title handler
 --- (rendering, error message, and constraints on inputs).
 --- The second component is a "show" function returning an HTML expression for
 --- the edit fields and a WUI state containing the CgiRefs to extract
---- the values from the edit fields.
---- The third component is "read" function to extract the values from
---- the edit fields for a given cgi environment (returned as (Just v)).
---- If the value is not legal, Nothing is returned. The second component
---- of the result contains an HTML edit expression
---- together with a WUI state to edit the value again.
+--- the values from the edit fields. If the second component of the show
+--- function is `True`, then the WUI condition is not checked for the data,
+--- otherwise the data is rendered with an error message if the
+--- WUI condition does not hold for the data.
+--- The third component is a predicate to check the correctness of
+--- the current data (with all its subcomponents).
+--- The fourth component is "read" function to extract the values from
+--- the edit fields for a given cgi environment.
 data WuiSpec a =
   WuiSpec (WuiParams a)
-          (WuiParams a -> a -> HtmlState)
-          (WuiParams a -> CgiEnv -> WuiState -> (Maybe a,HtmlState))
+          (WuiParams a -> Bool -> a -> HtmlState)
+          (WuiParams a -> a -> Bool)
+          (CgiEnv -> WuiState -> a)
 
 --- Puts a new rendering function into a WUI specification.
 withRendering :: WuiSpec a -> Rendering -> WuiSpec a
-withRendering (WuiSpec (_,errmsg,legal) showhtml readvalue) render =
-  WuiSpec (render,errmsg,legal) showhtml readvalue
+withRendering (WuiSpec (_,errmsg,legal) showhtml correct readvalue) render =
+  WuiSpec (render,errmsg,legal) showhtml correct readvalue
 
 -- !!! errmsg -> renderError errmsg in result !!!
 --- Puts a new error message into a WUI specification.
 withError :: WuiSpec a -> String -> WuiSpec a
-withError (WuiSpec (render,_,legal) showhtml readvalue) errmsg =
-  WuiSpec (render,renderError errmsg,legal) showhtml readvalue
+withError (WuiSpec (render,_,legal) showhtml correct readvalue) errmsg =
+  WuiSpec (render,renderError errmsg,legal) showhtml correct readvalue
 
 --- Puts a new condition into a WUI specification.
 withCondition :: WuiSpec a -> (a -> Bool) -> WuiSpec a
-withCondition (WuiSpec (render,errmsg,_) showhtml readvalue) legal =
-              (WuiSpec (render,errmsg,legal) showhtml readvalue)
+withCondition (WuiSpec (render,errmsg,_) showhtml correct readvalue) legal =
+              (WuiSpec (render,errmsg,legal) showhtml correct readvalue)
 
 -- !!! added !!!
 withErrorRendering :: WuiSpec a -> ErrorRendering -> WuiSpec a
-withErrorRendering (WuiSpec (render,_,legal) showhtml readvalue) erender =
-  WuiSpec (render,erender,legal) showhtml readvalue
+withErrorRendering (WuiSpec (render,_,legal) showhtml correct readvalue)
+                   erender =
+  WuiSpec (render,erender,legal) showhtml correct readvalue
 
 --- Transforms a WUI specification from one type to another.
 transformWSpec :: (a->b,b->a) -> WuiSpec a -> WuiSpec b
-transformWSpec (a2b,b2a) (WuiSpec wparamsa showhtmla readvaluea) =
+transformWSpec (a2b,b2a) (WuiSpec wparamsa showhtmla correcta readvaluea) =
   WuiSpec (transParam b2a wparamsa)
-          (\wparamsb b -> showhtmla (transParam a2b wparamsb) (b2a b))
-          (\wparamsb env wst ->
-            let (mba,errv) = readvaluea (transParam a2b wparamsb) env wst
-             in (maybe Nothing (Just . a2b) mba, errv))
+          (\wparamsb nchk b -> showhtmla (transParam a2b wparamsb) nchk (b2a b))
+          (\_ b -> correcta wparamsa (b2a b))
+          (\env wst -> a2b (readvaluea env wst))
  where
   transParam :: (b->a) -> WuiParams a -> WuiParams b
   transParam toa (render,errmsg,legal) = (render,errmsg,legal . toa)
@@ -173,16 +191,7 @@ transformWSpec (a2b,b2a) (WuiSpec wparamsa showhtmla readvaluea) =
 --- and operationally invertible (i.e., the inverse must be computable
 --- by narrowing). Otherwise, use <code>transformWSpec</code>!
 adaptWSpec :: (a->b) -> WuiSpec a -> WuiSpec b
-adaptWSpec a2b = transformWSpec (a2b,invert a2b)
-
--- Compute the inverse of a function by exploiting function patterns:
-invert :: (a->b) -> b -> a
-invert f = f_invert
- where
-  local_f x = f x
-  --f_invert (local_f x) = x  -- here we use a function pattern
-  f_invert y | (local_f x) =:<= y = x  where x free -- the same without fun.pat.
-
+adaptWSpec a2b = transformWSpec (a2b, invf1 a2b)
 
 ------------------------------------------------------------------------------
 -- A collection of basic WUIs and WUI combinators:
@@ -192,36 +201,33 @@ invert f = f_invert
 --- structures, e.g., internal identifiers, data base keys.
 wHidden :: WuiSpec a
 wHidden =
-  WuiSpec (head,renderError "?",const True) -- dummy values, not used
-          (\_ v -> (hempty, value2state v))
-          (\_ _ s -> (Just (state2value s), (hempty,s)))
+  WuiSpec (head, renderError "?", const True) -- dummy values, not used
+          (\_ _ v -> (hempty, value2state v))
+          (\_ _ -> True)
+          (\_ wst -> (state2value wst))
 
 --- A widget for values that are shown but cannot be modified.
 --- The first argument is a mapping of the value into a HTML expression
 --- to show this value.
-wConstant :: (a->HtmlExp) -> WuiSpec a
+wConstant :: (a -> HtmlExp) -> WuiSpec a
 wConstant showhtml =
-  WuiSpec (head,renderError "?",const True)
-          (\wparams v -> ((renderOf wparams) [showhtml v], value2state v))
-          (\(render,_,_) _ s -> let v = state2value s in
-                                (Just v, (render [showhtml v],s)))
+  WuiSpec (head, renderError "?", const True)
+          (\wparams _ v -> ((renderOf wparams) [showhtml v], value2state v))
+          (\_ _ -> True)
+          (\_ wst -> state2value wst)
 
 --- A widget for editing integer values.
 wInt :: WuiSpec Int
 wInt =
   WuiSpec (head,renderError "Illegal integer:",const True)
-          (\wparams v -> intWidget (renderOf wparams) (show v))
-          (\(render,erender,legal) env s ->
-            let input = env (state2cgiRef s)
-                -- renderr = renderError render errmsg
-             in maybe (Nothing, intWidget (erender render) input)
-                      (\v -> if legal v
-                             then (Just v,  intWidget render input)
-                             else (Nothing, intWidget (erender render) input))
-                      (readMaybeInt (stripSpaces input)))
+          (checkLegalInput intWidget)
+          (\wparams -> conditionOf wparams)
+          (\env wst ->
+            let input = env (state2cgiRef wst)
+             in maybe 0 id (readMaybeInt (stripSpaces input)))
  where
-  intWidget render s = let ref free in
-    (render [textfield ref s `addAttr` ("size","6")], cgiRef2state ref)
+  intWidget render i = let ref free in
+    (render [textField ref (show i) `addAttr` ("size","6")], cgiRef2state ref)
 
 -- Remove leading and ending spaces in a string.
 stripSpaces :: String -> String
@@ -239,14 +245,12 @@ readMaybeInt (v:s) | v=='-'  = maybe Nothing (\i->Just (-i)) (acc 0 s)
   acc n (c:cs) | isDigit c = acc (10*n + ord c - ord '0') cs
                | otherwise = Nothing
 
-
-checkLegalInput :: WuiParams a -> (Rendering -> a -> HtmlState) -> a
-                   -> (Maybe a,HtmlState)
-checkLegalInput (render,erender,legal) value2widget value =
-  if legal value
-  then (Just value, value2widget render value)
-  else (Nothing,    value2widget (erender render) value)
-
+checkLegalInput :: (Rendering -> a -> HtmlState) -> WuiParams a -> Bool -> a
+                -> HtmlState
+checkLegalInput value2widget (render,erender,legal) nocheck value =
+  if nocheck || legal value
+    then value2widget render value
+    else value2widget (erender render) value
 
 --- A predefined filter for processing string inputs.
 --- Here, we replace \r\n by \n:
@@ -273,15 +277,13 @@ wStringSize size = wStringAttrs [("size",show size)]
 --- text field.
 wStringAttrs :: [(String,String)] -> WuiSpec String
 wStringAttrs attrs =
-  WuiSpec (head,renderError "?", const True)
-          (\wparams v -> stringWidget (renderOf wparams) v)
-          (\wparams env s ->
-                checkLegalInput wparams stringWidget
-                                (filterStringInput (env (state2cgiRef s))))
+  WuiSpec (head, renderError "?", const True)
+          (checkLegalInput stringWidget)
+          (\wparams -> conditionOf wparams)
+          (\env s -> filterStringInput (env (state2cgiRef s)))
  where
-  stringWidget render v =
-    let ref free in
-    (render [foldr (flip addAttr) (textfield ref v) attrs], cgiRef2state ref)
+  stringWidget render v = let ref free in
+    (render [foldr (flip addAttr) (textField ref v) attrs], cgiRef2state ref)
 
 --- A widget for editing string values that are required to be non-empty.
 wRequiredString :: WuiSpec String
@@ -300,27 +302,24 @@ wRequiredStringSize size =
 --- The argument specifies the height and width of the text area.
 wTextArea :: (Int,Int) -> WuiSpec String
 wTextArea dims =
-  WuiSpec (head,renderError "?", const True)
-          (\wparams v -> textareaWidget (renderOf wparams) v)
-          (\wparams env s ->
-               checkLegalInput wparams textareaWidget
-                                       (filterStringInput (env (state2cgiRef s))))
+  WuiSpec (head, renderError "?", const True)
+          (checkLegalInput textareaWidget)
+          (\wparams -> conditionOf wparams)
+          (\env s -> filterStringInput (env (state2cgiRef s)))
  where
   textareaWidget render v = let ref free in
-                            (render [textarea ref dims v], cgiRef2state ref)
-
+    (render [textArea ref dims v], cgiRef2state ref)
 
 --- A widget to select a value from a given list of values.
 --- The current value should be contained in the value list and is preselected.
 --- The first argument is a mapping from values into strings to be shown
 --- in the selection widget.
-wSelect :: Eq a => (a->String) -> [a] -> WuiSpec a
+wSelect :: Eq a => (a -> String) -> [a] -> WuiSpec a
 wSelect showelem selset =
-  WuiSpec (head,renderError "?",const True)
-          (\wparams v -> selWidget (renderOf wparams) v)
-          (\wparams env s ->
-             checkLegalInput wparams selWidget
-                             (selset !! readNat (env (state2cgiRef s))))
+  WuiSpec (head, renderError "?", const True)
+          (checkLegalInput selWidget)
+          (\wparams -> conditionOf wparams)
+          (\env s -> selset !! readNat (env (state2cgiRef s)))
  where
   selWidget render v =
     let ref free
@@ -344,20 +343,20 @@ wSelectInt = wSelect show
 --- @param false - string for selection of False
 --- @return a WUI specification for a Boolean selection widget
 wSelectBool :: String -> String -> WuiSpec Bool
-wSelectBool true false = wSelect (\b->if b then true else false) [True,False]
+wSelectBool true false = wSelect (\b -> if b then true else false) [True,False]
 
 --- A widget to select a Boolean value via a check box.
 --- The first argument are HTML expressions that are shown after the
 --- check box.  The result is True if the box is checked.
 wCheckBool :: [HtmlExp] -> WuiSpec Bool
 wCheckBool hexps =
-  WuiSpec (head,renderError "?", const True)
-          (\wparams v -> checkWidget (renderOf wparams) v)
-          (\wparams env s ->
-             checkLegalInput wparams checkWidget (env (state2cgiRef s)=="True"))
+  WuiSpec (head, renderError "?", const True)
+          (checkLegalInput checkWidget)
+          (\wparams -> conditionOf wparams)
+          (\env wst -> env (state2cgiRef wst)=="True")
  where
   checkWidget render v = let ref free in
-    (render [inline ((if v then checkedbox else checkbox) ref "True" : hexps)],
+    (render [inline ((if v then checkedBox else checkBox) ref "True" : hexps)],
      cgiRef2state ref)
 
 --- A widget to select a list of values from a given list of values
@@ -365,20 +364,20 @@ wCheckBool hexps =
 --- The current values should be contained in the value list and are preselected.
 --- The first argument is a mapping from values into HTML expressions
 --- that are shown for each item after the check box.
-wMultiCheckSelect :: Eq a => (a->[HtmlExp]) -> [a] -> WuiSpec [a]
+wMultiCheckSelect :: Eq a => (a -> [HtmlExp]) -> [a] -> WuiSpec [a]
 wMultiCheckSelect showelem selset =
   WuiSpec (renderTuple, tupleErrorRendering, const True)
-          (\wparams vs -> checkWidget (renderOf wparams) vs)
-          (\wparams env st ->
-             checkLegalInput wparams checkWidget
-                   (concatMap (\ (ref,s) -> if env ref=="True" then [s] else [])
-                              (zip (map state2cgiRef (state2states st)) selset)))
+          (checkLegalInput checkWidget)
+          (\wparams -> conditionOf wparams)
+          (\env st ->
+              concatMap (\ (ref,s) -> if env ref=="True" then [s] else [])
+                        (zip (map state2cgiRef (state2states st)) selset))
  where
   checkWidget render vs =
     let refs = take (length selset) newVars
         numsetitems = zip refs selset
         showItem (ref,s) =
-           inline ((if s `elem` vs then checkedbox else checkbox)
+           inline ((if s `elem` vs then checkedBox else checkBox)
                                                        ref "True" : showelem s)
      in (render (map showItem numsetitems),
          states2state (map cgiRef2state refs))
@@ -393,16 +392,15 @@ newVars = unknown : newVars
 wRadioSelect :: Eq a => (a->[HtmlExp]) -> [a] -> WuiSpec a
 wRadioSelect showelem selset =
   WuiSpec (renderTuple, tupleErrorRendering, const True)
-          (\wparams v -> radioWidget (renderOf wparams) v)
-          (\wparams env s ->
-             checkLegalInput wparams radioWidget
-                             (selset !! readNat (env (state2cgiRef s))))
+          (checkLegalInput radioWidget)
+          (\wparams -> conditionOf wparams)
+          (\env s -> selset !! readNat (env (state2cgiRef s)))
  where
   radioWidget render v =
     let ref free
         idx = maybe 0 id (elemIndex v selset)
         numhitems = zip [0..] (map showelem selset)
-        showItem (i,s) = table [[[(if i==idx then radio_main else radio_other)
+        showItem (i,s) = table [[[(if i==idx then radioMain else radioOther)
                                         ref (show i)],s]]
      in (render (map showItem numhitems),
          cgiRef2state ref)
@@ -415,108 +413,234 @@ wRadioSelect showelem selset =
 --- @return a WUI specification for a Boolean selection widget
 wRadioBool :: [HtmlExp] -> [HtmlExp] -> WuiSpec Bool
 wRadioBool truehexps falsehexps =
-  wRadioSelect (\b->if b then truehexps else falsehexps) [True,False]
-
+  wRadioSelect (\b -> if b then truehexps else falsehexps) [True,False]
 
 --- WUI combinator for pairs.
 wPair :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
-wPair (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
-  WuiSpec (renderTuple, tupleErrorRendering, const True) showc readc
+-- This simple implementation does not work in KiCS2 due to non-determinism
+-- cause by functional patterns:
+-- wPair = wCons2 (\a b -> (a,b))
+wPair (WuiSpec wparamsa showa cora reada) (WuiSpec wparamsb showb corb readb) =
+  WuiSpec (renderTuple, tupleErrorRendering, const True) showc corc readc
  where
-  showc wparams (va,vb) =
-    let (hea,rta) = showa rendera va
-        (heb,rtb) = showb renderb vb
-     in ((renderOf wparams) [hea,heb], states2state [rta,rtb])
+  showc (render,erender,legal) nocheck (va,vb) =
+    let (hea,rta) = showa wparamsa nocheck va
+        (heb,rtb) = showb wparamsb nocheck vb
+     in ((if nocheck || legal (va,vb)
+            then render
+            else erender render) [hea,heb], states2state [rta,rtb])
 
-  readc (render,erender,legal) env s =
+  corc wparamsc (va,vb) = conditionOf wparamsc (va,vb) &&
+                          cora wparamsa va && corb wparamsb vb
+
+  readc env s =
     let [ra,rb] = state2states s
-        (rav,(hea,rta)) = reada rendera env ra
-        (rbv,(heb,rtb)) = readb renderb env rb
-        errhexps = [hea,heb]
-        errstate = states2state [rta,rtb]
-     in if rav==Nothing || rbv==Nothing
-        then (Nothing, (render errhexps, errstate))
-        else let value = (fromJust rav, fromJust rbv) in
-             if legal value
-             then (Just value, (render errhexps, errstate))
-             else (Nothing,    (erender render errhexps, errstate))
-             --renderError render errmsg errhexps, errstate))
+    in (reada env ra, readb env rb)
+
+--- WUI combinator for constructors of arity 2.
+--- The first argument is the binary constructor.
+--- The second and third arguments are the WUI specifications
+--- for the argument types.
+wCons2 :: (Eq a, Eq b) => (a->b->c) -> WuiSpec a -> WuiSpec b -> WuiSpec c
+wCons2 cons (WuiSpec wparamsa showa cora reada)
+            (WuiSpec wparamsb showb corb readb) =
+  WuiSpec (renderTuple, tupleErrorRendering, const True) showc corc readc
+ where
+  showc (render,erender,legal) nocheck vc | cons va vb =:<= vc =
+    let (hea,rta) = showa wparamsa nocheck va
+        (heb,rtb) = showb wparamsb nocheck vb
+     in ((if nocheck || legal (cons va vb)
+            then render
+            else erender render) [hea,heb], states2state [rta,rtb])
+   where va,vb free
+
+  corc wparamsc vc | cons va vb =:<= vc =
+    conditionOf wparamsc (cons va vb) &&
+    cora wparamsa va && corb wparamsb vb            where va,vb free
+
+  readc env s =
+    let [ra,rb] = state2states s
+    in cons (reada env ra) (readb env rb)
 
 
 --- WUI combinator for triples.
-wTriple :: (Eq a, Eq b, Eq c) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec (a,b,c)
-wTriple (WuiSpec rendera showa reada) (WuiSpec renderb showb readb)
-            (WuiSpec renderc showc readc) =
-  WuiSpec (renderTuple, tupleErrorRendering, const True) showd readd
+wTriple :: (Eq a, Eq b, Eq c) => WuiSpec a -> WuiSpec b -> WuiSpec c
+                              -> WuiSpec (a,b,c)
+-- This simple implementation does not work in KiCS2 due to non-determinism
+-- cause by functional patterns:
+--wTriple = wCons3 (\a b c -> (a,b,c))
+wTriple (WuiSpec wparamsa showa cora reada)
+        (WuiSpec wparamsb showb corb readb)
+        (WuiSpec wparamsc showc corc readc) =
+  WuiSpec (renderTuple, tupleErrorRendering, const True) showd cord readd
  where
-  showd wparams (va,vb,vc) =
-    let (hea,rta) = showa rendera va
-        (heb,rtb) = showb renderb vb
-        (hec,rtc) = showc renderc vc
-     in ((renderOf wparams) [hea,heb,hec], states2state [rta,rtb,rtc])
+  showd (render,erender,legal) nocheck (va,vb,vc) =
+    let (hea,rta) = showa wparamsa nocheck va
+        (heb,rtb) = showb wparamsb nocheck vb
+        (hec,rtc) = showc wparamsc nocheck vc
+     in ((if nocheck || legal (va,vb,vc)
+            then render
+            else erender render) [hea,heb,hec],
+         states2state [rta,rtb,rtc])
 
-  readd (render,erender,legal) env s =
+  cord wparamsd (va,vb,vc) = conditionOf wparamsd (va,vb,vc) &&
+                             cora wparamsa va &&
+                             corb wparamsb vb &&
+                             corc wparamsc vc
+
+  readd env s =
     let [ra,rb,rc] = state2states s
-        (rav,(hea,rta)) = reada rendera env ra
-        (rbv,(heb,rtb)) = readb renderb env rb
-        (rcv,(hec,rtc)) = readc renderc env rc
-        errhexps = [hea,heb,hec]
-        errstate = states2state [rta,rtb,rtc]
-     in if rav==Nothing || rbv==Nothing || rcv==Nothing
-        then (Nothing, (render errhexps, errstate))
-        else let value = (fromJust rav, fromJust rbv, fromJust rcv) in
-             if legal value
-             then (Just value, (render errhexps, errstate))
-             else (Nothing,    (erender render errhexps, errstate))
-                  --renderError render errmsg errhexps, errstate))
+    in (reada env ra, readb env rb, readc env rc)
+
+--- WUI combinator for constructors of arity 3.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons3 :: (Eq a, Eq b, Eq c) => (a -> b -> c -> d) -> WuiSpec a -> WuiSpec b
+                             -> WuiSpec c -> WuiSpec d
+wCons3 cons (WuiSpec wparamsa showa cora reada)
+            (WuiSpec wparamsb showb corb readb)
+            (WuiSpec wparamsc showc corc readc) =
+  WuiSpec (renderTuple, tupleErrorRendering, const True) showd cord readd
+ where
+  showd (render,erender,legal) nocheck vd | cons va vb vc =:<= vd =
+    let (hea,rta) = showa wparamsa nocheck va
+        (heb,rtb) = showb wparamsb nocheck vb
+        (hec,rtc) = showc wparamsc nocheck vc
+     in ((if nocheck || legal (cons va vb vc)
+            then render
+            else erender render) [hea,heb,hec],
+         states2state [rta,rtb,rtc])
+   where va,vb,vc free
+
+  cord wparamsd vd | cons va vb vc =:<= vd =
+    conditionOf wparamsd (cons va vb vc) &&
+    cora wparamsa va &&
+    corb wparamsb vb &&
+    corc wparamsc vc            where va,vb,vc free
+
+  readd env s =
+    let [ra,rb,rc] = state2states s
+    in cons (reada env ra) (readb env rb) (readc env rc)
 
 
 --- WUI combinator for tuples of arity 4.
-w4Tuple :: (Eq a, Eq b, Eq c, Eq d) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec (a,b,c,d)
+w4Tuple :: (Eq a, Eq b, Eq c, Eq d) => WuiSpec a -> WuiSpec b -> WuiSpec c
+                                    -> WuiSpec d -> WuiSpec (a,b,c,d)
+--w4Tuple = wCons4 (\a b c d -> (a,b,c,d)) -- does not work for KiCS2
 w4Tuple wa wb wc wd =
   transformWSpec (\ ((a,b),(c,d)) -> (a,b,c,d),
                   \ (a,b,c,d) -> ((a,b),(c,d)))
+                 (wJoinTuple (wPair wa wb) (wPair wc wd))
+
+
+--- WUI combinator for constructors of arity 4.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons4  :: (Eq a, Eq b, Eq c, Eq d) => (a->b->c->d->e) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
+wCons4 cons wa wb wc wd =
+  adaptWSpec (\ ((a,b),(c,d)) -> cons a b c d)
              (wJoinTuple (wPair wa wb) (wPair wc wd))
+
 
 --- WUI combinator for tuples of arity 5.
 w5Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec (a,b,c,d,e)
+--w5Tuple = wCons5 (\a b c d e -> (a,b,c,d,e)) -- does not work for KiCS2
 w5Tuple wa wb wc wd we =
   transformWSpec (\ ((a,b,c),(d,e)) -> (a,b,c,d,e),
                   \ (a,b,c,d,e) -> ((a,b,c),(d,e)))
              (wJoinTuple (wTriple wa wb wc) (wPair wd we))
 
+--- WUI combinator for constructors of arity 5.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons5  :: (Eq a, Eq b, Eq c, Eq d, Eq e) => (a->b->c->d->e->f) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f
+wCons5 cons wa wb wc wd we =
+  adaptWSpec (\ ((a,b,c),(d,e)) -> cons a b c d e)
+             (wJoinTuple (wTriple wa wb wc) (wPair wd we))
+
+
 --- WUI combinator for tuples of arity 6.
 w6Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec (a,b,c,d,e,f)
+--w6Tuple = wCons6 (\a b c d e f -> (a,b,c,d,e,f))
 w6Tuple wa wb wc wd we wf =
   transformWSpec (\ ((a,b,c),(d,e,f)) -> (a,b,c,d,e,f),
                   \ (a,b,c,d,e,f) -> ((a,b,c),(d,e,f)))
              (wJoinTuple (wTriple wa wb wc) (wTriple wd we wf))
 
+--- WUI combinator for constructors of arity 6.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons6  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => (a->b->c->d->e->f->g) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g
+wCons6 cons wa wb wc wd we wf =
+  adaptWSpec (\ ((a,b,c),(d,e,f)) -> cons a b c d e f)
+             (wJoinTuple (wTriple wa wb wc) (wTriple wd we wf))
+
+
 --- WUI combinator for tuples of arity 7.
 w7Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec (a,b,c,d,e,f,g)
+--w7Tuple = wCons7 (\a b c d e f g -> (a,b,c,d,e,f,g))
 w7Tuple wa wb wc wd we wf wg =
   transformWSpec (\ ((a,b,c,d),(e,f,g)) -> (a,b,c,d,e,f,g),
                   \ (a,b,c,d,e,f,g) -> ((a,b,c,d),(e,f,g)))
              (wJoinTuple (w4Tuple wa wb wc wd) (wTriple we wf wg))
 
+--- WUI combinator for constructors of arity 7.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons7  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => (a->b->c->d->e->f->g->h) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h
+wCons7 cons wa wb wc wd we wf wg =
+  adaptWSpec (\ ((a,b,c,d),(e,f,g)) -> cons a b c d e f g)
+             (wJoinTuple (w4Tuple wa wb wc wd) (wTriple we wf wg))
+
+
 --- WUI combinator for tuples of arity 8.
 w8Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec (a,b,c,d,e,f,g,h)
+--w8Tuple = wCons8 (\a b c d e f g h -> (a,b,c,d,e,f,g,h))
 w8Tuple wa wb wc wd we wf wg wh =
   transformWSpec (\ ((a,b,c,d),(e,f,g,h)) -> (a,b,c,d,e,f,g,h),
                   \ (a,b,c,d,e,f,g,h) -> ((a,b,c,d),(e,f,g,h)))
              (wJoinTuple (w4Tuple wa wb wc wd) (w4Tuple we wf wg wh))
 
+--- WUI combinator for constructors of arity 8.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons8  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => (a->b->c->d->e->f->g->h->i) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i
+wCons8 cons wa wb wc wd we wf wg wh =
+  adaptWSpec (\ ((a,b,c,d),(e,f,g,h)) -> cons a b c d e f g h)
+             (wJoinTuple (w4Tuple wa wb wc wd) (w4Tuple we wf wg wh))
+
+
 --- WUI combinator for tuples of arity 9.
 w9Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i ->
            WuiSpec (a,b,c,d,e,f,g,h,i)
+--w9Tuple = wCons9 (\a b c d e f g h i -> (a,b,c,d,e,f,g,h,i))
 w9Tuple wa wb wc wd we wf wg wh wi =
   transformWSpec (\ ((a,b,c,d,e),(f,g,h,i)) -> (a,b,c,d,e,f,g,h,i),
                   \ (a,b,c,d,e,f,g,h,i) -> ((a,b,c,d,e),(f,g,h,i)))
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w4Tuple wf wg wh wi))
+
+--- WUI combinator for constructors of arity 9.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons9  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => (a->b->c->d->e->f->g->h->i->j) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j
+wCons9 cons wa wb wc wd we wf wg wh wi =
+  adaptWSpec (\ ((a,b,c,d,e),(f,g,h,i)) -> cons a b c d e f g h i)
              (wJoinTuple (w5Tuple wa wb wc wd we) (w4Tuple wf wg wh wi))
 
 
@@ -524,18 +648,44 @@ w9Tuple wa wb wc wd we wf wg wh wi =
 w10Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec (a,b,c,d,e,f,g,h,i,j)
+--w10Tuple = wCons10 (\a b c d e f g h i j -> (a,b,c,d,e,f,g,h,i,j))
 w10Tuple wa wb wc wd we wf wg wh wi wj =
   transformWSpec (\ ((a,b,c,d,e),(f,g,h,i,j)) -> (a,b,c,d,e,f,g,h,i,j),
                   \ (a,b,c,d,e,f,g,h,i,j) -> ((a,b,c,d,e),(f,g,h,i,j)))
              (wJoinTuple (w5Tuple wa wb wc wd we) (w5Tuple wf wg wh wi wj))
 
+--- WUI combinator for constructors of arity 10.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons10  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => (a->b->c->d->e->f->g->h->i->j->k) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k
+wCons10 cons wa wb wc wd we wf wg wh wi wj =
+  adaptWSpec (\ ((a,b,c,d,e),(f,g,h,i,j)) -> cons a b c d e f g h i j)
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w5Tuple wf wg wh wi wj))
+
+
 --- WUI combinator for tuples of arity 11.
 w11Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k)
+--w11Tuple = wCons11 (\a b c d e f g h i j k -> (a,b,c,d,e,f,g,h,i,j,k))
 w11Tuple wa wb wc wd we wf wg wh wi wj wk =
   transformWSpec (\ ((a,b,c,d,e),(f,g,h,i,j,k)) -> (a,b,c,d,e,f,g,h,i,j,k),
                   \ (a,b,c,d,e,f,g,h,i,j,k) -> ((a,b,c,d,e),(f,g,h,i,j,k)))
+             (wJoinTuple (w5Tuple wa wb wc wd we) (w6Tuple wf wg wh wi wj wk))
+
+--- WUI combinator for constructors of arity 11.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons11 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) =>
+           (a->b->c->d->e->f->g->h->i->j->k->l) ->
+           WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+           WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+           WuiSpec k -> WuiSpec l
+wCons11 cons wa wb wc wd we wf wg wh wi wj wk =
+  adaptWSpec (\ ((a,b,c,d,e),(f,g,h,i,j,k)) -> cons a b c d e f g h i j k)
              (wJoinTuple (w5Tuple wa wb wc wd we) (w6Tuple wf wg wh wi wj wk))
 
 
@@ -545,10 +695,81 @@ w12Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec l -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k,l)
+--w12Tuple = wCons12 (\a b c d e f g h i j k l -> (a,b,c,d,e,f,g,h,i,j,k,l))
 w12Tuple wa wb wc wd we wf wg wh wi wj wk wl =
   transformWSpec (\ ((a,b,c,d,e,f),(g,h,i,j,k,l)) -> (a,b,c,d,e,f,g,h,i,j,k,l),
                   \ (a,b,c,d,e,f,g,h,i,j,k,l) -> ((a,b,c,d,e,f),(g,h,i,j,k,l)))
        (wJoinTuple (w6Tuple wa wb wc wd we wf) (w6Tuple wg wh wi wj wk wl))
+
+--- WUI combinator for constructors of arity 12.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons12  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
+             Eq i, Eq j, Eq k, Eq l) =>
+            (a->b->c->d->e->f->g->h->i->j->k->l->m) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k -> WuiSpec l -> WuiSpec m
+wCons12 cons wa wb wc wd we wf wg wh wi wj wk wl =
+  adaptWSpec (\ ((a,b,c,d,e,f),(g,h,i,j,k,l)) -> cons a b c d e f g h i j k l)
+       (wJoinTuple (w6Tuple wa wb wc wd we wf) (w6Tuple wg wh wi wj wk wl))
+
+--- WUI combinator for tuples of arity 13.
+w13Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
+             Eq i, Eq j, Eq k, Eq l, Eq m) =>
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k -> WuiSpec l -> WuiSpec m ->
+            WuiSpec (a,b,c,d,e,f,g,h,i,j,k,l,m)
+--w13Tuple = wCons13 (\a b c d e f g h i j k l m -> (a,b,c,d,e,f,g,h,i,j,k,l,m))
+w13Tuple wa wb wc wd we wf wg wh wi wj wk wl wm =
+  transformWSpec
+    (\ ((a,b,c,d,e,f),(g,h,i,j,k,l,m)) -> (a,b,c,d,e,f,g,h,i,j,k,l,m),
+     \ (a,b,c,d,e,f,g,h,i,j,k,l,m) -> ((a,b,c,d,e,f),(g,h,i,j,k,l,m)))
+    (wJoinTuple (w6Tuple wa wb wc wd we wf) (w7Tuple wg wh wi wj wk wl wm))
+
+--- WUI combinator for constructors of arity 13.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons13  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
+             Eq i, Eq j, Eq k, Eq l, Eq m) =>
+            (a->b->c->d->e->f->g->h->i->j->k->l->m->n) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k -> WuiSpec l -> WuiSpec m -> WuiSpec n
+wCons13 cons wa wb wc wd we wf wg wh wi wj wk wl wm =
+  adaptWSpec
+    (\ ((a,b,c,d,e,f),(g,h,i,j,k,l,m)) -> cons a b c d e f g h i j k l m)
+    (wJoinTuple (w6Tuple wa wb wc wd we wf) (w7Tuple wg wh wi wj wk wl wm))
+
+--- WUI combinator for tuples of arity 14.
+w14Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
+             Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) =>
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k -> WuiSpec l -> WuiSpec m -> WuiSpec n ->
+            WuiSpec (a,b,c,d,e,f,g,h,i,j,k,l,m,n)
+--w14Tuple = wCons14 (\a b c d e f g h i j k l m n -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n))
+w14Tuple wa wb wc wd we wf wg wh wi wj wk wl wm wn =
+  transformWSpec
+    (\ ((a,b,c,d,e,f,g),(h,i,j,k,l,m,n)) -> (a,b,c,d,e,f,g,h,i,j,k,l,m,n),
+     \ (a,b,c,d,e,f,g,h,i,j,k,l,m,n) -> ((a,b,c,d,e,f,g),(h,i,j,k,l,m,n)))
+    (wJoinTuple (w7Tuple wa wb wc wd we wf wg) (w7Tuple wh wi wj wk wl wm wn))
+
+--- WUI combinator for constructors of arity 14.
+--- The first argument is the ternary constructor.
+--- The further arguments are the WUI specifications for the argument types.
+wCons14  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
+             Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) =>
+            (a->b->c->d->e->f->g->h->i->j->k->l->m->n->o) ->
+            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
+            WuiSpec k -> WuiSpec l -> WuiSpec m -> WuiSpec n -> WuiSpec o
+wCons14 cons wa wb wc wd we wf wg wh wi wj wk wl wm wn =
+  adaptWSpec
+    (\ ((a,b,c,d,e,f,g),(h,i,j,k,l,m,n)) -> cons a b c d e f g h i j k l m n)
+    (wJoinTuple (w7Tuple wa wb wc wd we wf wg) (w7Tuple wh wi wj wk wl wm wn))
+
 
 --- WUI combinator to combine two tuples into a joint tuple.
 --- It is similar to wPair but renders both components as a single
@@ -556,51 +777,45 @@ w12Tuple wa wb wc wd we wf wg wh wi wj wk wl =
 --- i.e., by the rendering function <code>renderTuple</code>.
 --- This combinator is useful to define combinators for large tuples.
 wJoinTuple :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
-wJoinTuple (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
-  WuiSpec (renderTuple, tupleErrorRendering, const True) showc readc
+wJoinTuple (WuiSpec wparamsa showa cora reada)
+           (WuiSpec wparamsb showb corb readb) =
+  WuiSpec (renderTuple, tupleErrorRendering, const True) showc corc readc
  where
   render2joinrender render [h1,h2] =
     let h1s = unRenderTuple h1
         h2s = unRenderTuple h2
      in render (h1s++h2s)
 
-  showc wparams (va,vb) =
-    let (hea,rta) = showa rendera va
-        (heb,rtb) = showb renderb vb
-     in (render2joinrender (renderOf wparams) [hea,heb],states2state [rta,rtb])
+  showc (render,erender,legal) nocheck (va,vb) =
+    let (hea,rta) = showa wparamsa nocheck va
+        (heb,rtb) = showb wparamsb nocheck vb
+     in ((if nocheck || legal (va,vb)
+            then render2joinrender render
+            else erender (render2joinrender render)) [hea,heb],
+         states2state [rta,rtb])
 
-  readc (orgrender,erender,legal) env s =
+  corc wparamsc (va,vb) = conditionOf wparamsc (va,vb) &&
+                          cora wparamsa va && corb wparamsb vb
+
+  readc env s =
     let [ra,rb] = state2states s
-        (rav,(hea,rta)) = reada rendera env ra
-        (rbv,(heb,rtb)) = readb renderb env rb
-        errhexps = [hea,heb]
-        errstate = states2state [rta,rtb]
-        render = render2joinrender orgrender
-     in if rav==Nothing || rbv==Nothing
-        then (Nothing, (render errhexps, errstate))
-        else let value = (fromJust rav, fromJust rbv) in
-             if legal value
-             then (Just value, (render errhexps, errstate))
-             else (Nothing,    (erender render errhexps, errstate))
-                  --renderError render errmsg errhexps, errstate))
+    in (reada env ra, readb env rb)
 
 
 --- WUI combinator for list structures where the list elements are vertically
 --- aligned in a table.
 wList :: Eq a => WuiSpec a -> WuiSpec [a]
-wList (WuiSpec rendera showa reada) =
-  WuiSpec (renderList,renderError "Illegal list:",const True)
-          (\wparams vas ->
-              listWidget (renderOf wparams) (unzip (map (showa rendera) vas)))
-          (\ (render,erender,legal) env s ->
-            let rvs = map (reada rendera env) (state2states s)
-             in if Nothing `elem` (map fst rvs)
-                then (Nothing, listWidget render (unzip (map snd rvs)))
-                else let value = map (fromJust . fst) rvs in
-                     if legal value
-                     then (Just value, listWidget render (unzip (map snd rvs)))
-                     else (Nothing, listWidget (erender render)
-                                               (unzip (map snd rvs))) )
+wList (WuiSpec wparamsa showa cora reada) =
+  WuiSpec (renderList, renderError "Illegal list:", const True)
+          (\ (render,erender,legal) nocheck vas ->
+             listWidget
+               (if nocheck || legal vas
+                  then render
+                  else erender render)
+               (unzip (map (showa wparamsa nocheck) vas)))
+          (\wparams vas -> conditionOf wparams vas &&
+                           all (cora wparamsa) vas)
+          (\env wst -> map (reada env) (state2states wst))
  where
   listWidget render (hes,refs) = (render hes, states2state refs)
 
@@ -631,27 +846,23 @@ wMatrix wspec = wList (wHList wspec)
 --- @param wspeca - a WUI specification for the type of potential values
 --- @param def - a default value that is used if the current value is Nothing
 wMaybe :: Eq a => WuiSpec Bool -> WuiSpec a -> a -> WuiSpec (Maybe a)
-wMaybe (WuiSpec paramb showb readb) (WuiSpec parama showa reada) def =
+wMaybe (WuiSpec paramb showb _ readb) (WuiSpec parama showa cora reada) def =
  WuiSpec
    (renderTuple, tupleErrorRendering, const True)
-   (\wparams mbs ->
-     let (heb,rtb) = showb paramb (mbs/=Nothing)
-         (hea,rta) = showa parama (maybe def id mbs)
-      in ((renderOf wparams) [heb,hea], states2state [rtb,rta]))
-   (\ (render,erender,legal) env s ->
+   (\ (render,erender,legal) nocheck mbs ->
+     let (heb,rtb) = showb paramb nocheck (mbs/=Nothing)
+         (hea,rta) = showa parama nocheck (maybe def id mbs)
+      in ((if nocheck || legal mbs
+             then render
+             else erender render) [heb,hea],
+          states2state [rtb,rta]))
+   (\wparams mbv -> conditionOf wparams mbv &&
+                    maybe True (\v -> cora parama v) mbv)
+   (\env s ->
      let [rb,ra] = state2states s
-         (rbv,(heb,rtb)) = readb paramb env rb
-         (rav,(hea,rta)) = reada parama env ra
-         errhexps = [heb,hea]
-         errstate = states2state [rtb,rta]
-      in if rbv==Nothing || rav==Nothing
-         then (Nothing, (render errhexps, errstate))
-         else let value = if fromJust rbv
-                          then Just (fromJust rav)
-                          else Nothing in
-              if legal value
-              then (Just value, (render errhexps, errstate))
-              else (Nothing,    (erender render errhexps, errstate)))
+         vb = readb env rb
+         va = reada env ra
+      in if vb then Just va else Nothing)
 
 --- A WUI for Maybe values where a check box is used to select Just.
 --- The value WUI is shown after the check box.
@@ -668,7 +879,8 @@ wCheckMaybe wspec exps = wMaybe (wCheckBool exps) wspec
 --- @param hexps - a list of HTML expressions shown after the Nothing button
 --- @param hexps - a list of HTML expressions shown after the Just button
 --- @param def - a default value if the current value is Nothing
-wRadioMaybe :: Eq a => WuiSpec a -> [HtmlExp] -> [HtmlExp] -> a -> WuiSpec (Maybe a)
+wRadioMaybe :: Eq a => WuiSpec a -> [HtmlExp] -> [HtmlExp] -> a
+                    -> WuiSpec (Maybe a)
 wRadioMaybe wspec hnothing hjust = wMaybe wBool wspec
  where
   wBool = wRadioSelect (\b->if b then hjust else hnothing) [False,True]
@@ -678,73 +890,64 @@ wRadioMaybe wspec hnothing hjust = wMaybe wBool wspec
 --- Here we provide only the implementation for Either types
 --- since other types with more alternatives can be easily reduced to this case.
 wEither :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (Either a b)
-wEither (WuiSpec rendera showa reada) (WuiSpec renderb showb readb) =
- WuiSpec (head,renderError "?", const True) showEither readEither
+wEither (WuiSpec rendera showa cora reada) (WuiSpec renderb showb corb readb) =
+ WuiSpec (head, renderError "?", const True) showEither corEither readEither
  where
-  showEither wparams (Left va) =
-    let (hea,rta) = showa rendera va
-     in ((renderOf wparams) [hea], altstate2state (1,rta))
-  showEither wparams (Right vb) =
-    let (heb,rtb) = showb renderb vb
-     in ((renderOf wparams) [heb], altstate2state (2,rtb))
+  showEither (render,erender,legal) nocheck (Left va) =
+    let (hea,rta) = showa rendera nocheck va
+     in ((if nocheck || legal (Left va)
+            then render
+            else erender render) [hea], altstate2state (1,rta))
+  showEither (render,erender,legal) nocheck (Right vb) =
+    let (heb,rtb) = showb renderb nocheck vb
+     in ((if nocheck || legal (Right vb)
+            then render
+            else erender render) [heb], altstate2state (2,rtb))
 
-  readEither (render,erender,legal) env s =
+  corEither wparam vab = conditionOf wparam vab &&
+                         either (cora rendera) (corb renderb) vab
+
+  readEither env s =
     let (altindex,rab) = state2altstate s
      in case altindex of
-         1 -> let (rv,(he,rst)) = reada rendera env rab
-               in checkValue (rv==Nothing) (Left (fromJust rv))
-                             he (altstate2state(1,rst))
-         2 -> let (rv,(he,rst)) = readb renderb env rab
-               in checkValue (rv==Nothing) (Right (fromJust rv))
-                             he (altstate2state(2,rst))
-   where
-     checkValue isnothing value hexp altstate =
-        if isnothing
-        then (Nothing, (render [hexp], altstate))
-        else if legal value
-             then (Just value, (render [hexp], altstate))
-             else (Nothing,    (erender render [hexp], altstate))
+          1 -> Left  (reada env rab)
+          2 -> Right (readb env rab)
 
 --- A simple tree structure to demonstrate the construction of WUIs for tree
 --- types.
 data WTree a = WLeaf a | WNode [WTree a]
  deriving Eq
 
-
 --- WUI for tree types.
 --- The rendering specifies the rendering of inner nodes.
 --- Leaves are shown with their default rendering.
 wTree :: Eq a => WuiSpec a -> WuiSpec (WTree a)
-wTree (WuiSpec rendera showa reada) =
- WuiSpec (renderList,renderError "Illegal tree:", const True) showTree readTree
+wTree (WuiSpec wparama showa cora reada) =
+  WuiSpec (renderList, renderError "Illegal tree:", const True)
+          showTree corTree readTree
  where
-  showTree _ (WLeaf va) =
-    let (hea,rta) = showa rendera va
-     in (hea, altstate2state (1,rta))
-  showTree wparams (WNode ns) =
-    let (hes,sts) = unzip (map (showTree wparams) ns)
-     in ((renderOf wparams) hes, altstate2state (2,states2state sts))
+  showTree (render,erender,legal) nocheck (WLeaf va) =
+    let (hea,rta) = showa wparama nocheck va
+     in ((if nocheck || legal (WLeaf va)
+                             then render
+                             else erender render) [hea],
+         altstate2state (1,rta))
+  showTree wparams@(render,erender,legal) nocheck (WNode ns) =
+    let (hes,sts) = unzip (map (showTree wparams nocheck) ns)
+     in ((if nocheck || legal (WNode ns)
+            then render
+            else erender render) hes,
+         altstate2state (2,states2state sts))
 
-  readTree wpar env s =
-    let (altindex,rab) = state2altstate s
+  corTree wparam (WLeaf va)  = conditionOf wparam (WLeaf va) && cora wparama va
+  corTree wparam (WNode tvs) = conditionOf wparam (WNode tvs) &&
+                               all (corTree wparam) tvs
+
+  readTree env wst =
+    let (altindex,rab) = state2altstate wst
      in case altindex of
-         1 -> let (rv,(he,rst)) = reada rendera env rab
-               in checkValue (rv==Nothing) (WLeaf (fromJust rv)) head
-                             [he] (altstate2state(1,rst))
-         2 -> let rvs = map (readTree wpar env) (state2states rab)
-               in checkValue (Nothing `elem`  (map fst rvs))
-                             (WNode (map (fromJust . fst) rvs)) (renderOf wpar)
-                             (map (fst . snd) rvs)
-                          (altstate2state(2,states2state (map (snd . snd) rvs)))
-   where
-     checkValue isnothing value rendertree hexps altstate =
-        if isnothing
-        then (Nothing, (rendertree hexps, altstate))
-        else if conditionOf wpar value
-             then (Just value, (rendertree hexps, altstate))
-             else (Nothing,    ((errorRenderOf wpar ) rendertree hexps,
-                                altstate))
-
+         1 -> WLeaf (reada env rab)
+         2 -> WNode (map (readTree env) (state2states rab))
 
 -------------------------------------------------------------------------------
 -- Definition of standard rendering functions
@@ -777,6 +980,7 @@ unRenderTuple hexp =
     map (\ (HtmlStruct "td" _ [e]) -> e) tds
 
 -- Standard error message for tuples:
+tupleErrorRendering :: Rendering -> Rendering
 tupleErrorRendering = renderError "Illegal combination:"
 
 --- Standard rendering of tuples with a tag for each element.
@@ -825,70 +1029,133 @@ mergeRowWithSingleTableData
 
 
 -------------------------------------------------------------------------------
--- Main operations to generate HTML structures and handlers from
--- WUI specifications:
+--- The type of data actually stored in a WUI store.
+--- If the first component is `True`, the current data is not immediately
+--- checked for correctness (usually, if it is the first edit call).
+--- The second component is `Nothing` if the data is not yet set.
+type WuiStore a = (Bool, Maybe a)
 
---- Generates an HTML form from a WUI data specification,
---- an initial value and an update form.
-mainWUI :: WuiSpec a -> a -> (a -> IO HtmlForm) -> IO HtmlForm
-mainWUI wuispec val store = do
-  let (hexp,handler) = wui2html wuispec val store
-  return $ form "WUI" [hexp, breakline, wuiHandler2button "Submit" handler]
+--- Sets the initial data which are edited in a WUI form in the session store.
+setWuiStore :: Global (SessionStore (WuiStore a)) -> a -> IO ()
+setWuiStore wuistore val = putSessionData wuistore (True, Just val)
 
---- Generates HTML editors and a handler from a WUI data specification,
---- an initial value and an update form.
-wui2html :: WuiSpec a -> a -> (a -> IO HtmlForm) -> (HtmlExp,WuiHandler)
-wui2html wspec val store = wuiWithErrorForm wspec val store standardErrorForm
+--- Reads the data which are edited in a WUI form from the session store.
+getWuiStore :: Global (SessionStore (WuiStore a)) -> IO (WuiStore a)
+getWuiStore wuistore = getSessionData wuistore (True, Nothing)
 
---- A standard error form for WUIs.
-standardErrorForm :: HtmlExp -> WuiHandler -> IO HtmlForm
-standardErrorForm hexp whandler =
-  return $ standardForm "Input error"
-                        [hexp, wuiHandler2button "Submit" whandler]
+--- Sets the initial data which are edited in a parameterized WUI form
+--- in the session store.
+setParWuiStore :: Global (SessionStore (b,WuiStore a)) -> b -> a -> IO ()
+setParWuiStore wuistore par val =
+  putSessionData wuistore (par, (True, Just val))
 
+--- Reads the data which are edited in a parameterized WUI form
+--- from the session store.
+getParWuiStore :: Global (SessionStore (b,WuiStore a)) -> IO (b,WuiStore a)
+getParWuiStore wuistore = getSessionData wuistore (failed, (True, Nothing))
 
---- Puts a WUI into a HTML form containing "holes" for the WUI and the
---- handler.
-wuiInForm :: WuiSpec a -> a -> (a -> IO HtmlForm)
-             -> (HtmlExp -> WuiHandler -> IO HtmlForm) -> IO HtmlForm
-wuiInForm wspec val store userform =
-  answerForm (wuiWithErrorForm wspec val store userform)
+-- Main operations to generate HTML form definitions from WUI specifications:
+
+--- Generates an HTML form definition from a string (the qualified name
+--- of the top-level operation corresponding to this form),
+--- a session data store containing the data to be edited,
+--- a WUI specification,
+--- an action to store the updated data and returning an HTML answer,
+--- an operation to render the WUI (e.g., `wuiSimpleRenderer`), and
+--- which is used when input errors must be corrected,
+--- from the HTML WUI expression and submit handler.
+wui2FormDef :: String
+            -> Global (SessionStore (WuiStore a))
+            -> WuiSpec a
+            -> (a -> IO [HtmlExp])
+            -> (HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+            -> HtmlFormDef (WuiStore a)
+wui2FormDef formqname wuistore wuispec storepage renderwui =
+  let wuiformdef = HtmlFormDef formqname (getWuiStore wuistore)
+                               (formHtml wuiformdef)
+  in wuiformdef
  where
-  answerForm (hexp,whandler) = userform hexp whandler
+  formHtml iform sdata =
+    wui2HtmlExp wuistore wuispec storepage renderwui iform sdata
 
---- Generates HTML editors and a handler from a WUI data specification,
---- an initial value and an update form. In addition to wui2html,
---- we can provide a skeleton form used to show illegal inputs.
-wuiWithErrorForm :: WuiSpec a -> a -> (a -> IO HtmlForm)
-                    -> (HtmlExp -> WuiHandler -> IO HtmlForm)
-                    -> (HtmlExp,WuiHandler)
-wuiWithErrorForm wspec val store errorform =
-        showAndReadWUI wspec store errorform (generateWUI wspec val)
-
-generateWUI :: WuiSpec a -> a -> (HtmlExp, CgiEnv -> (Maybe a,HtmlState))
-generateWUI (WuiSpec wparams showhtml readval) val = hst2result (showhtml wparams val)
-  where
-    hst2result (htmledits,wstate) = (htmledits, \env -> readval wparams env wstate)
-
-showAndReadWUI :: WuiSpec a -> (a -> IO HtmlForm)
-                            -> (HtmlExp -> WuiHandler -> IO HtmlForm)
-                            -> (HtmlExp,CgiEnv -> (Maybe a,HtmlState))
-                            -> (HtmlExp,WuiHandler)
-showAndReadWUI wspec store errorform (htmledits,readenv) =
-  (htmledits, WHandler (htmlhandler wspec))
+--- Generates an HTML form expression from
+--- a session store containing the data to be edited,
+--- a WUI data specification,
+--- an action to store the updated data and returning an HTML answer,
+--- an operation to render the WUI (e.g., `wuiSimpleRenderer`),
+--- which is used when input errors must be corrected,
+--- an HTML form definition representing the generated form,
+--- and the actual data of the store.
+wui2HtmlExp :: Global (SessionStore (WuiStore a))
+            -> WuiSpec a
+            -> (a -> IO [HtmlExp])
+            -> (HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+            -> HtmlFormDef (WuiStore a)
+            -> WuiStore a -> [HtmlExp]
+wui2HtmlExp _ _ _ _ _ (_,Nothing) =
+  [h1 [htxt "Execution error!"],
+   htxt "Cookie not yet set, please run again or accept cookies!"]
+wui2HtmlExp wuistore (WuiSpec wparams wshow wcor wread) storepage renderwui
+            wuiformdef (fstcall,Just val) =
+  let (hexp,wst) = wshow wparams fstcall val
+  in renderwui hexp (handler wst)
  where
-  htmlhandler wui@(WuiSpec wparams _ readval) env =
-    let (mbnewval, (htmlerrform,errwstate)) = readenv env
-     in maybe (let (errhexp,errhdl) =
-                      showAndReadWUI wui
-                                     store
-                                     errorform
-                                     (htmlerrform,
-                                      \errenv -> readval wparams errenv errwstate)
-               in errorform errhexp errhdl)
-              (\newval -> seq (normalForm newval) -- to strip off unused lvars
-                              (store newval))
-              mbnewval
+  handler wst env = do
+    let newval = wread env wst
+    if (wcor wparams) newval
+      then do putSessionData wuistore (True, Nothing)
+              storepage newval
+      else do putSessionData wuistore (False, Just newval)
+              return [formExp wuiformdef]
 
+
+--- Generates an HTML form definition similarly to `wui2FormDef`
+--- but with some additional data on which the further arguments depend.
+pwui2FormDef :: String
+             -> Global (SessionStore (b, WuiStore a))
+             -> (b -> WuiSpec a)
+             -> (b -> a -> IO [HtmlExp])
+             -> (b -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+             -> HtmlFormDef (b, WuiStore a)
+pwui2FormDef formqname wuistore wuispec storepage renderwui =
+  let wuiformdef = HtmlFormDef formqname (getParWuiStore wuistore)
+                               (formHtml wuiformdef)
+  in wuiformdef
+ where
+  formHtml iform sdata =
+    pwui2HtmlExp wuistore wuispec storepage renderwui iform sdata
+
+--- Generates an HTML form expression similarly to `wui2HtmlExp`
+--- but with some additional data on which the further arguments depend.
+pwui2HtmlExp :: Global (SessionStore (b, WuiStore a))
+             -> (b -> WuiSpec a)
+             -> (b -> a -> IO [HtmlExp])
+             -> (b -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+             -> HtmlFormDef (b,WuiStore a)
+             -> (b, WuiStore a) -> [HtmlExp]
+pwui2HtmlExp _ _ _ _ _ (_,(_,Nothing)) =
+  [h1 [htxt "Execution error!"],
+   htxt "Cookie not yet set, please run again or accept cookies!"]
+pwui2HtmlExp wuistore pwuispec storepage renderwui
+            wuiformdef (par, (fstcall,Just val)) =
+  let (WuiSpec wparams wshow wcor wread) = pwuispec par
+      (hexp,wst) = wshow wparams fstcall val
+  in renderwui par hexp (handler wparams wcor wread wst)
+ where
+  handler wparams wcor wread wst env = do
+    let newval = wread env wst
+    if (wcor wparams) newval
+      then do putSessionData wuistore (par, (True, Nothing))
+              storepage par newval
+      else do putSessionData wuistore (par, (False, Just newval))
+              return [formExp wuiformdef]
+
+--- A standard rendering for WUI forms.
+--- The arguments are the HTML expression representing the WUI fields
+--- and the handler for the "submit" button.
+wuiSimpleRenderer :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp]
+wuiSimpleRenderer inputhexp storehandler =
+  [inputhexp, breakline,
+   button "Submit" (\env -> storehandler env >>= return . page "Answer")]
 
 --------------------------------------------------------------------------

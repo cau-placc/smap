@@ -6,19 +6,21 @@
 --- association with classes, e.g. for Bootstrap elements). In addition, it
 --- provides some helper functions for assigning attributes to HTML elements.
 ---
---- @author Lasse Kristopher Meyer
---- @version July 2014
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module HTML.Html5 (
-  module HTML.Base,HtmlAttr,
+  module HTML.Base, HtmlAttr,
   text,empty,
   a,article,aside,b,br,button,code,div,em,fieldset,figcaption,figure,footer,
-  form,h1,h2,h3,h4,h5,h6,header,hr,i,img,input,label,li,meta,nav,ol,option,p,
-  script,section,select,small,span,strong,text,textarea,ul,
+  {-form,-}h1,h2,h3,h4,h5,h6,header,hr,i,
+  img,input,label,li,meta,nav,ol,option,p,
+  script,section,select,selectNoRef,small,span,strong,
+  text,textArea,textAreaNoRef,ul,
   alt,autofocus,checked,classA,cols,content,disabled,href,id,lang,name,onclick,
   placeholder,rel,role,rows,src,style,tabindex,target,targetBlank,title,value,
-  buttonButton,resetButton,submitButton,selectInput,
+  buttonButton,resetButton,submitButton,formSubmitButton,selectInput,
   ariaHidden,ariaLabelledby,readonly,addId,
 
   consAttrs,consAttr,consClass,addToAttr,addToClass,setAttr,deleteAttr,
@@ -28,9 +30,10 @@ module HTML.Html5 (
 
 import Char
 import List ( findIndex )
-import HTML.Base hiding ( button, code, footer, form, h1, h2, h3, h4, h5
-                        , header, href, nav, section, strong, style, textarea )
-import qualified HTML.Base ( textarea )
+import HTML.Base hiding ( button, resetButton, code, footer {-, form-}
+                        , h1, h2, h3, h4, h5, h6
+                        , header, href, nav, section, strong, style, textArea )
+import qualified HTML.Base ( textArea, button )
 
 infixl 9 `withClass`,`withAddClass`,`withId`
 infixl 0 `addToAttr`,`addToClass`,`setAttr`,`deleteAttr`,`addId`
@@ -94,8 +97,8 @@ figure = HtmlStruct "figure"
 footer :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 footer = HtmlStruct "footer"
 
-form :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-form = HtmlStruct "form"
+--form :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
+--form = HtmlStruct "form"
 
 h1 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 h1 = HtmlStruct "h1"
@@ -159,9 +162,9 @@ section = HtmlStruct "section"
 
 select :: [HtmlAttr] -> CgiRef -> [(String,String)] -> String -> HtmlExp
 select attrs cRef selMenu initSelVal =
-  HTML.Base.selectionInitial cRef selMenu 0 `addAttrs` attrs
+  HTML.Base.selectionInitial cRef selMenu initSel `addAttrs` attrs
  where
-  initSel = maybe 0 Prelude.id (findIndex (==initSelVal) (map fst selMenu))
+  initSel = maybe 0 Prelude.id (findIndex (==initSelVal) (map snd selMenu))
 {- OLD:
 select attrs cRef selMenu initSelVal | cRef =:= CgiRef ref =
   HtmlCRef (HtmlStruct "select" ((name ref):attrs) options) cRef
@@ -170,6 +173,22 @@ select attrs cRef selMenu initSelVal | cRef =:= CgiRef ref =
     options  = map (\(n,v) -> option ((value v):(mSel v)) [text n]) selMenu
     mSel val = if val==initSelVal then [selected] else []
 -}
+
+selectNoRef :: [HtmlAttr] -> [(String,String)] -> String -> HtmlExp
+selectNoRef attrs selMenu initSelVal =
+  sI selMenu initSel `addAttrs` attrs
+ where
+  initSel = maybe 0 Prelude.id (findIndex (==initSelVal) (map snd selMenu))
+
+  sI :: [(String,String)] -> Int -> HtmlExp
+  sI sellist sel = HtmlStruct "select" [] (selOption sellist sel)
+   where
+    selOption [] _ = []
+    selOption ((n,v):nvs) i =
+      HtmlStruct "option"
+        ([("value",v)] ++ if i==0 then [("selected","selected")] else [])
+        [htxt n] : selOption nvs (i-1)
+
 
 small :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 small = HtmlStruct "small"
@@ -180,14 +199,23 @@ span = HtmlStruct "span"
 strong :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 strong = HtmlStruct "strong"
 
-textarea :: [HtmlAttr] -> CgiRef -> String -> HtmlExp
-textarea attrs cRef cont =
-  deleteAttr (deleteAttr (HTML.Base.textarea cRef (80,10) cont) "rows") "cols"
+textArea :: [HtmlAttr] -> CgiRef -> String -> HtmlExp
+textArea attrs cRef cont =
+  deleteAttr (deleteAttr (HTML.Base.textArea cRef (80,10) cont) "rows") "cols"
     `addAttrs` attrs
 {- OLD:
   HtmlCRef (HtmlStruct "textarea" ((name ref):attrs) [text cont]) cRef
   where ref free
 -}
+
+textAreaNoRef :: [HtmlAttr] -> String -> HtmlExp
+textAreaNoRef attrs cont =
+  deleteAttr (deleteAttr (tA (80,10) cont) "rows") "cols"
+    `addAttrs` attrs
+ where
+  tA (height,width) contents =
+    HtmlStruct "textarea" [("rows",show height),("cols",show width)]
+                          [htxt contents]
 
 ul :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 ul = HtmlStruct "ul"
@@ -203,8 +231,17 @@ resetButton :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
 resetButton attrs = button $ ("type","reset"):attrs
 
 submitButton :: [HtmlAttr] -> HtmlHandler -> [HtmlExp] -> HtmlExp
-submitButton attrs hdlr btnLabel = 
-  HtmlEvent (button (("type","submit"):(name "EVENT"):attrs) btnLabel) hdlr
+submitButton attrs hdlr btnLabel
+  | idOfCgiRef cref =:= ref -- instantiate cref argument
+  = HtmlEvent
+      (HtmlStruct "input" (("type","submit") : (name ref) : attrs) btnLabel)
+                  cref hdlr
+ where
+  cref,ref free
+
+formSubmitButton :: [HtmlAttr] -> String -> HtmlHandler -> HtmlExp
+formSubmitButton attrs btnLabel hdlr =
+  consAttrs attrs (HTML.Base.button btnLabel hdlr)
 
 selectInput :: [HtmlAttr] -> CgiRef -> [(String,String)] -> Int -> HtmlExp
 selectInput attrs cref sels initSel =
@@ -318,7 +355,9 @@ consAttrs nats (HtmlStruct tag ((n,v):ats) hexps)
   | n == "type" = HtmlStruct tag ((n,v):nats++ats) hexps -- skip type attribute
   | otherwise   = HtmlStruct tag (nats++(n,v):ats) hexps
 consAttrs nats (HtmlCRef hexp cref)      = HtmlCRef  (consAttrs nats hexp) cref
-consAttrs nats (HtmlEvent hexp hdlr)     = HtmlEvent (consAttrs nats hexp) hdlr
+consAttrs nats (HtmlEvent hexp cref hdlr) =
+  HtmlEvent (consAttrs nats hexp) cref hdlr
+consAttrs _    (HtmlAction act) = HtmlAction act
 
 consAttr :: (String,String) -> HtmlExp -> HtmlExp
 consAttr nat = consAttrs [nat]
@@ -334,7 +373,9 @@ addToAttr (HtmlStruct tag ats hexps) (n,v) =
         addToAttr' ((n',v'):ats') | n' == n   = (n',v'++" "++v):ats'
                                   | otherwise = (n',v'):(addToAttr' ats')
 addToAttr (HtmlCRef hexp cref)       at    = HtmlCRef  (addToAttr hexp at) cref
-addToAttr (HtmlEvent hexp hdlr)      at    = HtmlEvent (addToAttr hexp at) hdlr
+addToAttr (HtmlEvent hexp cref hdlr) at    =
+  HtmlEvent (addToAttr hexp at) cref hdlr
+addToAttr (HtmlAction act) _               = HtmlAction act
 
 addToClass :: HtmlExp -> String -> HtmlExp
 addToClass hexp cvalue = addToAttr hexp ("class",cvalue)
@@ -346,8 +387,9 @@ setAttr (HtmlStruct tag ats hexps) (n,v) =
   where setAttr' [] = [(n,v)]
         setAttr' ((n',v'):ats') | n' == n   = ((n,v):ats')
                                    | otherwise = (n',v'):(setAttr' ats') 
-setAttr (HtmlCRef hexp cref)  at = HtmlCRef  (setAttr hexp at) cref
-setAttr (HtmlEvent hexp hdlr) at = HtmlEvent (setAttr hexp at) hdlr
+setAttr (HtmlCRef hexp cref)       at = HtmlCRef  (setAttr hexp at) cref
+setAttr (HtmlEvent hexp cref hdlr) at = HtmlEvent (setAttr hexp at) cref hdlr
+setAttr (HtmlAction act)           _  = HtmlAction act
 
 deleteAttr :: HtmlExp -> String -> HtmlExp
 deleteAttr (HtmlText txt)        _  = HtmlText txt
@@ -357,7 +399,9 @@ deleteAttr (HtmlStruct tag ats hexps) n =
         deleteAttr' ((n',v):ats') | n' == n   = ats'
                                   | otherwise = (n',v):(deleteAttr' ats') 
 deleteAttr (HtmlCRef hexp cref)  at = HtmlCRef  (deleteAttr hexp at) cref
-deleteAttr (HtmlEvent hexp hdlr) at = HtmlEvent (deleteAttr hexp at) hdlr
+deleteAttr (HtmlEvent hexp cref hdlr) at =
+  HtmlEvent (deleteAttr hexp at) cref hdlr
+deleteAttr (HtmlAction act) _ = HtmlAction act
 
 
 toValidAttrValue :: String -> String

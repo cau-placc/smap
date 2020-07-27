@@ -40,13 +40,13 @@ sessionAuthNData =
 
 --- Gets the current authentication data from the session store.
 getSessionAuthNData :: IO (Maybe AuthNData)
-getSessionAuthNData = getSessionData sessionAuthNData
+getSessionAuthNData = getSessionMaybeData sessionAuthNData
 
 --- Stores new authentication data in the current session (after the user
 --- authentication).
 --- @param authNData - authentication data of the user
 signInToSession :: AuthNData -> IO ()
-signInToSession authNData = putSessionData authNData sessionAuthNData
+signInToSession authNData = putSessionData sessionAuthNData authNData
 
 --- Removes authentication data from the current session.
 signOutFromSession :: IO ()

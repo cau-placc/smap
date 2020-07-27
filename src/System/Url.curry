@@ -45,8 +45,8 @@ showUrl url = showPath url ++ showQueryString url
 showPath :: Url -> String
 showPath (path,_) =
   if null path 
-  then "" 
-  else "?"++(intercalate "/" path)
+    then ""
+    else "?" ++ intercalate "/" path
 
 --- Turns the query string component of a given URL into its string
 --- representation. Also adds the question mark at the beginning.

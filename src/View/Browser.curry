@@ -4,11 +4,12 @@
 --- information for each program.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version November 2018
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module View.Browser (
   dashboard,programList,userProgramList,userFavoritesList,programPage,tagList,
+  modifyProgramRendering, createCommentRendering,
   SearchSettings,SearchPanelData,PagerData,defaultSearchSettings
 ) where
 
@@ -220,37 +221,15 @@ tagList azdata allTags popularTags =
                              maybe False (==0) (lookup tag popularTags)
 
 --- The program page which shows all information to a given program.
---- @param progVers    - program and displayed version
---- @param makeVisible - controller that makes the program visible
---- @param addToFavs   - controller that adds the program to the favorites of
----   the currently authenticated user
---- @param remFromFavs - controller that removes the program from the favorites
----   of the currently authenticated user
---- @param modifyProg  - controller that modifies metadata of the program
---- @param deleteProg  - controller that deletes the program
---- @param createCom   - controller that creates a comment
+--- @param progVers       - program and displayed version
+--- @param modifyProgForm - a form expression to the metadata of the program
+--- @param createComForm  - a form expression to create a comment
 --- @param authzData   - the current authorization data
-programPage
-  :: (Program,Int)
-  -> (Program -> Controller)
-  -> (Program -> Controller)
-  -> (Program -> Controller)
-  -> ([String] -> Program -> Controller)
-  -> (Program -> Controller)
-  -> ((String,Program) -> Controller)
-  -> AuthZData
-  -> View
-programPage (prog,versNum)
-            makeVisible
-            addToFavs
-            remFromFavs
-            modifyProgAndTags
-            deleteProg
-            createCom
-            authzData =
+programPage :: (Program,Int) -> HtmlExp -> HtmlExp -> AuthZData -> View
+programPage (prog,versNum) modifyProgForm createComForm authzData =
   renderBrowser
     [renderOptionsPanel
-      [orangeLinkBtn (openProgramBaseUrl++key)
+      [orangeLinkBtn (openProgramBaseUrl ++ key)
         [openIcon,text " Open with SmapIE",br []
         ,span [classA "small"] [text "(latest version)"]]
       `addId` "open-button"
@@ -259,7 +238,7 @@ programPage (prog,versNum)
       ,mRemFavOption
       ,mModifyOption
       ,mDeleteOption
-      ,linkLinkBtn ("?download/"++key ++ (if versNum==0 then "" else '/':show versNum))
+      ,linkLinkBtn ("?download/" ++ key ++ '/' : show versNum)
                    [downloadIcon,text " Download source code"]
          `addAttr` ("target","_blank")
       ]
@@ -268,7 +247,7 @@ programPage (prog,versNum)
       ,h4 [classA "right"] [versCountHExp]]
       [text "Choose the version you want to view."]
       [label [] [text "Current version:"]
-      ,select [classA "form-control input-sm"] _ versMenu initVersSel
+      ,selectNoRef [classA "form-control input-sm"] versMenu initVersSel
       `addId` "version-select"
       ,label [] [text "Version message:"]
       ,div [classA "well well-sm"] [code [] [text versMsg]]]
@@ -302,7 +281,6 @@ programPage (prog,versNum)
     ,confirmDeleteDialog]
     []    
   where
-    titleRef,descrRef,tagsRef,comRef free
     -- getting program attributes
     key          = showProgramKey prog
     title        = programTitle prog
@@ -325,14 +303,6 @@ programPage (prog,versNum)
     favers       = programFavoriters prog
     faverCount   = length $ favers
     currUserName = maybe "" id $ getUsernameFromAuthZData authzData
-    makeVisibleHdlr _ = next $ makeVisible $ setProgramIsVisible True prog
-    addFavHdlr      _ = next $ addToFavs   prog
-    remFavHdlr      _ = next $ remFromFavs prog
-    modifyHdlr    env = next $ modifyProgAndTags (words (env tagsRef))
-                                $ setProgramTitle (env titleRef)
-                                   $ setProgramDescription (env descrRef) prog
-    deleteHdlr      _ = next $ deleteProg  prog
-    creatComHdlr  env = next $ createCom   (env comRef,prog)
     -- HTML expressions for program attributes
     descrHExp
       = span [classA "text-muted"] [text $ if null descr then "-" else descr]
@@ -341,29 +311,28 @@ programPage (prog,versNum)
     authorDatesHExps 
       = let mMod = if versCount==1 then empty else ltstVersDateHExp
          in [userIcon
-            ,text $ " Created by "++authorName++" on "++fstVersDate
+            ,text $ " Created by " ++ authorName ++ " on " ++ fstVersDate
             ,mMod]
     ltstVersDateHExp
       = text $ " (last modified on "++ltstVersDate++")"
-    codeLabelHExp 
-      = if versNum==versCount
+    codeLabelHExp =
+      if versNum == versCount
         then text "(Latest version):"
-        else text $ "(Version "++show versNum++" of "++show versCount++"):"
+        else text $ "(Version " ++ show versNum ++ " of " ++
+                    show versCount ++ "):"
     codeHExp
-      = textarea [classA "form-control"] _ versCode `addId` "editor"
+      = textAreaNoRef [classA "form-control"] versCode `addId` "editor"
     versCountHExp
       = let mS = if versCount>1 then "s" else ""
          in badge [text $ show versCount++" version"++mS]
     versMenu 
-      = map (\v -> 
-        let num  = show $ versionNumber v
-            date = toDayString $ versionDate v
-         in ("Version "++num++" from "++date,"?browser/"++key++"/"++num))
-        vers
-    initVersSel
-      = "?browser/"++key++"/"++(show versNum)
-    tagCountHExp
-      = badge [text $ show tagCount++" tags"]
+      = map (\v -> let num  = show $ versionNumber v
+                       date = toDayString $ versionDate v
+                   in ("Version " ++ num ++ " from " ++ date,
+                       "?browser/" ++ key ++ "/" ++ num))
+            vers
+    initVersSel = "?browser/" ++ key ++ "/" ++ show versNum
+    tagCountHExp = badge [text $ show tagCount++" tags"]
     comCountHExp
       = let mS = if comCount==1 then "" else "s"
          in a [href "#",modalToggle,targetId "comment-modal"]
@@ -399,19 +368,23 @@ programPage (prog,versNum)
         makeVisibleOption (\_ -> empty)
     (makeVisibleOption,confirmMakeVisibleDialog) = withConfirmation 1
       (linkLinkBtn "#" [visibleIcon,text " Make program visible"])
-      confirmMakeVisibleMsg makeVisibleHdlr
+      confirmMakeVisibleMsg
+      (showUrl (["browser","visible",showProgramKey prog],[]))
+
     mAddFavOption = 
       byAuthorization (browserOperation (AddToFavorites prog) authzData)
         addFavOption (\_ -> empty)
     addFavOption = 
-      linkSubmitBtn addFavHdlr 
-        [favoriteIcon,text " Add to favorites"]
+      --linkSubmitBtn "Add to favorites" addFavHdlr
+      linkLinkBtn (showUrl (["browser","addfav",showProgramKey prog],[]))
+                  [favoriteIcon, htxt " Add to favorites"]
     mRemFavOption = 
       byAuthorization (browserOperation (RemoveFromFavorites prog) authzData)
         remFavOption (\_ -> empty)
     remFavOption = 
-      linkSubmitBtn remFavHdlr 
-        [favoriteIcon,text " Remove from favorites"]
+      --linkSubmitBtn "Remove from favorites" remFavHdlr
+      linkLinkBtn (showUrl (["browser","remfav",showProgramKey prog],[]))
+                  [favoriteIcon, htxt " Remove from favorites"]
 
     -- modify button
     mModifyOption = 
@@ -427,16 +400,7 @@ programPage (prog,versNum)
         []
     mModifyForm = 
       byAuthorization (browserOperation (ModifyProgram prog) authzData)
-        [label [] [titleIcon, text " Title"]
-        ,textarea [classA "form-control",rows 1] titleRef title
-        ,label [] [descriptionIcon, text " Description"]
-        ,textarea [classA "form-control",rows 5] descrRef descr
-        ,label [] [tagsIcon, text " Tags (separated by spaces)"]
-        ,textarea [classA "form-control",rows 2] tagsRef
-                  (unwords (map tagName tags))
-        ,blueSubmitBtn modifyHdlr [text "Change!"]
-        ,buttonButton [classA "btn btn-default",modalDismiss]
-          [text "Cancel"]]
+        [modifyProgForm]
         (\err -> [p [classA "text-muted"] [text err]])
 
     mDeleteOption = 
@@ -445,18 +409,14 @@ programPage (prog,versNum)
         (\_ -> empty)
     (deleteOption,confirmDeleteDialog) = withConfirmation 2
       (linkLinkBtn "#" [deleteIcon,text " Delete this program"])
-      confirmDeleteMsg deleteHdlr
+      confirmDeleteMsg
+      (showUrl (["browser","delprog",showProgramKey prog],[]))
 
     mCommentForm =
       byAuthorization (browserOperation CreateComment authzData)
-        [label [] [text "Write a new comment"]
-        ,textarea [classA "form-control",rows 5] comRef ""
-        `addId` "comment-text-input"
-        ,blueSubmitBtn creatComHdlr [text "Submit!"] `addAttr` disabled
-        `addId` "comment-submit-button"
-        ,buttonButton [classA "btn btn-default",modalDismiss]
-          [text "Cancel"]]
+        [createComForm]
         (\err -> [p [classA "text-muted"] [text err]])
+
     codeMirrorInstance =
       "var code = CodeMirror.fromTextArea(document.getElementById('editor'), "++
       "{\n"++
@@ -475,6 +435,42 @@ programPage (prog,versNum)
     confirmMakeVisibleMsg =
       "Are you sure you want make this program available for other users? Thi"++
       "s operation currently cannot be undone."
+
+modifyProgramRendering :: Program -> ([String] -> Program -> Controller)
+                       -> [HtmlExp]
+modifyProgramRendering prog modifyProgAndTags =
+  [label [] [titleIcon, text " Title"]
+  ,textArea [classA "form-control",rows 1] titleRef title
+  ,label [] [descriptionIcon, text " Description"]
+  ,textArea [classA "form-control",rows 5] descrRef descr
+  ,label [] [tagsIcon, text " Tags (separated by spaces)"]
+  ,textArea [classA "form-control",rows 2] tagsRef
+            (unwords (map tagName tags))
+  ,blueSubmitBtn "Change!" modifyHdlr
+  ,buttonButton [classA "btn btn-default",modalDismiss]
+    [text "Cancel"]]
+ where
+  titleRef,descrRef,tagsRef free
+  title = programTitle prog
+  descr = programDescription prog
+  tags  = programTags prog
+  modifyHdlr env = next $ modifyProgAndTags (words (env tagsRef))
+                           $ setProgramTitle (env titleRef)
+                              $ setProgramDescription (env descrRef) prog
+
+createCommentRendering :: Program -> ((String,Program) -> Controller)
+                       -> [HtmlExp]
+createCommentRendering prog createCom =
+  [label [] [text "Write a new comment"]
+  ,textArea [classA "form-control",rows 5] comRef ""
+  `addId` "comment-text-input"
+  ,blueSubmitBtn "Submit!" creatComHdlr `addAttr` disabled
+  `addId` "comment-submit-button"
+  ,buttonButton [classA "btn btn-default",modalDismiss]
+    [text "Cancel"]]
+ where
+  comRef free
+  creatComHdlr  env = next $ createCom (env comRef, prog)
 
 --------------------------------------------------------------------------------
 -- Standard Browser HTML components                                           --
@@ -585,15 +581,15 @@ renderSearchPanel (langs,sortMenu,(mQ,(t,d,ts),mLang,mSort,mOrder)) baseUrl =
         `addId` "search-panel-tags-checkbox"]
         ,tagsIcon, text " Tags"]
     ,label [] [text " Filter by language"]
-    ,select [classA "form-control input-sm"] _ langMenu lang
+    ,selectNoRef [classA "form-control input-sm"] langMenu lang
     `addId` "search-panel-lang-select"
     ,hr []
     ,span [classA "text-muted"] [sortIcon,text " Sorting options"]
     ,label [] [text "Sort by"]
-    ,select [classA "form-control input-sm"] _ sortMenu sort
+    ,selectNoRef [classA "form-control input-sm"] sortMenu sort
     `addId` "search-panel-sort-select"
     ,label [] [text "Order results"]
-    ,select [classA "form-control input-sm"] _ orderMenu order
+    ,selectNoRef [classA "form-control input-sm"] orderMenu order
     `addId` "search-panel-order-select"
     ,div [classA "btn-group"]
       [greyLinkBtn baseUrl [searchIcon,text " Search"]

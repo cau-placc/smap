@@ -2,15 +2,19 @@
 --- This module provides the handling of all functionality related to user
 --- authentication (sign in, sign up, assignment of new passwords).
 ---
---- @author Lasse Kristopher Meyer
---- @version November 2018
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module Controller.AuthN (
-  authNController
+  authNController,
+  signUpForm, signInForm, forgotPasswordForm, changePasswordForm
 ) where
 
+import Global
 import Mail
+import Maybe     ( isNothing )
+import WUI
 
 import System.Alerts
 import System.Authentication
@@ -18,11 +22,14 @@ import System.Authorization
 import System.AuthorizedOperations
 import View.AuthN
 import System.Controllers
-import Controller.Static(showLandingPage)
+import Controller.Static  ( showLandingPage )
 import View.Static
+import System.Session
 import System.Url
 import Model.User
 import Controller.Users
+import System.SmapHtml
+import System.Views
 
 --------------------------------------------------------------------------------
 -- Delegation controller                                                      --
@@ -52,21 +59,43 @@ showBlankSignUpPage = showSignUpPage ("","","","")
 -- created.
 showSignUpPage :: (String,String,String,String) -> Controller
 showSignUpPage initCreationData =
-  checkAuthorization (authNOperation SignUp) $ \_ ->
-  return $ signUpPage initCreationData $ 
-                      doCreateUser 
-                        (showSignUpPage       ,Just nameNotUniqueErrAlert )
-                        (showSignUpPage       ,Just emailNotUniqueErrAlert)
-                        (showSignInPage . Just,Just signUpSucceededAlert  )
-  where
-    nameNotUniqueErrAlert = 
-      ErrorAlert $ "This user name is already taken. Please try another one."
-    emailNotUniqueErrAlert = 
-      ErrorAlert $ "This email address already exists. Please try another one."
-    signUpSucceededAlert = 
-      SuccessAlert $ "You can now sign in to Smap with your user name and "++
-      "password!"
+  checkAuthorization (authNOperation SignUp) $ \_ -> do
+    setWuiStore signUpStore initCreationData
+    return [formExp signUpForm]
 
+--- A WUI form to sign up.
+--- The default values for the fields are stored in 'signUpStore'.
+signUpForm :: HtmlFormDef (WuiStore (String,String,String,String))
+signUpForm =
+  wui2FormDef "Controller.AuthN.signUpForm" signUpStore
+   wSignUpData
+   (\newuserdata ->
+     checkAuthorization (authNOperation SignUp) $ \_ ->
+       doCreateUser (showSignUpPage       , Just nameNotUniqueErrAlert )
+                    (showSignUpPage       , Just emailNotUniqueErrAlert)
+                    (showSignInPage . Just, Just signUpSucceededAlert  )
+                    newuserdata)
+   (renderWui
+      [h3 [] [signUpIcon, text " Sign up for Smap"]]
+      []
+      "Sign up"
+      []
+      [text "Already have an account? "
+      ,a [href "?signin"] [text "Sign in &raquo;"]])
+
+ where
+  nameNotUniqueErrAlert = 
+    ErrorAlert $ "This user name is already taken. Please try another one."
+  emailNotUniqueErrAlert = 
+    ErrorAlert $ "This email address already exists. Please try another one."
+  signUpSucceededAlert = 
+    SuccessAlert $
+      "You can now sign in to Smap with your user name and password!"
+
+--- The data stored for executing the "signUp" WUI form.
+signUpStore :: Global (SessionStore (WuiStore (String,String,String,String)))
+signUpStore = global emptySessionStore (Persistent (inDataDir "signUpStore"))
+                      
 --------------------------------------------------------------------------------
 -- Signing in                                                                 --
 --------------------------------------------------------------------------------
@@ -77,9 +106,26 @@ showBlankSignInPage = showSignInPage Nothing
 -- Returns a controller that displays the sign in page where users can
 -- authenticate themselves.
 showSignInPage :: Maybe User -> Controller
-showSignInPage mUser =
-  checkAuthorization (authNOperation SignIn) $ \_ ->
-  return $ signInPage (maybe Nothing (Just . userName) mUser) doSignIn
+showSignInPage muser = 
+  checkAuthorization (authNOperation SignIn) $ \_ -> do
+    let initUsername  = maybe "" userName muser
+    setParWuiStore signInStore (isNothing muser) (initUsername,"")
+    return [formExp signInForm]
+
+--- A WUI form to sign in.
+--- The default values for the fields are stored in 'signInStore'.
+signInForm :: HtmlFormDef (Bool, WuiStore (String,String))
+signInForm =
+  pwui2FormDef "Controller.AuthN.signInForm" signInStore
+   (\focusUsername -> wSignInData focusUsername)
+   (\_ logindata ->
+     checkAuthorization (authNOperation SignIn) $ \_ ->
+       doSignIn logindata)
+   (\_ -> signInRenderer)
+
+--- The data stored for executing the "signIn" WUI form.
+signInStore :: Global (SessionStore (Bool, WuiStore (String,String)))
+signInStore = global emptySessionStore (Persistent (inDataDir "signInStore"))
 
 -- Performs the sign in process and stores the authentication data in the
 -- current session (see module `Authentication`). An error alert is displayed if
@@ -91,7 +137,7 @@ doSignIn (userName,password) =
   do userHash <- getUserHash userName password
      mUser    <- getUserByNameWith userName (Nothing,Just userHash)
      maybe (do setAlert signInFailedAlert
-               return $ signInPage (Just userName) doSignIn)
+               showSignInPage mUser)
            (\user -> do signInToSession (userName,userIsAdmin user)
                         return $ landingPage)
            mUser
@@ -117,8 +163,25 @@ doSignOut =
 -- associated with their account.
 showForgotPasswordPage :: Controller
 showForgotPasswordPage = 
-  checkAuthorization (authNOperation SendNewPassword) $ \_ ->
-  return $ forgotPasswordPage doSendNewPassword
+  checkAuthorization (authNOperation SendNewPassword) $ \_ -> do
+    setWuiStore forgotPWStore ""
+    return [formExp forgotPasswordForm]
+
+--- A WUI form to request a new password.
+--- The default values for the fields are stored in 'forgotPWStore'.
+forgotPasswordForm :: HtmlFormDef (WuiStore String)
+forgotPasswordForm =
+  wui2FormDef "Controller.AuthN.forgotPasswordForm" forgotPWStore
+   wNewPasswordData
+   (\emailaddr ->
+     checkAuthorization (authNOperation SendNewPassword) $ \_ ->
+       doSendNewPassword emailaddr)
+   forgotPasswordRenderer
+
+--- The data stored for executing the "forgotPassword" WUI form.
+forgotPWStore :: Global (SessionStore (WuiStore String))
+forgotPWStore =
+  global emptySessionStore (Persistent (inDataDir "forgotPWStore"))
 
 -- Takes an email address and sends a new password if the email address is 
 -- associated to an actual user account. Otherwise, an error alert is displayed.
@@ -128,7 +191,7 @@ doSendNewPassword userEmail =
   checkAuthorization (authNOperation SendNewPassword) $ \_ ->
   do mUser <- getUserByEmail userEmail
      maybe (do setAlert emailNotFoundErrAlert
-               return $ forgotPasswordPage doSendNewPassword)
+               showForgotPasswordPage)
            (\user -> do newPassword <- randomPassword 6
                         userHash    <- getUserHash (userName user) newPassword
                         tResult     <- updateUser $ setUserHash user userHash
@@ -137,8 +200,7 @@ doSendNewPassword userEmail =
                                                   subject
                                                   (content user newPassword)
                                          setAlert sendingInProcessAlert
-                                         return $ signInPage Nothing 
-                                                              doSignIn)
+                                         showSignInPage Nothing)
                                (showTransactionErrorPage updateUserFailedErr)
                                tResult)
            mUser
@@ -163,15 +225,37 @@ doSendNewPassword userEmail =
 --------------------------------------------------------------------------------
 
 --- Returns a controller to change the user's password.
+showChangePasswdForm :: Controller
 showChangePasswdForm =
   checkAuthorization (authNOperation ChangePasswd) $ \authzData ->
   do mUser <- maybe (return Nothing) getUserByName
                     (getUsernameFromAuthZData authzData)
      maybe (showStdErrorPage userNotFoundErr)
-           (\user -> return $ changePasswordForm user doChangePasswdCtrl)
+           (\user -> do setParWuiStore changePWStore user ("","","")
+                        return [formExp changePasswordForm])
            mUser
  where
-  doChangePasswdCtrl (oldpass,newpass,newpass2) user = do
+  userNotFoundErr = "Unexpectedly, no user was found with the signed-in user."
+
+--- A WUI form to change the user's password.
+--- The default values for the fields are stored in 'changePWStore'.
+changePasswordForm :: HtmlFormDef (User, WuiStore (String,String,String))
+changePasswordForm =
+  pwui2FormDef "Controller.AuthN.changePasswordForm" changePWStore
+   (\_ -> wChgPasswords)
+   (\user passworddata ->
+     checkAuthorization (authNOperation ChangePasswd) $ \_ ->
+       doChangePasswdCtrl passworddata user)
+   (\_ -> renderWui [h3 [] [passwordIcon, text " Change my password"]]
+                    [] "Change!" [] [])
+
+--- The data stored for executing the "changePassword" WUI form.
+changePWStore :: Global (SessionStore (User, WuiStore (String,String,String)))
+changePWStore =
+  global emptySessionStore (Persistent (inDataDir "changePWStore"))
+                      
+doChangePasswdCtrl :: (String,String,String) -> User -> Controller
+doChangePasswdCtrl (oldpass,newpass,newpass2) user = do
     oldpasshash <- getUserHash (userName user) oldpass
     if oldpasshash /= userHash user
      then setAlert wrongOldPasswordAlert >> showLandingPage
@@ -188,7 +272,7 @@ showChangePasswdForm =
           (const showLandingPage, Just emailNotUniqueErrAlert)
           (const showLandingPage, Just changePasswdSucceededAlert)
           (setUserHash user newpasshash)
-
+ where
   nameNotUniqueErrAlert = 
     ErrorAlert "This user name is already taken. Please try another one."
   emailNotUniqueErrAlert = 
@@ -202,6 +286,5 @@ showChangePasswdForm =
     ErrorAlert "The new passwords are different. Nothing changed!"
   passwordTooShortAlert =
     ErrorAlert "Please choose a new password with at least 6 characters."
-  userNotFoundErr = "Unexpectedly, no user was found with the signed-in user."
 
 --------------------------------------------------------------------------------

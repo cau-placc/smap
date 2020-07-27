@@ -8,18 +8,21 @@
 --- authenticated user.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2014
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module Controller.Browser (
-  browserController
+  browserController, modifyProgramForm, createCommentForm
 ) where
 
 import Char
 import Float
+import Global
 import List
 import Sort
 import Time
+
+import HTML.Base ( HtmlFormDef, formDefWithID, formExp )
 
 import Model.Comment
 import Model.ExecEnv
@@ -37,6 +40,7 @@ import System.Authorization
 import System.AuthorizedOperations
 import System.Controllers
 import System.Models
+import System.Session
 import System.Url
 import System.Views
 
@@ -50,25 +54,26 @@ import View.Browser
 --- this module depending on the URL path.
 --- @param path - the current URL
 browserController :: Url -> Controller
-browserController url@(path,_) = 
-  case path of
-    ["browser"]                 -> showDashboard
-    ["browser","programs"]      -> showProgramList       url
-    ["browser","myprograms"]    -> showUserProgramList   url
-    ["browser","myfavorites"]   -> showUserFavoritesList url
-    ["browser","tags"]          -> showTagList
-    ["browser","deltag",tagkey] -> validateKeyAndApply 
-                                     (readTagKey tagkey)
-                                     url doDeleteTag
-    ["browser",progKey]         -> validateKeyAndApply 
-                                     (readProgramKeyAndVersionNumber 
-                                       (progKey,"0"))
-                                     url showProgramPage
-    ["browser",progKey,versNum] -> validateKeyAndApply
-                                     (readProgramKeyAndVersionNumber 
-                                       (progKey,versNum))
-                                     url showProgramPage
-    _                           -> showInvalidUrlErrorPage url
+browserController url@(path,_) = case path of
+  ["browser"]                 -> showDashboard
+  ["browser","programs"]      -> showProgramList       url
+  ["browser","myprograms"]    -> showUserProgramList   url
+  ["browser","myfavorites"]   -> showUserFavoritesList url
+  ["browser","tags"]          -> showTagList
+  ["browser","deltag",tagkey] -> validateKeyAndApply (readTagKey tagkey)
+                                   url doDeleteTag
+  ["browser","visible",progKey] -> browseOn progKey "0" visibleProgramController
+  ["browser","modprog",progKey] -> browseOn progKey "0" modifyProgramController
+  ["browser","delprog",progKey] -> browseOn progKey "0" deleteProgramController
+  ["browser","newcomm",progKey] -> browseOn progKey "0" createCommentController
+  ["browser","addfav" ,progKey] -> browseOn progKey "0" addFavProgramController
+  ["browser","remfav" ,progKey] -> browseOn progKey "0" remFavProgramController
+  ["browser",progKey]           -> browseOn progKey "0" showProgramPage
+  ["browser",progKey,versNum]   -> browseOn progKey versNum showProgramPage
+  _                             -> showInvalidUrlErrorPage url
+ where
+  browseOn progKey versNum =
+    validateKeyAndApply (readProgramKeyAndVersionNumber (progKey,versNum)) url
 
 --------------------------------------------------------------------------------
 -- Browser controllers                                                        --
@@ -200,7 +205,113 @@ doDeleteTag tagkey =
     tagUndeletableErr =
       "The tag cannot be deleted since it is now used in some program."
 
+--- Controller that makes the program visible.
+visibleProgramController :: (ProgramKey,Int) -> Controller
+visibleProgramController (progKey,versNum) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ MakeVisible prog) $ \_ ->
+           doUpdateProgramMetadata
+             (const $ showProgramPage (progKey,versNum),
+              Just programVisibleSucceededAlert)
+             (setProgramIsVisible True prog))
+ where
+  programVisibleSucceededAlert =
+    SuccessAlert $ "This program is now available for everyone on Smap."
 
+--- Controller that modifiers the metadata of the program.
+modifyProgramController :: (ProgramKey,Int) -> Controller
+modifyProgramController (progKey,versNum) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ ModifyProgram prog) $ \_ -> do
+             putSessionData browserStore (prog,versNum)
+             return [formExp modifyProgramForm])
+
+--- The data stored for executing the "modifyProgram" form.
+browserStore :: Global (SessionStore (Program,Int))
+browserStore = global emptySessionStore (Persistent (inDataDir "browserStore"))
+
+modifyProgramForm :: HtmlFormDef (Program,Int)
+modifyProgramForm =
+  formDefWithID "Controller.Browser.modifyProgramForm" readData formHTML
+ where
+  readData = getSessionData browserStore failed
+
+  formHTML (prog,versNum) = modifyProgramRendering prog modifyProgAndTags
+   where
+    modifyProgAndTags = doUpdateProgramMetadataWithTags
+          (const $ showProgramPage (programKey prog, versNum),
+           Just programEditingSucceededAlert)
+    programEditingSucceededAlert =
+      SuccessAlert $ "The program metadata has been modified."
+
+--- Controller that modifiers the metadata of the program.
+createCommentController :: (ProgramKey,Int) -> Controller
+createCommentController (progKey,versNum) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ CreateComment) $ \_ -> do
+             putSessionData browserStore (prog,versNum)
+             return [formExp createCommentForm])
+
+createCommentForm :: HtmlFormDef (Program,Int)
+createCommentForm =
+  formDefWithID "Controller.Browser.createCommentForm" readData formHTML
+ where
+  readData = getSessionData browserStore failed
+
+  formHTML (prog,versNum) = createCommentRendering prog doCreateComCtrl
+   where
+    doCreateComCtrl
+      = doCreateCommentForCurrentUser 
+        (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
+        (const $ showProgramPage (programKey prog, versNum),Nothing)
+
+--- Controller that deletes the program.
+deleteProgramController :: (ProgramKey,Int) -> Controller
+deleteProgramController (progKey,_) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ DeleteProgram prog) $ \_ ->
+           doDeleteProgram
+             (showDashboard, Just $ programDeletionSucceededAlert prog) prog)
+ where
+  programDeletionSucceededAlert prog =
+    SuccessAlert $ "\"<code>"++programTitle prog++"</code>\" was "++
+      "successfully deleted from Smap and is no longer available."
+
+programNotFoundErr :: String
+programNotFoundErr =
+  "We couldn't find the program you were looking for. It might have been "++
+  "deleted by its author or probably never existed."
+
+--- Controller that adds the program to the favorites of
+--- the currently authenticated user.
+addFavProgramController :: (ProgramKey,Int) -> Controller
+addFavProgramController (progKey,versNum) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ AddToFavorites prog) $ \_ ->
+           doAddFavoritingForCurrentUser
+             (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
+             (showProgramPage (progKey,versNum)                   ,Nothing)
+             prog)
+
+--- Controller that removes the program from the favorites
+--- of the currently authenticated user.
+remFavProgramController :: (ProgramKey,Int) -> Controller
+remFavProgramController (progKey,versNum) = getProgramByKey progKey >>=
+  maybe (showStdErrorPage programNotFoundErr)
+        (\prog ->
+           checkAuthorization (browserOperation $ RemoveFromFavorites prog) $
+           \_ ->
+           doRemoveFavoritingForCurrentUser
+             (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
+             (showProgramPage (progKey,versNum)                   ,Nothing)
+             prog)
+
+------------------------------------------------------------------------------
 -- Shows a specific version of an existing program in the Browser. In contrary
 -- to the information shown in the IE, this view also includes the description
 -- and information on associated entities like versions, tags and favoritings.
@@ -210,67 +321,32 @@ doDeleteTag tagkey =
 -- number is not valid.
 -- @param ctrlData - program key and version number
 showProgramPage :: (ProgramKey,Int) -> Controller
-showProgramPage (progKey,versNum) =
-  do mProg <- getProgramByKey progKey
-     maybe (showStdErrorPage programNotFoundErr) (\prog ->
-           checkAuthorization (browserOperation $ ShowProgram prog) $ \azData ->
-           do mValidVersNum <- getValidVersionNumber
-                                 (length $ programVersions prog)
-              maybe (showStdErrorPage $ versionNotFoundErr prog)
-                    (\validVersNum -> return $ programPage
-                                               (prog,validVersNum)
-                                               doMakeVisibleCtrl
-                                               doAddFavCtrl
-                                               doRemFavCtrl
-                                               doModifyProgCtrl
-                                               (doDeleteProgCtrl prog)
-                                               doCreateComCtrl
-                                               azData)
-                    mValidVersNum)
-           mProg
-  where
-    getValidVersionNumber versCount
-      = if versNum == 0 -- always points to latest version
-        then return $ Just versCount
-        else if versNum < 0 || versNum > versCount
-             then return Nothing
-             else return $ Just versNum
-    goBack
-      = showProgramPage (progKey,versNum)
-    doMakeVisibleCtrl
-      = doUpdateProgramMetadata
-        (const $ goBack,Just programVisibleSucceededAlert)
-    doAddFavCtrl
-      = doAddFavoritingForCurrentUser
-        (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
-        (goBack                                              ,Nothing)
-    doRemFavCtrl 
-      = doRemoveFavoritingForCurrentUser
-        (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
-        (goBack                                              ,Nothing)
-    doModifyProgCtrl
-      = doUpdateProgramMetadataWithTags
-          (const $ goBack,Just programEditingSucceededAlert)
-    doDeleteProgCtrl prog
-      = doDeleteProgram
-        (showDashboard,Just $ programDeletionSucceededAlert prog)
-    doCreateComCtrl
-      = doCreateCommentForCurrentUser 
-        (const $ showAccessDeniedErrorPage programNotFoundErr,Nothing)
-        (const $ goBack                                      ,Nothing)
-    programNotFoundErr =
-      "We couldn't find the program you were looking for. It might have been "++
-      "deleted by its author or probably never existed."
-    versionNotFoundErr prog =
-      "We couldn't find the version you requested (see <a href=?browser/"++
-      showProgramKey prog++">latest version</a> instead)."
-    programVisibleSucceededAlert =
-      SuccessAlert $ "This program is now available for everyone on Smap."
-    programEditingSucceededAlert =
-      SuccessAlert $ "The program metadata has been modified."
-    programDeletionSucceededAlert prog =
-      SuccessAlert $ "\"<code>"++programTitle prog++"</code>\" was "++
-       "successfully deleted from Smap and is no longer available."
+showProgramPage (progKey,versNum) = do
+  mProg <- getProgramByKey progKey
+  maybe
+    (showStdErrorPage programNotFoundErr)
+    (\prog ->
+        checkAuthorization (browserOperation $ ShowProgram prog) $ \azData -> do
+          putSessionData browserStore (prog,versNum)
+          maybe (showStdErrorPage $ versionNotFoundErr prog)
+                (\validVersNum -> return $ programPage
+                                             (prog,validVersNum)
+                                             (formExp modifyProgramForm)
+                                             (formExp createCommentForm)
+                                             azData)
+                (validVersionNumber (length $ programVersions prog)))
+    mProg
+ where
+  validVersionNumber versCount =
+    if versNum == 0 -- always points to latest version
+      then Just versCount
+      else if versNum < 0 || versNum > versCount
+             then Nothing
+             else Just versNum
+
+  versionNotFoundErr prog =
+    "We couldn't find the version you requested (see <a href=?browser/" ++
+    showProgramKey prog ++ ">latest version</a> instead)."
 
 --------------------------------------------------------------------------------
 -- Handling query string search settings                                      --

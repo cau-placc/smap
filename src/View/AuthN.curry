@@ -2,12 +2,13 @@
 --- This module provides all views for authentication related pages (WUI forms
 --- for signing in, signing up and password requests).
 ---
---- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @author Lasse Kristopher Meyer, Michael Hanus
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module View.AuthN (
-  signUpPage,signInPage,forgotPasswordPage,changePasswordForm
+  signInRenderer, forgotPasswordRenderer,
+  wSignUpData, wSignInData, wNewPasswordData, wChgPasswords
 ) where
 
 import Prelude hiding (div)
@@ -21,112 +22,44 @@ import System.Views
 -- Exported views                                                             --
 --------------------------------------------------------------------------------
 
---- Supplies a WUI form to sign up for Smap by creating a new user with an
---- username, an email address and a password.
---- @param signUp - the controller which handles the user creation
-signUpPage
-  :: (String,String,String,String)
-  -> ((String,String,String,String) -> Controller)
-  -> View
-signUpPage initCreationData signUp = 
-  renderWuiForm wSignUpData initCreationData signUp
-    [h3 [] [signUpIcon,text " Sign up for Smap"]]
-    []
-    [text "Sign up"]
-    []
-    [text "Already have an account? "
-    ,a [href "?signin"] [text "Sign in &raquo;"]]
-
---- Supplies a WUI form to sign in to Smap with a user name and a password. If
+--- A rendering to sign in to Smap with a user name and a password. If
 --- given, an initial user name is set.
---- @param mUsername - an possibly given initial user name 
---- @param signIn    - the controller which handles the sign in process
-signInPage :: Maybe String -> ((String,String) -> Controller) -> View
-signInPage mUsername signIn = wuiFrame hExp wHdlr
-  where 
-    initUsername  = maybe "" id mUsername
-    focusUsername = maybe True (\_ -> False) mUsername
-    (hExp,wHdlr)  = wuiWithErrorFormToHtml (wSignInData focusUsername)
-                                           (initUsername,"") 
-                                           signIn
-                                           (wuiFrameToForm wuiFrame)
-    wuiFrame hExp' wHdlr' =
-      [(container `withId` "sign-in-page")
-        [row
-          [col [Xs 4,XsOffset 4]
-            [panelDefault
-              [panelBody
-                [pageHeader
-                  [h3 [] [signInIcon,text " Sign in to Smap"]]
-                  ,hExp'
-                  ,hr []
-                  ,blueWuiBtn wHdlr' [text "Sign in"]
-                  ,a [href "?forgot"] [text "Forgot password?"]]
-              ,panelFooter
-                [text "New to Smap? "
-                ,a [href "?signup"] [text "Sign up &raquo;"]]]]]]]
+signInRenderer :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp]
+signInRenderer hexp hdlr =
+  [(container `withId` "sign-in-page")
+    [row
+      [col [Xs 4,XsOffset 4]
+        [panelDefault
+          [panelBody
+            [pageHeader
+              [h3 [] [signInIcon,text " Sign in to Smap"]]
+              ,hexp
+              ,hr []
+              ,blueSubmitBtn "Sign in" (\env -> hdlr env >>= getPage)
+              ,a [href "?forgot"] [text "Forgot password?"]]
+          ,panelFooter
+            [text "New to Smap? "
+            ,a [href "?signup"] [text "Sign up &raquo;"]]]]]]]
 
---- Supplies a WUI form to send a new password to an user with a given email
+--- A rendering to send a new password to an user with a given email
 --- address (if this email address is associated to an user account).
---- @param sendNewPassword - the controller which sends the new password
-forgotPasswordPage :: (String -> Controller) -> View
-forgotPasswordPage senNewPassword = wuiFrame hExp wHdlr
-  where 
-    (hExp,wHdlr) = wuiWithErrorFormToHtml wNewPasswordData
-                                          ""
-                                          senNewPassword
-                                          (wuiFrameToForm wuiFrame)
-    wuiFrame hExp' wHdlr' =
-      [(container `withId` "forgot-password-page")
-        [row
-          [col [Xs 4,XsOffset 4]
-            [panelDefault
-              [panelBody
-                [pageHeader
-                  [h3 [] [passwordIcon,text " Forgot your password?"]]
-                  ,hExp'
-                  ,hr []
-                  ,blueWuiBtn wHdlr' [text "Submit"],greyCancelBtn]
-              ,panelFooter
-                [text "Remember your password? "
-                ,a [href "?signin"] [text "Sign in &raquo;"]]]]]]]
-
---- Supplies a WUI form to change the password of a user.
-changePasswordForm'
-  :: User
-  -> ((String,String,String) -> User -> Controller)
-  -> View
-changePasswordForm' user updateuser =
- [panelWith 6
-   [text "Change my password"]
-   [label [] [passwordIcon, text "Old password:"], br []
-   ,password oldref, br []
-   ,label [] [passwordIcon, text "New password (at least six characters):"]
-   ,br []
-   ,password newref, br []
-   ,label [] [passwordIcon, text "New password (type again):"], br []
-   ,password new2ref, br []]
-   [blueSubmitBtn chgpasswdHdlr [text "Change!"]]]
- where
-  oldref,newref,new2ref free
-
-  chgpasswdHdlr env =
-    next $ updateuser (env oldref, env newref, env new2ref) user
-
-changePasswordForm
-  :: User
-  -> ((String,String,String) -> User -> Controller)
-  -> View
-changePasswordForm user updateuser =
-  renderWuiForm wChgPasswords ("","","") chgpasswdHdlr
-    [h3 [] [passwordIcon,text " Change my password"]]
-    []
-    [text "Change!"]
-    []
-    []
- where
-  chgpasswdHdlr passwds = updateuser passwds user
-
+forgotPasswordRenderer :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp]
+forgotPasswordRenderer hexp hdlr =
+  [(container `withId` "forgot-password-page")
+    [row
+      [col [Xs 4,XsOffset 4]
+        [panelDefault
+          [panelBody
+            [pageHeader
+              [h3 [] [passwordIcon,text " Forgot your password?"]]
+              ,hexp
+              ,hr []
+              ,blueSubmitBtn "Submit" (\env -> hdlr env >>= getPage)
+              ,greyCancelBtn
+            ]
+          ,panelFooter
+            [text "Remember your password? "
+            ,a [href "?signin"] [text "Sign in &raquo;"]]]]]]]
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --
@@ -159,27 +92,43 @@ wSignUpData = wSmap4Tuple
     emailErr =
       "Please choose a valid email address."
 
+isAtLeast6CharactersLong :: [a] -> Bool
 isAtLeast6CharactersLong = (6<=) . length
 
+wSignUpDataErrorRendering :: String -> (a -> HtmlExp) -> a -> HtmlExp
 wSignUpDataErrorRendering err render hExps =
   render hExps `addToClass` "has-error with-error"
                `addAttrs`   [tooltipToggle,title err]
 
-passwd1Help = "The password is required for the authentication process. Choose a "++
-              "password that is at least 6 characters long."
-passwd2Help = "Repeat your password to make sure that you didn't made a typing error."
+passwd1Help :: String
+passwd1Help =
+  "The password is required for the authentication process. Choose a "++
+  "password that is at least 6 characters long."
+
+passwd2Help :: String
+passwd2Help =
+  "Repeat your password to make sure that you didn't made a typing error."
+
+passwd1Err :: String
 passwd1Err  = "Please choose a password with at least 6 characters."
+
+passwd2Err :: String
 passwd2Err  = "Please repeat your password."
+
+passwordMatchErr :: String
 passwordMatchErr = "Passwords do not match. Please try again."
 
 -- The WUI specification for changing the password.
 wChgPasswords :: WuiSpec (String,String,String)
 wChgPasswords = wSmapTriple
-  (wPassword "Old password:"                           False passwdOHelp passwdOErr
+  (wPassword "Old password:"
+             False passwdOHelp passwdOErr
     `withCondition` isRequired)
-  (wPassword "New password (at least six characters):" False passwd1Help passwd1Err
+  (wPassword "New password (at least six characters):"
+             False passwd1Help passwd1Err
     `withCondition` isAtLeast6CharactersLong)
-  (wPassword "New password (type again):"              False passwd2Help passwd2Err
+  (wPassword "New password (type again):"
+             False passwd2Help passwd2Err
     `withCondition` isRequired)
    `withErrorRendering` wSignUpDataErrorRendering passwordMatchErr
    `withCondition` passwordsDoMatch

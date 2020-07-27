@@ -3,7 +3,7 @@
 --- the basic layout, WUI forms and views.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version November 2018
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.SmapHtml (
@@ -16,7 +16,7 @@ module System.SmapHtml (
   smTextInput,
   greyLinkBtn,blueLinkBtn,smBlueLinkBtn,smGreenLinkBtn,xsDefaultLinkBtn,
   greenLinkBtn,orangeLinkBtn,linkLinkBtn,
-  blueSubmitBtn,orangeSubmitBtn,linkSubmitBtn,greyCancelBtn,
+  blueSubmitBtn,greenSubmitBtn,orangeSubmitBtn,linkSubmitBtn,greyCancelBtn,
   aboutIcon,addIcon,browserIcon,codeIcon,commentIcon,createdIcon,dashboardIcon,
   deleteIcon,descriptionIcon,downloadIcon,uploadIcon,
   executionIcon,execErrorIcon,
@@ -44,19 +44,19 @@ import System.Url
 --------------------------------------------------------------------------------
 
 --- The viewport meta tag (http://getbootstrap.com/css/#overview-mobile).
-viewportMetaTag :: FormParam
-viewportMetaTag = HeadInclude $
+viewportMetaTag :: PageParam
+viewportMetaTag = PageHeadInclude $
   meta [name "viewport",content "width=device-width, initial-scale=1.0"]
 
 --- The favicon.
-favicon :: FormParam
-favicon = HeadInclude $
+favicon :: PageParam
+favicon = PageHeadInclude $
   HtmlStruct "link" [rel "shortcut icon",href "favicon.ico"] []
 
 --- JavaScript files to be included in the head (especially CodeMirror modes).
 --- @param langNames - the names of all languages in the database
-jsHeadIncludes :: [String] -> [FormParam]
-jsHeadIncludes langNames = map (\file -> FormJScript $ "js/"++file++".js") $
+jsHeadIncludes :: [String] -> [PageParam]
+jsHeadIncludes langNames = map (\file -> PageJScript $ "js/"++file++".js") $
   ["codemirror/codemirror"
   ,"codemirror/addons/active-line"
   ,"codemirror/addons/closebrackets"
@@ -64,8 +64,8 @@ jsHeadIncludes langNames = map (\file -> FormJScript $ "js/"++file++".js") $
   ++map (\langName -> "codemirror/modes/"++map toLower langName) langNames
 
 --- CSS files to be included in the head.
-cssIncludes :: [FormParam]
-cssIncludes = map (\file -> FormCSS $ "css/"++file++".css")
+cssIncludes :: [PageParam]
+cssIncludes = map (\file -> PageCSS $ "css/"++file++".css")
   ["bootstrap/bootstrap.min"
   ,"bootstrap/bootstrap-theme.min"
   ,"codemirror/codemirror"
@@ -219,7 +219,7 @@ stickyFooter =
   (div [] `withId` "sticky-footer")
     [container
       [p [classA "text-muted"]
-        [text "&copy; 2014, Lasse Kristopher Meyer &bull; "
+        [text "&copy; 2014-2020, Lasse Kristopher Meyer, Michael Hanus &bull; "
         ,a [href "?about"] [text " About"]]]]
 
 -- A panel with a width (in columns between 2 and 12), title, body, and footer.
@@ -353,22 +353,28 @@ linkLinkBtn url = a [href url,classA "btn btn-link"]
 -- Submit buttons
 
 --- A submit button rendered as a blue button.
---- @param hdlr  - the HTML handler
---- @param label - label HTML expressions
-blueSubmitBtn :: HtmlHandler -> [HtmlExp] -> HtmlExp
-blueSubmitBtn = submitButton [classA "btn btn-primary"]
+--- @param label - the button label
+--- @param hdlr - the handler
+blueSubmitBtn :: String -> HtmlHandler -> HtmlExp
+blueSubmitBtn = formSubmitButton [classA "btn btn-primary"]
+
+--- A submit button rendered as a blue button.
+--- @param label - the button label
+--- @param hdlr - the handler
+greenSubmitBtn :: String -> HtmlHandler -> HtmlExp
+greenSubmitBtn = formSubmitButton [classA "btn btn-success"]
 
 --- A submit button rendered as a orange button.
 --- @param hdlr  - the HTML handler
 --- @param label - label HTML expressions
-orangeSubmitBtn :: HtmlHandler -> [HtmlExp] -> HtmlExp
-orangeSubmitBtn = submitButton [classA "btn btn-warning"]
+orangeSubmitBtn :: String -> HtmlHandler -> HtmlExp
+orangeSubmitBtn = formSubmitButton [classA "btn btn-warning"]
 
 --- A submit button rendered as a link button.
 --- @param hdlr  - the HTML handler
 --- @param label - label HTML expressions
-linkSubmitBtn :: HtmlHandler -> [HtmlExp] -> HtmlExp
-linkSubmitBtn = submitButton [classA "btn btn-link"]
+linkSubmitBtn :: String -> HtmlHandler -> HtmlExp
+linkSubmitBtn = formSubmitButton [classA "btn btn-link"]
 
 -- Standard buttons
 

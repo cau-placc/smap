@@ -37,5 +37,5 @@ languages, Smap currently supports the following languages:
 </ul>
 <p>
 If you are are interested in the support for other languages,
-please contact the Smap administrator.
+please contact the Smap maintainer.
 </p>
