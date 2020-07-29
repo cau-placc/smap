@@ -146,9 +146,6 @@ showSmapIE mProg execEnv mExecRes initCode initSystemKey =
     return [ -- for styling purposes (to increase container to 100%)
             input [("type","hidden"),value "smap-ie"],
             formExp smapIEForm]
-    --return $ smapIE mProg execEnv mExecRes initCode initSystemKey
-    --                doExecuteProgram tryShowProgramCreationForm
-    --                tryShowVersionCreationForm authzData
 
 -- The state of the SmapIE containing:
 -- - the program that will be opened (if given)

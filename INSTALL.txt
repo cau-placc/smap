@@ -1,11 +1,23 @@
-Installation of smap at
+Installation of Smap at
 =======================
 
-http://www-ps.informatik.uni-kiel.de/smap/
+http://smap.informatik.uni-kiel.de/
+--------------------------------------
+
+Installation directory: /var/www/smap
+
+
+Old installation:
+-----------------
+
+http://www-ps.informatik.uni-kiel.de/smap/ (forwarded to actual installation)
 
 The old implementation based on html1 is still available at
 
 http://www-ps.informatik.uni-kiel.de/smap/smap1
+
+(only for testing purposes, without actual data)
+
 
 - Installation directory on giscours (alias www-ps):
   /srv/sites/informatik.uni-kiel.de/www-ps/htdocs/smap

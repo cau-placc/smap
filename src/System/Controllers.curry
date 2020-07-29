@@ -181,30 +181,29 @@ nextFor controller arg =
 --- sticky footer).
 --- @param view - the view returned by the last active controller
 getPage :: [HtmlExp] -> IO HtmlPage
-getPage view = 
-  do cookie <- sessionCookie
-     body   <- addLayoutToView
-     langs  <- getAllLanguages
-     return $ HtmlPage "Smap"
-                ([viewportMetaTag, cookie, favicon]
-                ++(jsHeadIncludes $ map languageName langs)
-                ++cssIncludes)
-                (body++jsBodyIncludes)
-  where
-    addLayoutToView =
-      do url        <- getUrl
-         langs      <- getAllLanguages
-         mAuthNData <- getSessionAuthNData
-         mAlert     <- getAlert
-         return $ 
-           [wrap styleAttrs $
-             [renderNavbar url langs mAuthNData]
-           ++[maybe empty renderAlert mAlert]
-           ++view]++
-           [stickyFooter]
-    styleAttrs = case view of -- adds styles for specific pages
-      HtmlStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
-        [style "height: 100%;"]
-      _ -> []
+getPage view = do
+  body   <- addLayoutToView
+  langs  <- getAllLanguages
+  withSessionCookieInfo $ HtmlPage "Smap"
+    ([viewportMetaTag, favicon] ++
+     (jsHeadIncludes $ map languageName langs) ++
+     cssIncludes)
+    (body ++ jsBodyIncludes)
+ where
+  addLayoutToView =
+    do url        <- getUrl
+       langs      <- getAllLanguages
+       mAuthNData <- getSessionAuthNData
+       mAlert     <- getAlert
+       return $ 
+         [wrap styleAttrs $
+           [renderNavbar url langs mAuthNData] ++
+           [maybe empty renderAlert mAlert] ++
+           view] ++
+         [stickyFooter]
+  styleAttrs = case view of -- adds styles for specific pages
+    HtmlStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
+      [style "height: 100%;"]
+    _ -> []
 
 --------------------------------------------------------------------------------
