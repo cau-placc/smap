@@ -25,7 +25,7 @@ main = runServiceAsCGI executeWithGHC
 
 --- Paths to required binaries.
 runghc :: String
-runghc   = "/opt/ghc/8.4.3/bin/runghc"
+runghc   = "/opt/ghc/bin/runghc"
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
@@ -51,7 +51,7 @@ timeLimit = "5"
 executeWithGHC :: String -> String -> IO String
 executeWithGHC urlparam inputprog = do
   pid <- getPID
-  let execDir  = "tmpGHCEXEC_"++show pid
+  let execDir  = "tmpGHCEXEC_" ++ show pid
       prog = if null inputprog && not (null urlparam)
                then urlencoded2string urlparam
                else inputprog
@@ -59,8 +59,8 @@ executeWithGHC urlparam inputprog = do
       fileName = maybe "Prog" id modName ++ ".hs"
       moduleHeader = maybe "module Prog where\n\n" (const "") modName
       mainProg = let mname = maybe "Prog" id modName
-                  in "import qualified "++mname++
-                     "\n\nmain = print "++mname++".main\n"
+                  in "import qualified " ++ mname ++ 
+                     "\n\nmain = print " ++ mname ++ ".main\n"
   currDir <- getCurrentDirectory
   setEnviron "HOME" currDir -- since GHC requires HOME for getAppUserDataDirectory
   createDirectoryIfMissing True execDir
@@ -73,7 +73,7 @@ executeWithGHC urlparam inputprog = do
                          [timeLimit,runghc,"Main.hs"]
                          ""
   setCurrentDirectory currDir
-  system $ "/bin/rm -r "++execDir
+  system $ "/bin/rm -r " ++ execDir
   return $ parseResult result
 
 
@@ -82,11 +82,11 @@ executeWithGHC urlparam inputprog = do
 --- @param result - exit status, stdin content and stderr content
 parseResult :: (Int,String,String) -> String
 parseResult (exit,out,err)
-  | exit == 0   = show exit++"\n"++out -- ++err
-  | exit == 1   = "1\n"++out++err
-  | exit == 124 = "124\nTIME OUT (after "++timeLimit++" seconds)!"
-  | otherwise   = show exit++"\n"++
-                  "ERROR (exit code: "++show exit++")\n"++out++err
+  | exit == 0   = show exit ++ "\n" ++ out -- ++ err
+  | exit == 1   = "1\n" ++ out ++ err
+  | exit == 124 = "124\nTIME OUT (after " ++ timeLimit ++ " seconds)!"
+  | otherwise   = show exit ++ "\n" ++
+                  "ERROR (exit code: " ++ show exit ++ ")\n" ++ out ++ err
 
 --- Finds the module name from a Haskell program if present.
 --- @param prog - the Curry program

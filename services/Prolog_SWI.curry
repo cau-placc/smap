@@ -51,7 +51,7 @@ timeLimit = "5"
 executeWithSWI :: String -> String -> IO String
 executeWithSWI urlparam inputprog = do
   pid <- getPID
-  let execDir  = "tmpSWIEXEC_"++show pid
+  let execDir  = "tmpSWIEXEC_" ++ show pid
       filename = "test.pl"
       prog = if null inputprog && not (null urlparam)
                then urlencoded2string urlparam
@@ -61,10 +61,10 @@ executeWithSWI urlparam inputprog = do
   setCurrentDirectory execDir
   writeFile filename prog
   result <- evalCmd timeout
-                    ([timeLimit,swi]++swiParams)
-                    ("compile('../safeload'). safe_exec('"++filename++"').")
+                    ([timeLimit,swi] ++ swiParams)
+                    ("compile('../safeload'). safe_exec('" ++ filename ++ "').")
   setCurrentDirectory currDir
-  system $ "/bin/rm -r "++execDir
+  system $ "/bin/rm -r " ++ execDir
   return $ parseResult result
 
 
@@ -73,9 +73,9 @@ executeWithSWI urlparam inputprog = do
 --- @param result - exit status, stdin content and stderr content
 parseResult :: (Int,String,String) -> String
 parseResult (exit,out,err)
-  | exit == 0   = show exit++"\n"++out -- ++err
-  | exit == 124 = "124\nTIME OUT (after "++timeLimit++" seconds)!"
-  | otherwise   = show exit++"\n"++
-                  "ERROR (exit code: "++show exit++")\n"++out++err
+  | exit == 0   = show exit ++ "\n" ++ out -- ++ err
+  | exit == 124 = "124\nTIME OUT (after " ++ timeLimit ++ " seconds)!"
+  | otherwise   = show exit ++ "\n" ++
+                  "ERROR (exit code: " ++ show exit ++ ")\n" ++ out ++ err
 
 --------------------------------------------------------------------------------
