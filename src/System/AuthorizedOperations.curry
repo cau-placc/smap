@@ -7,7 +7,7 @@
 --- elements on views.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2014
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.AuthorizedOperations (
@@ -250,7 +250,7 @@ authNOperation accessType authzData =
 --- is one of the following.
 --- @cons CreateLanguage - creates a new language entity 
 --- @cons CreateSystem   - creates a new system entity
-data AdminAccessType = CreateLanguage | CreateSystem
+data AdminAccessType = CreateLanguage | CreateSystem | EditUser
 
 --- Checks the authorization of administrational operations.
 --- @param authzData - the current authorization data

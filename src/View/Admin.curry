@@ -8,7 +8,7 @@
 
 module View.Admin (
   languageCreationRendering, systemCreationRendering, editSystemRendering,
-  listSystemView,
+  listSystemView, listUserView,
   wLanguage, wSystem, wSystemType
 ) where
 
@@ -82,6 +82,34 @@ listSystemView systems =
     systemToListView :: System -> [[HtmlExp]]
     systemToListView system =
       [[text (systemName system)],[text (systemExecUrl system)]]
+
+--- Supplies a list view for a given list of User entities.
+listUserView :: [User] -> [HtmlExp]
+listUserView users =
+  [panelWith 10
+     [text  "Users in Smap"]
+     [spTable ([[[b [] [text "Name"]],[b [] [text "Email"]]
+                ,[b [] [text "Is admin?"]]]] ++
+               map listUser (sortBy leqUser users))] []]
+  where
+    listUser :: User -> [[HtmlExp]]
+    listUser user =
+         userToListView user ++ []
+           --[[smBlueLinkBtn ("?users/edit/" ++ showUserKey user)
+           --         [modifiedIcon, htxt " edit"]]
+           --,[smBlueLinkBtn ("?users/delete/" ++ showUserKey user)
+           --         [deleteIcon, htxt " delete"]]
+           --]
+
+    userToListView :: User -> [[HtmlExp]]
+    userToListView user =
+      [[text (userName user)]
+      ,[text (userEmail user)]
+      ,[text (if userIsAdmin user then "X" else " ")]]
+
+--- Compares two User entities. This order is used in the list view.
+leqUser :: User -> User -> Bool
+leqUser x1 x2 = userName x1 <= userName x2
 
 --------------------------------------------------------------------------------
 -- WUI components                                                             --

@@ -49,6 +49,7 @@ adminController url@(path,_) = case path of
   ["systems","edit",syskey]    -> sysControllerOn syskey editSystemController
   ["systems","delete",syskey]  -> sysControllerOn syskey deleteSystemController
   ["systems","destroy",syskey] -> sysControllerOn syskey destroySystemController
+  ["users","list"]             -> listUserController
   _                            -> showInvalidUrlErrorPage url
  where
   sysControllerOn syskey =
@@ -204,4 +205,12 @@ getLangImplLanguage :: System -> Transaction Language
 getLangImplLanguage sLanguage =
   getLanguage (systemLanguageLangImplKey sLanguage)
 
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+--- Lists all User entities.
+listUserController :: Controller
+listUserController =
+  checkAuthorization (adminOperation EditUser) $ \_ -> do
+    users <- runQ queryAllUsers
+    return $ listUserView users
+
+------------------------------------------------------------------------------

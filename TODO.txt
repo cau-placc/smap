@@ -1,4 +1,4 @@
 Some things to be done for Smap:
 
 - Admin can
-  - see/edit users
+  - edit users

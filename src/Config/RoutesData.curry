@@ -55,6 +55,7 @@ getRoutes = return
   ,(Exact "passwd"   ,AuthNController  )
   ,(Exact "languages",AdminController  )
   ,(Exact "systems"  ,AdminController  )
+  ,(Exact "users"    ,AdminController  )
   ,(Exact "new"      ,SmapIEController )
   ,(Exact "upload"   ,SmapIEController )
   ,(Always           ,SmapIEController )]

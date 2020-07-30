@@ -198,7 +198,10 @@ renderNavbar url langNames mAuthNData =
           [addIcon,text " Add system"]]
       ,li []
         [a [href "?systems/list"] 
-          [modifiedIcon,text " Edit systems"]]]
+          [modifiedIcon,text " Edit systems"]]
+      ,li []
+        [a [href "?users/list"] 
+          [browserIcon,text " Show users"]]]
     mAdmin b = if b then " admin" else ""
     navbarSearchTooltip =
       "Search all programs on Smap that contain the given keyword in either t"++
