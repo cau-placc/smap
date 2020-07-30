@@ -87,8 +87,9 @@ listSystemView systems =
 listUserView :: [User] -> [HtmlExp]
 listUserView users =
   [panelWith 10
-     [text  "Users in Smap"]
-     [spTable ([[[b [] [text "Name"]],[b [] [text "Email"]]
+     [text $ "Users in Smap (total: " ++ show (length users) ++ ")"]
+     [spTable ([[[b [] [text "Name"]]
+                ,[b [] [text "Email"]]
                 ,[b [] [text "Is admin?"]]]] ++
                map listUser (sortBy leqUser users))] []]
   where
