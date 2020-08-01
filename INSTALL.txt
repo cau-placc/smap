@@ -6,6 +6,14 @@ http://smap.informatik.uni-kiel.de/
 
 Installation directory: /var/www/smap
 
+Install new version:
+--------------------
+
+- Login at lascombes and set SYSTEM to kics2 in Makefile
+- > make deploy
+- Login at smap.informatik.uni-kiel.de:
+  > sudo cp ~mh/public_html/smap/smap.cgi.bin /var/www/smap
+
 
 Old installation:
 -----------------
