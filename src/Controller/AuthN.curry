@@ -14,6 +14,7 @@ module Controller.AuthN (
 import Global
 import Maybe     ( isNothing )
 
+import HTML.Session
 import Mail      ( sendMail )
 import WUI
 
@@ -26,7 +27,6 @@ import View.AuthN
 import System.Controllers
 import Controller.Static  ( showLandingPage )
 import View.Static
-import System.Session
 import System.Url
 import Model.User
 import Controller.Users
@@ -96,7 +96,8 @@ signUpForm =
 
 --- The data stored for executing the "signUp" WUI form.
 signUpStore :: Global (SessionStore (WuiStore (String,String,String,String)))
-signUpStore = global emptySessionStore (Persistent (inDataDir "signUpStore"))
+signUpStore =
+  global emptySessionStore (Persistent (inSessionDataDir "signUpStore"))
                       
 --------------------------------------------------------------------------------
 -- Signing in                                                                 --
@@ -127,7 +128,8 @@ signInForm =
 
 --- The data stored for executing the "signIn" WUI form.
 signInStore :: Global (SessionStore (Bool, WuiStore (String,String)))
-signInStore = global emptySessionStore (Persistent (inDataDir "signInStore"))
+signInStore =
+  global emptySessionStore (Persistent (inSessionDataDir "signInStore"))
 
 -- Performs the sign in process and stores the authentication data in the
 -- current session (see module `Authentication`). An error alert is displayed if
@@ -183,7 +185,7 @@ forgotPasswordForm =
 --- The data stored for executing the "forgotPassword" WUI form.
 forgotPWStore :: Global (SessionStore (WuiStore String))
 forgotPWStore =
-  global emptySessionStore (Persistent (inDataDir "forgotPWStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "forgotPWStore"))
 
 -- Takes an email address and sends a new password if the email address is 
 -- associated to an actual user account. Otherwise, an error alert is displayed.
@@ -253,7 +255,7 @@ changePasswordForm =
 --- The data stored for executing the "changePassword" WUI form.
 changePWStore :: Global (SessionStore (User, WuiStore (String,String,String)))
 changePWStore =
-  global emptySessionStore (Persistent (inDataDir "changePWStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "changePWStore"))
                       
 doChangePasswdCtrl :: (String,String,String) -> User -> Controller
 doChangePasswdCtrl (oldpass,newpass,newpass2) user = do

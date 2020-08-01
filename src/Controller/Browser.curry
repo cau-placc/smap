@@ -23,6 +23,7 @@ import Sort
 import Time
 
 import HTML.Base ( HtmlFormDef, formDefWithID, formExp )
+import HTML.Session
 
 import Model.Comment
 import Model.ExecEnv
@@ -40,7 +41,6 @@ import System.Authorization
 import System.AuthorizedOperations
 import System.Controllers
 import System.Models
-import System.Session
 import System.Url
 import System.Views
 
@@ -230,7 +230,8 @@ modifyProgramController (progKey,versNum) = getProgramByKey progKey >>=
 
 --- The data stored for executing the "modifyProgram" form.
 browserStore :: Global (SessionStore (Program,Int))
-browserStore = global emptySessionStore (Persistent (inDataDir "browserStore"))
+browserStore =
+  global emptySessionStore (Persistent (inSessionDataDir "browserStore"))
 
 modifyProgramForm :: HtmlFormDef (Program,Int)
 modifyProgramForm =

@@ -5,7 +5,7 @@
 --- data in sessions.
 ---
 --- @author Michael Hanus, Lasse Kristopher Meyer
---- @version February 2014
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.Authentication (
@@ -17,11 +17,10 @@ module System.Authentication (
 import FilePath ( (</>) )
 
 import Global
+import HTML.Session
 
-import Config.Smap ( smapDataDir )
 import Model.User
 import System.Crypto
-import System.Session
 
 --------------------------------------------------------------------------------
 -- Authentication data storing                                                --
@@ -36,7 +35,7 @@ type AuthNData = (String,Bool)
 -- Definition of the session state to store the authentication data.
 sessionAuthNData :: Global (SessionStore AuthNData)
 sessionAuthNData =
-  global emptySessionStore (Persistent  (smapDataDir </> "sessionAuthData"))
+  global emptySessionStore (Persistent  (inSessionDataDir "sessionAuthData"))
 
 --- Gets the current authentication data from the session store.
 getSessionAuthNData :: IO (Maybe AuthNData)

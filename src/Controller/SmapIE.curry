@@ -16,6 +16,7 @@ import Global
 import Maybe
 import Time
 import HTML.Base ( HtmlFormDef, formDefWithID, formExp, urlencoded2string )
+import HTML.Session
 import WUI
 
 import Model.ExecEnv
@@ -32,7 +33,6 @@ import System.Authorization
 import System.AuthorizedOperations
 import System.Controllers
 import System.Execution
-import System.Session
 import System.Url
 import System.SmapHtml
 import System.Views
@@ -159,7 +159,8 @@ type SmapIEData =
 
 --- The data stored for executing the "smapIO" form.
 smapIEStore :: Global (SessionStore SmapIEData)
-smapIEStore = global emptySessionStore (Persistent (inDataDir "smapIEStore"))
+smapIEStore =
+  global emptySessionStore (Persistent (inSessionDataDir "smapIEStore"))
 
 smapIEForm :: HtmlFormDef SmapIEData
 smapIEForm = formDefWithID "Controller.SmapIE.smapIEForm" readData formHTML
@@ -209,7 +210,7 @@ pcCreateStore :: Global
   (SessionStore ((ExecEnv,ExecResult,String,String),
                  WuiStore (String,String,Bool,Language,User,String,String)))
 pcCreateStore =
-  global emptySessionStore (Persistent (inDataDir "pcCreateStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "pcCreateStore"))
 
 -- Returns a controller that displays a WUI form to create a new program if the
 -- given code executes successfully with the choosen execution system.
@@ -277,7 +278,7 @@ pvCreateStore ::
   Global (SessionStore ((ExecEnv,ExecResult,String,String,Program),
                         WuiStore (Int,String,String,Program)))
 pvCreateStore =
-  global emptySessionStore (Persistent (inDataDir "pvCreateStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "pvCreateStore"))
 
 -- Returns a controller that displays a WUI form to create a new version if the
 -- given code executes successfully with the choosen execution system.

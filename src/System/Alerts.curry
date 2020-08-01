@@ -4,7 +4,7 @@
 --- alerts in views (alerts are comparable with Spicey's default page messages).
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2014
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.Alerts (
@@ -18,8 +18,8 @@ import Global
 
 import HTML.Bootstrap3
 import HTML.Html5
+import HTML.Session
 
-import System.Session
 import System.SmapHtml
 
 --------------------------------------------------------------------------------

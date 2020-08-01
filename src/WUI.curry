@@ -7,7 +7,7 @@
 --- [this web page](http://www.informatik.uni-kiel.de/~pakcs/WUI).
 ---
 --- @author Michael Hanus
---- @version October 2019
+--- @version July 2020
 ------------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
@@ -48,7 +48,7 @@ import Read(readNat)
 import ReadShowTerm
 
 import HTML.Base
-import System.Session
+import HTML.Session
 
 infixl 0 `withRendering`
 infixl 0 `withErrorRendering`

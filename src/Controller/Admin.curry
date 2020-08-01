@@ -26,13 +26,13 @@ import Controller.Static
 import View.Admin
 import System.SmapHtml
 import HTML.Html5
+import HTML.Session
 import WUI
 
 import System.Alerts
 import System.Authorization
 import System.AuthorizedOperations
 import System.Controllers
-import System.Session
 import System.Url
 
 --------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ langCreateForm =
 --- The data stored for executing the "langCreate" WUI form.
 langCreateStore :: Global (SessionStore (WuiStore (String,String,String)))
 langCreateStore =
-  global emptySessionStore (Persistent (inDataDir "langCreateStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "langCreateStore"))
 
 ------------------------------------------------------------------------------
 -- Returns a controller that displays a WUI form to create a new system.
@@ -122,7 +122,7 @@ sysCreateForm =
 sysCreateStore ::
   Global (SessionStore ([Language], WuiStore (String,String,Language)))
 sysCreateStore =
-  global emptySessionStore (Persistent (inDataDir "sysCreateStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "sysCreateStore"))
                       
 ------------------------------------------------------------------------------
 --- Shows a form to edit the given System entity.
@@ -151,7 +151,7 @@ sysEditForm =
 sysEditStore ::
   Global (SessionStore ((System,Language,[Language]), WuiStore System))
 sysEditStore =
-  global emptySessionStore (Persistent (inDataDir "sysEditStore"))
+  global emptySessionStore (Persistent (inSessionDataDir "sysEditStore"))
 
 --- Persists modifications of a given System entity to the
 --- database depending on the Boolean argument. If the Boolean argument

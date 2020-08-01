@@ -5,7 +5,7 @@
 --- also exports the general type synonym for controllers.
 ---
 --- @author Lasse Kristopher Meyer
---- @version November 2018
+--- @version July 2020
 --------------------------------------------------------------------------------
 
 module System.Controllers (
@@ -20,10 +20,11 @@ module System.Controllers (
 import KeyDatabase
 import Prelude hiding (div)
 
+import HTML.Session
+
 import System.Alerts
 import System.Authentication
 import Model.ExecEnv
-import System.Session
 import System.SmapHtml
 import System.Url
 

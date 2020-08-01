@@ -66,6 +66,9 @@ deploy: checkdeploy
 	mkdir -p $(WEBSERVERDIR)/data # create private data dir
 	chmod 700 $(WEBSERVERDIR)/data
 	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
+	mkdir -p $(WEBSERVERDIR)/sessiondata # create private data dir
+	chmod 700 $(WEBSERVERDIR)/sessiondata
+	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
 
 $(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
 	$(CPM) exec $(CURRY2CGI) --system="$(SYSTEM)" \
