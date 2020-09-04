@@ -184,7 +184,7 @@ renderNavbar url langNames mAuthNData =
     langMenu = 
       map (\lang ->
       let langName = languageName lang
-       in li [] [a [href $ newProgBaseUrl++"/"++map toLower langName]
+       in li [] [a [href $ newProgBaseUrl ++ "/" ++ map toLower langName]
             [text langName]])
       langNames
     adminMenu =

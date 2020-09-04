@@ -8,7 +8,7 @@
     "dependencies": {
         "base"         : ">= 1.0.0, < 2.0.0",
         "cdbi"         : ">= 2.0.0",
-        "html2"        : ">= 0.0.1",
+        "html2"        : ">= 0.1.0",
         "mail-utils"   : ">= 2.0.0",
         "random"       : ">= 0.0.1",
         "setfunctions" : ">= 0.0.1",

@@ -1071,8 +1071,8 @@ wui2FormDef :: String
             -> (HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
             -> HtmlFormDef (WuiStore a)
 wui2FormDef formqname wuistore wuispec storepage renderwui =
-  let wuiformdef = HtmlFormDef formqname (getWuiStore wuistore)
-                               (formHtml wuiformdef)
+  let wuiformdef = formDefWithID formqname (getWuiStore wuistore)
+                                 (formHtml wuiformdef)
   in wuiformdef
  where
   formHtml iform sdata =
@@ -1118,8 +1118,8 @@ pwui2FormDef :: String
              -> (b -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
              -> HtmlFormDef (b, WuiStore a)
 pwui2FormDef formqname wuistore wuispec storepage renderwui =
-  let wuiformdef = HtmlFormDef formqname (getParWuiStore wuistore)
-                               (formHtml wuiformdef)
+  let wuiformdef = formDefWithID formqname (getParWuiStore wuistore)
+                                 (formHtml wuiformdef)
   in wuiformdef
  where
   formHtml iform sdata =
