@@ -2,7 +2,7 @@
 --- Library for Bootstrap 3 components (work in progress).
 ---
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module HTML.Bootstrap3 (
@@ -19,6 +19,7 @@ module HTML.Bootstrap3 (
 import Char
 import List
 
+import HTML.Base
 import HTML.Html5
 
 --------------------------------------------------------------------------------
@@ -33,14 +34,14 @@ data ColClass
 -- CSS (http://getbootstrap.com/css/)                                         --
 --------------------------------------------------------------------------------
 
-container :: [HtmlExp] -> HtmlExp
-container = HtmlStruct "div" [("class","container")]
+container :: HTML h => [h] -> h
+container = htmlStruct "div" [("class","container")]
 
-row :: [HtmlExp] -> HtmlExp
-row = HtmlStruct "div" [("class","row")]
+row :: HTML h => [h] -> h
+row = htmlStruct "div" [("class","row")]
 
-col :: [ColClass] -> [HtmlExp] -> HtmlExp
-col ccs = HtmlStruct "div" [("class",colClasses)]
+col :: HTML h => [ColClass] -> [h] -> h
+col ccs = htmlStruct "div" [("class",colClasses)]
   where
     colClasses = unwords $ map showColClass ccs
     showColClass cc = 
@@ -50,56 +51,56 @@ col ccs = HtmlStruct "div" [("class",colClasses)]
     parseColClassCons = 
       concatMap (\c -> (if isUpper c then "-" else "")++[toLower c])
 
-controlLabel :: String -> [HtmlExp] -> HtmlExp
-controlLabel refId = HtmlStruct "label" 
+controlLabel :: HTML h => String -> [h] -> h
+controlLabel refId = htmlStruct "label" 
   [("class","control-label")
   ,("for",refId)]
 
-caret :: HtmlExp
-caret = HtmlStruct "span" [("class","caret")] []
+caret :: HTML h => h
+caret = htmlStruct "span" [("class","caret")] []
 
 --------------------------------------------------------------------------------
 -- Components (http://getbootstrap.com/components/)                           --
 --------------------------------------------------------------------------------
 
-glyphicon :: String -> HtmlExp
-glyphicon name = HtmlStruct "span" [("class","glyphicon glyphicon-"++name)] []
+glyphicon :: HTML h => String -> h
+glyphicon name = htmlStruct "span" [("class","glyphicon glyphicon-"++name)] []
 
-navbarHeader :: [HtmlExp] -> HtmlExp
-navbarHeader = HtmlStruct "div" [("class","navbar-header")]
+navbarHeader :: HTML h => [h] -> h
+navbarHeader = htmlStruct "div" [("class","navbar-header")]
 
-navbarBrand :: String -> [HtmlExp] -> HtmlExp
-navbarBrand url = HtmlStruct "a" [("href",url),("class","navbar-brand")]
+navbarBrand :: HTML h => String -> [h] -> h
+navbarBrand url = htmlStruct "a" [("href",url),("class","navbar-brand")]
 
-labelDefault :: [HtmlExp] -> HtmlExp
-labelDefault = HtmlStruct "span" [("class","label label-default")]
+labelDefault :: HTML h => [h] -> h
+labelDefault = htmlStruct "span" [("class","label label-default")]
 
-labelInfo :: [HtmlExp] -> HtmlExp
-labelInfo = HtmlStruct "span" [("class","label label-info")]
+labelInfo :: HTML h => [h] -> h
+labelInfo = htmlStruct "span" [("class","label label-info")]
 
-labelWarning :: [HtmlExp] -> HtmlExp
-labelWarning = HtmlStruct "span" [("class","label label-warning")]
+labelWarning :: HTML h => [h] -> h
+labelWarning = htmlStruct "span" [("class","label label-warning")]
 
-badge :: [HtmlExp] -> HtmlExp
-badge = HtmlStruct "span" [("class","badge")]
+badge :: HTML h => [h] -> h
+badge = htmlStruct "span" [("class","badge")]
 
-jumbotron :: [HtmlExp] -> HtmlExp
-jumbotron = HtmlStruct "div" [("class","jumbotron")]
+jumbotron :: HTML h => [h] -> h
+jumbotron = htmlStruct "div" [("class","jumbotron")]
 
-pageHeader :: [HtmlExp] -> HtmlExp
-pageHeader = HtmlStruct "div" [("class","page-header")]
+pageHeader :: HTML h => [h] -> h
+pageHeader = htmlStruct "div" [("class","page-header")]
 
-panelDefault :: [HtmlExp] -> HtmlExp
-panelDefault = HtmlStruct "div" [("class","panel panel-default")]
+panelDefault :: HTML h => [h] -> h
+panelDefault = htmlStruct "div" [("class","panel panel-default")]
 
-panelHeading :: [HtmlExp] -> HtmlExp
-panelHeading = HtmlStruct "div" [("class","panel-heading")]
+panelHeading :: HTML h => [h] -> h
+panelHeading = htmlStruct "div" [("class","panel-heading")]
 
-panelBody :: [HtmlExp] -> HtmlExp
-panelBody = HtmlStruct "div" [("class","panel-body")]
+panelBody :: HTML h => [h] -> h
+panelBody = htmlStruct "div" [("class","panel-body")]
 
-panelFooter :: [HtmlExp] -> HtmlExp
-panelFooter = HtmlStruct "div" [("class","panel-footer")]
+panelFooter :: HTML h => [h] -> h
+panelFooter = htmlStruct "div" [("class","panel-footer")]
 
 --------------------------------------------------------------------------------
 -- Javascript (http://getbootstrap.com/javascript/)                           --
@@ -107,8 +108,8 @@ panelFooter = HtmlStruct "div" [("class","panel-footer")]
 
 -- Modal
 
-modal :: String -> String -> [HtmlExp] -> HtmlExp
-modal modalId labelId = HtmlStruct "div"
+modal :: HTML h => String -> String -> [h] -> h
+modal modalId labelId = htmlStruct "div"
   [("class","modal")
   ,("id",modalId)
   ,("tabindex","-1")
@@ -116,20 +117,20 @@ modal modalId labelId = HtmlStruct "div"
   ,("aria-labelledby",labelId)
   ,("aria-hidden","true")]
 
-modalDialog :: [HtmlExp] -> HtmlExp
-modalDialog = HtmlStruct "div" [("class","modal-dialog")]
+modalDialog :: HTML h => [h] -> h
+modalDialog = htmlStruct "div" [("class","modal-dialog")]
 
-modalContent :: [HtmlExp] -> HtmlExp
-modalContent = HtmlStruct "div" [("class","modal-content")]
+modalContent :: HTML h => [h] -> h
+modalContent = htmlStruct "div" [("class","modal-content")]
 
-modalHeader :: [HtmlExp] -> HtmlExp
-modalHeader = HtmlStruct "div" [("class","modal-header")]
+modalHeader :: HTML h => [h] -> h
+modalHeader = htmlStruct "div" [("class","modal-header")]
 
-modalBody :: [HtmlExp] -> HtmlExp
-modalBody = HtmlStruct "div" [("class","modal-body")]
+modalBody :: HTML h => [h] -> h
+modalBody = htmlStruct "div" [("class","modal-body")]
 
-modalFooter :: [HtmlExp] -> HtmlExp
-modalFooter = HtmlStruct "div" [("class","modal-footer")]
+modalFooter :: HTML h => [h] -> h
+modalFooter = htmlStruct "div" [("class","modal-footer")]
 
 modalDismiss :: (String,String)
 modalDismiss = ("data-dismiss","modal")
@@ -137,22 +138,22 @@ modalDismiss = ("data-dismiss","modal")
 modalToggle :: (String,String)
 modalToggle = ("data-toggle","modal")
 
-stdModalClose :: HtmlExp
-stdModalClose = HtmlStruct "button"
+stdModalClose :: HTML h => h
+stdModalClose = htmlStruct "button"
   [("type","button")
   ,("class","close")
   ,modalDismiss
   ,("aria-hidden","true")]
-  [HtmlText "&times;"]
+  [htmlText "&times;"]
 
-stdModal :: String -> String -> [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> HtmlExp
+stdModal :: HTML h => String -> String -> [h] -> [h] -> [h] -> h
 stdModal modalId labelId title body footer =
   modal modalId labelId `withFade`
     [modalDialog
       [modalContent
         [modalHeader
           [stdModalClose
-          ,HtmlStruct "h4" [("class","modal-title")] title `addId` labelId]
+          ,htmlStruct "h4" [("class","modal-title")] title `addId` labelId]
         ,modalBody
           body
         ,modalFooter
@@ -175,7 +176,7 @@ collapseToggle = ("data-toggle","collapse")
 
 --------------------------------------------------------------------------------
 
-withFade :: ([HtmlExp] -> HtmlExp) -> [HtmlExp] -> HtmlExp
+withFade :: HTML h => ([h] -> h) -> [h] -> h
 withFade hElem = hElem `withAddClass` "fade"
 
 parentId :: String -> (String,String)
@@ -190,27 +191,21 @@ targetId elemId = ("data-target",'#':elemId)
 loadingText :: String -> (String,String)
 loadingText lText = ("data-loading-text",lText)
 
-withLoadingText :: ([HtmlExp] -> HtmlExp) -> String -> ([HtmlExp] -> HtmlExp)
+withLoadingText :: HTML h => ([h] -> h) -> String -> ([h] -> h)
 withLoadingText hElem lText hExps = hElem hExps `addAttr` (loadingText lText)
 
 --------------------------------------------------------------------------------
 
-addToAttr :: HtmlExp -> (String,String) -> HtmlExp
-addToAttr (HtmlText text)            _     = HtmlText text
-addToAttr (HtmlStruct tag ats hexps) (n,v) = 
-  HtmlStruct tag (addToAttr' ats) hexps
+addToAttr :: HTML h => h -> (String,String) -> h
+addToAttr he (n,v) = updAttrs addToAttr' he
   where addToAttr' []                         = [(n,v)]
         addToAttr' ((n',v'):ats') | n' == n   = (n',v'++" "++v):ats'
                                   | otherwise = (n',v'):(addToAttr' ats')
-addToAttr (HtmlCRef hexp cref)       at    = HtmlCRef  (addToAttr hexp at) cref
-addToAttr (HtmlEvent hexp cref hdlr) at    =
-  HtmlEvent (addToAttr hexp at) cref hdlr
-addToAttr (HtmlAction act) _               = HtmlAction act
 
-addToClass :: HtmlExp -> String -> HtmlExp
+addToClass :: HTML h => h -> String -> h
 addToClass hexp cvalue = addToAttr hexp ("class",cvalue)
 
-withAddClass :: ([HtmlExp] -> HtmlExp) -> String -> ([HtmlExp] -> HtmlExp)
+withAddClass :: HTML h => ([h] -> h) -> String -> ([h] -> h)
 withAddClass helem cls hexps = helem hexps `addToClass` cls
 
 --------------------------------------------------------------------------------

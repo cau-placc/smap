@@ -35,7 +35,7 @@ import System.Url
 
 --- A controller contains the application logic and reacts to user actions.
 --- Controllers always return a corresponding view as an I/O action,
-type Controller = IO [HtmlExp]
+type Controller = IO [BaseHtml]
 
 --------------------------------------------------------------------------------
 -- Controllers for displaying errors                                          --
@@ -99,7 +99,7 @@ stdErrorPageTitle = "Oops, an error occured!"
 
 -- The standard rendering of error pages.
 -- @param errorPageData - title, controller error and internal error
-renderErrorPage :: (String,String,Maybe String) -> HtmlExp
+renderErrorPage :: (String,String,Maybe String) -> BaseHtml
 renderErrorPage (title,controllerMsg,mInternalMsg) =
   container
     [row
@@ -181,7 +181,7 @@ nextFor controller arg =
 --- form parameters and the basic layout (including the navigation bar and
 --- sticky footer).
 --- @param view - the view returned by the last active controller
-getPage :: [HtmlExp] -> IO HtmlPage
+getPage :: [BaseHtml] -> IO HtmlPage
 getPage view = do
   body   <- addLayoutToView
   langs  <- getAllLanguages
@@ -203,7 +203,7 @@ getPage view = do
            view] ++
          [stickyFooter]
   styleAttrs = case view of -- adds styles for specific pages
-    HtmlStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
+    BaseStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
       [style "height: 100%;"]
     _ -> []
 

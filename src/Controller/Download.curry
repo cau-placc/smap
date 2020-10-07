@@ -37,8 +37,8 @@ downloadController url@(path,_) =
     _ -> showInvalidUrlErrorPage url >>= getPage
  where
   toAnswer hexps = case hexps of
-    [HtmlText s] -> return $ HtmlAnswer "text/plain" (removeCRs s)
-    _ -> getPage hexps
+    [BaseText s] -> return $ HtmlAnswer "text/plain" (removeCRs s)
+    _            -> getPage hexps
 
 -- Shows a specific version of an existing program as HtmlText. Returns
 -- an error page if no program exists for the given key or if the version
@@ -72,6 +72,6 @@ showDownloadPage (progKey,versNum) =
       showProgramKey prog++">latest version</a> instead)."
 
     downloadPage (prog,versnum) =
-      [HtmlText (versionSourceCode ((programVersions prog) !! (versnum-1)))]
+      [htmlText (versionSourceCode ((programVersions prog) !! (versnum-1)))]
 
 -------------------------------------------------------------------------------

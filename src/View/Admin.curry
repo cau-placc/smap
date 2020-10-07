@@ -28,7 +28,7 @@ import Model.Smap
 --------------------------------------------------------------------------------
 
 --- A rendering for a WUI form to create a new language.
-languageCreationRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+languageCreationRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
 languageCreationRendering =
   renderWui
     [h3 [] [addIcon, text " Add a new language to Smap"]]
@@ -38,7 +38,7 @@ languageCreationRendering =
     []
 
 --- A rendering for a WUI form to create a new system.
-systemCreationRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+systemCreationRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
 systemCreationRendering =
   renderWui
     [h3 [] [addIcon, text " Add a new system to Smap"]]
@@ -50,7 +50,7 @@ systemCreationRendering =
 --- Supplies a WUI form to edit the given System entity.
 --- Takes also associated entities and a list of possible associations
 --- for every associated entity type.
-editSystemRendering :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> View
+editSystemRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
 editSystemRendering =
   renderWui [text "Edit System"]  [] "Change!" [] []
 
@@ -63,14 +63,14 @@ leqSystem x1 x2 =
 --- Supplies a list view for a given list of System entities.
 --- Shows also show/edit/delete buttons if the user is logged in.
 --- The arguments are the session info and the list of System entities.
-listSystemView :: [System] -> [HtmlExp]
+listSystemView :: [System] -> [BaseHtml]
 listSystemView systems =
   [panelWith 10
      [text  "Execution Systems in Smap"]
      [spTable ([[[b [] [text "Name"]],[b [] [text "Execution URL"]]]] ++
                map listSystem (sortBy leqSystem systems))] []]
   where
-    listSystem :: System -> [[HtmlExp]]
+    listSystem :: System -> [[BaseHtml]]
     listSystem system =
          systemToListView system ++
           ([[smBlueLinkBtn ("?systems/edit/" ++ showSystemKey system)
@@ -79,12 +79,12 @@ listSystemView systems =
                     [deleteIcon, htxt " delete"]]
            ])
 
-    systemToListView :: System -> [[HtmlExp]]
+    systemToListView :: System -> [[BaseHtml]]
     systemToListView system =
       [[text (systemName system)],[text (systemExecUrl system)]]
 
 --- Supplies a list view for a given list of User entities.
-listUserView :: [User] -> [HtmlExp]
+listUserView :: [User] -> [BaseHtml]
 listUserView users =
   [panelWith 10
      [text $ "Users in Smap (total: " ++ show (length users) ++ ")"]
@@ -93,7 +93,7 @@ listUserView users =
                 ,[b [] [text "Is admin?"]]]] ++
                map listUser (sortBy leqUser users))] []]
   where
-    listUser :: User -> [[HtmlExp]]
+    listUser :: User -> [[BaseHtml]]
     listUser user =
          userToListView user ++ []
            --[[smBlueLinkBtn ("?users/edit/" ++ showUserKey user)
@@ -102,7 +102,7 @@ listUserView users =
            --         [deleteIcon, htxt " delete"]]
            --]
 
-    userToListView :: User -> [[HtmlExp]]
+    userToListView :: User -> [[BaseHtml]]
     userToListView user =
       [[text (userName user)]
       ,[text (userEmail user)]

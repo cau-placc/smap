@@ -4,7 +4,7 @@
 --- information for each program.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module View.Browser (
@@ -137,8 +137,8 @@ userFavoritesList =
 -- @param searchPanelData - data for rendering the search panel
 -- @param pagerData       - data for rendering the pager
 renderProgramListView
-  :: [HtmlExp] -> HtmlExp -> [Program] -> [(Tag,Int)] -> Int -> SearchPanelData
-  -> PagerData -> View
+  :: [BaseHtml] -> BaseHtml -> [Program] -> [(Tag,Int)] -> Int
+  -> SearchPanelData -> PagerData -> View
 renderProgramListView header 
                       breadcrumb 
                       results
@@ -225,7 +225,7 @@ tagList azdata allTags popularTags =
 --- @param modifyProgForm - a form expression to the metadata of the program
 --- @param createComForm  - a form expression to create a comment
 --- @param authzData   - the current authorization data
-programPage :: (Program,Int) -> HtmlExp -> HtmlExp -> AuthZData -> View
+programPage :: (Program,Int) -> BaseHtml -> BaseHtml -> AuthZData -> View
 programPage (prog,versNum) modifyProgForm createComForm authzData =
   renderBrowser
     [renderOptionsPanel
@@ -482,8 +482,7 @@ createCommentRendering prog createCom =
 -- @param info    - content of the info block beneath the header
 -- @param body    - content of the main panel body
 -- @param footer  - content of the main panel footer
-renderBrowser 
-  :: [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> [HtmlExp]
+renderBrowser :: HTML h => [h] -> [h] -> [h] -> [h] -> [h] -> [h]
 renderBrowser sidebar header info body footer =
   [(container `withId` "browser")
     [row
@@ -506,7 +505,7 @@ renderBrowser sidebar header info body footer =
 -- @param header - content of the sidebar panel header
 -- @param info   - content of the info block beneath the header
 -- @param body   - content of the sidebar panel body
-renderSidebarPanel :: [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> HtmlExp
+renderSidebarPanel :: HTML h => [h] -> [h] -> [h] -> h
 renderSidebarPanel header info body =
   (panelDefault `withAddClass` "sidebar-panel")
     [panelBody $
@@ -522,7 +521,7 @@ renderSidebarPanel header info body =
 -- @param popular Tags    - tags ordered by their popularity
 -- @param baseUrl         - the base URL for program searches (depends on the
 --   type of program list, e.g. user programs)
-renderStdSidebar :: SearchPanelData -> [(Tag,Int)] -> String -> [HtmlExp]
+renderStdSidebar :: HTML h => SearchPanelData -> [(Tag,Int)] -> String -> [h]
 renderStdSidebar searchPanelData popularTags baseUrl =
   [renderSearchPanel searchPanelData baseUrl
   ,renderSidebarPanel
@@ -533,7 +532,7 @@ renderStdSidebar searchPanelData popularTags baseUrl =
 
 -- Standard rendering for the options panel.
 -- @param options - contained options
-renderOptionsPanel :: [HtmlExp] -> HtmlExp
+renderOptionsPanel :: HTML h => [h] -> h
 renderOptionsPanel options =
   renderSidebarPanel
     [h4 [] [optionsIcon,text " Options"]]
@@ -544,14 +543,14 @@ renderOptionsPanel options =
     renderOptions = ul [classA "list-unstyled"] $ 
       filter isNotEmptyLI $ map (\o -> li [] [o]) options
 
-    isNotEmptyLI he =
-      case he of HtmlStruct "li" [] [HtmlText ""] -> False
-                 _ -> True
+    isNotEmptyLI he = case toBaseHtml he of
+      BaseStruct "li" [] [BaseText ""] -> False
+      _                                -> True
 
 -- The standard renderung for the search panel.
 -- @param searchPanelData - initial data for the input elements
 -- @param baseUrl         - the base url for building the query string
-renderSearchPanel :: SearchPanelData -> String -> HtmlExp
+renderSearchPanel :: HTML h => SearchPanelData -> String -> h
 renderSearchPanel (langs,sortMenu,(mQ,(t,d,ts),mLang,mSort,mOrder)) baseUrl =
   renderSidebarPanel
     [h4 [] [searchIcon,text " Advanced search"]]
@@ -616,7 +615,7 @@ renderSearchPanel (langs,sortMenu,(mQ,(t,d,ts),mLang,mSort,mOrder)) baseUrl =
 -- @param noProgsMsg - message for the case of an empty program list
 -- @param progs      - the program list
 -- @param detailed   - flag to display more details in the program list
-renderProgramList :: String -> [Program] -> Bool -> HtmlExp
+renderProgramList :: HTML h => String -> [Program] -> Bool -> h
 renderProgramList noProgsMsg progs detailed =
   if null progs
   then span [classA "text-muted small"] 
@@ -627,7 +626,7 @@ renderProgramList noProgsMsg progs detailed =
 -- Renders a single program in the program list.
 -- @param detailed - flag to display more details in the program list
 -- @param prog     - the program
-renderProgramInList :: Bool -> Program -> [HtmlExp]
+renderProgramInList :: HTML h => Bool -> Program -> [h]
 renderProgramInList detailed prog =
   [div [classA "left"] $
     [h5 [] [titleHExp,visibilityHExp,text " ",openLink]
@@ -683,7 +682,7 @@ renderProgramInList detailed prog =
 -- Renders a tag list as a list of hyperlinks.
 -- The first argument is a function that is true for a tag if a delete button
 -- should be shown for this tag.
-renderTagList :: (Tag -> Bool) -> [Tag] -> [HtmlExp]
+renderTagList :: HTML h => (Tag -> Bool) -> [Tag] -> [h]
 renderTagList withdelete = concatMap $ \tag ->
   [xsDefaultLinkBtn
      (allProgramsBaseUrl++"?q="++tagName tag++"&amp;targets=tags")
@@ -696,7 +695,7 @@ renderTagList withdelete = concatMap $ \tag ->
       [deleteIcon]
 
 --  Renders the comment list for the program page view.
-renderCommentList :: [Comment] -> HtmlExp
+renderCommentList :: [Comment] -> BaseHtml
 renderCommentList =
   ul [classA "list-unstyled"] . reverse . (map $ \(n,c) ->
     li []

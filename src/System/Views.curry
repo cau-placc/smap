@@ -23,7 +23,7 @@ import System.SmapWui
 --- A view is a list of HTML expressions that will be framed by the general
 --- layout of the HTML page (see `getPage` in `Controllers`) and contains the
 --- viewable content of a HTML page.
-type View = [HtmlExp]
+type View = [BaseHtml]
 
 --------------------------------------------------------------------------------
 -- Helpful HTML components for generic views                                  --
@@ -41,7 +41,7 @@ type View = [HtmlExp]
 ---   the first component should be used in place of the given trigger element
 ---   and the second component must be inserted somewhere in the HTML form to
 ---   actually show up when the returned trigger element is clicked
-withConfirmation :: Int -> HtmlExp -> String -> String -> (HtmlExp,HtmlExp)
+withConfirmation :: HTML h => Int -> h -> String -> String -> (h,h)
 withConfirmation dialogId trigger message acturl =
   (trigger `addAttrs` [modalToggle,targetId modalId]
   ,stdModal modalId labelId
@@ -53,8 +53,8 @@ withConfirmation dialogId trigger message acturl =
     ]
   `addToClass` "confirmation-dialog-box")
   where 
-    modalId = "confirmation-dialog-box-"++show dialogId
-    labelId = modalId++"-title"
+    modalId = "confirmation-dialog-box-" ++ show dialogId
+    labelId = modalId ++ "-title"
 
 --------------------------------------------------------------------------------
 -- General WUI forms and WUI components                                       --
@@ -72,7 +72,7 @@ withConfirmation dialogId trigger message acturl =
 --- @param hexp    - the HTML expression representing the WUI form
 --- @param handler - the handler for submitting data
 renderWui :: [HtmlExp] -> [HtmlExp] -> String -> [HtmlExp] -> [HtmlExp]
-          -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp]
+          -> HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
 renderWui header info label addNav footer hexp hdlr =
       [(container `withId` "wui-form")
         [row

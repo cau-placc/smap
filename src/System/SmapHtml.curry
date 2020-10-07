@@ -51,7 +51,7 @@ viewportMetaTag = PageHeadInclude $
 --- The favicon.
 favicon :: PageParam
 favicon = PageHeadInclude $
-  HtmlStruct "link" [rel "shortcut icon",href "favicon.ico"] []
+  htmlStruct "link" [rel "shortcut icon",href "favicon.ico"] []
 
 --- JavaScript files to be included in the head (especially CodeMirror modes).
 --- @param langNames - the names of all languages in the database
@@ -73,7 +73,7 @@ cssIncludes = map (\file -> PageCSS $ "css/"++file++".css")
   ,"smap"]
 
 --- JavaScript files to be included in the body (for performance reasons).
-jsBodyIncludes :: [HtmlExp]
+jsBodyIncludes :: HTML h => [h]
 jsBodyIncludes = map (\file -> script [src $ "js/"++file++".js"] [])
   ["jquery-2.0.3.min"
   ,"bootstrap/bootstrap.min"
@@ -87,7 +87,7 @@ jsBodyIncludes = map (\file -> script [src $ "js/"++file++".js"] [])
 --- @param url        - the current URL (to set the active state of links)
 --- @param langs      - all languages in the database (for the SmapIE menu)
 --- @param mAuthNData - the current session authentication data (if available)
-renderNavbar :: Url -> [Language] -> Maybe AuthNData -> HtmlExp
+renderNavbar :: HTML h => Url -> [Language] -> Maybe AuthNData -> h
 renderNavbar url langNames mAuthNData =
   nav [classA "navbar navbar-inverse navbar-fixed-top",role "navigation"]
     [container
@@ -211,13 +211,13 @@ renderNavbar url langNames mAuthNData =
 --- enable the sticky footer.
 --- @param attrs   - attributes to modify the wrapper
 --- @param content - the wrapped content above the sticky footer
-wrap :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
+wrap :: HTML h => [HtmlAttr] -> [h] -> h
 wrap attrs content = 
   div attrs content 
   `addId` "wrap" 
 
 --- The sticky footer.
-stickyFooter :: HtmlExp
+stickyFooter :: HTML h => h
 stickyFooter = 
   (div [] `withId` "sticky-footer")
     [container
@@ -226,7 +226,7 @@ stickyFooter =
         ,a [href "?about"] [text " About"]]]]
 
 -- A panel with a width (in columns between 2 and 12), title, body, and footer.
-panelWith :: Int -> [HtmlExp] -> [HtmlExp] -> [HtmlExp] -> HtmlExp
+panelWith :: HTML h => Int -> [h] -> [h] -> [h] -> h
 panelWith colwidth title body footer =
    container
     [row
@@ -289,7 +289,7 @@ allTagsBaseUrl = "?browser/tags"
 
 --- A small text input field (without CGI reference).
 --- @param pholder - value of the placeholder attribute
-smTextInput :: String -> HtmlExp
+smTextInput :: HTML h => String -> h
 smTextInput pholder = 
   input [("type","text"),classA "form-control input-sm",placeholder pholder]
 
@@ -302,55 +302,55 @@ smTextInput pholder =
 --- A hyperlink rendered as a grey button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-greyLinkBtn :: String -> [HtmlExp] -> HtmlExp
+greyLinkBtn :: HTML h => String -> [h] -> h
 greyLinkBtn url = a [href url,classA "btn btn-default"]
 
 --- A hyperlink rendered as a small blue button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-smBlueLinkBtn :: String -> [HtmlExp] -> HtmlExp
+smBlueLinkBtn :: HTML h => String -> [h] -> h
 smBlueLinkBtn url = a [href url,classA "btn btn-primary btn-sm"]
 
 --- A hyperlink rendered as a blue button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-blueLinkBtn :: String -> [HtmlExp] -> HtmlExp
+blueLinkBtn :: HTML h => String -> [h] -> h
 blueLinkBtn url = a [href url,classA "btn btn-primary"]
 
 --- A hyperlink rendered as a small green button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-smGreenLinkBtn :: String -> [HtmlExp] -> HtmlExp
+smGreenLinkBtn :: HTML h => String -> [h] -> h
 smGreenLinkBtn url = a [href url,classA "btn btn-success btn-sm"]
 
 --- A hyperlink rendered as an extra small default button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-xsDefaultLinkBtn :: String -> [HtmlExp] -> HtmlExp
+xsDefaultLinkBtn :: HTML h => String -> [h] -> h
 xsDefaultLinkBtn url = a [href url,classA "btn btn-default btn-xxs"]
 
 --- A hyperlink rendered as a green button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-greenLinkBtn :: String -> [HtmlExp] -> HtmlExp
+greenLinkBtn :: HTML h => String -> [h] -> h
 greenLinkBtn url = a [href url,classA "btn btn-success"]
 
 --- A hyperlink rendered as a small orange button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-smOrangeLinkBtn :: String -> [HtmlExp] -> HtmlExp
+smOrangeLinkBtn :: HTML h => String -> [h] -> h
 smOrangeLinkBtn url = a [href url,classA "btn btn-warning btn-sm"]
 
 --- A hyperlink rendered as a orange button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-orangeLinkBtn :: String -> [HtmlExp] -> HtmlExp
+orangeLinkBtn :: HTML h => String -> [h] -> h
 orangeLinkBtn url = a [href url,classA "btn btn-warning"]
 
 --- A hyperlink rendered as a link button.
 --- @param url   - the hyperlink URL 
 --- @param label - label HTML expressions
-linkLinkBtn :: String -> [HtmlExp] -> HtmlExp
+linkLinkBtn :: HTML h => String -> [h] -> h
 linkLinkBtn url = a [href url,classA "btn btn-link"]
 
 -- Submit buttons
@@ -382,156 +382,156 @@ linkSubmitBtn = formSubmitButton [classA "btn btn-link"]
 -- Standard buttons
 
 --- A grey cancel button.
-greyCancelBtn :: HtmlExp
+greyCancelBtn :: HTML h => h
 greyCancelBtn = a [href landingPageUrl,classA "btn btn-default"] [text "Cancel"]
 
 --------------------------------------------------------------------------------
 -- Icons                                                                      --
 --------------------------------------------------------------------------------
 
-aboutIcon :: HtmlExp
+aboutIcon :: HTML h => h
 aboutIcon = glyphicon "info-sign"
 
-addIcon :: HtmlExp
+addIcon :: HTML h => h
 addIcon = glyphicon "plus-sign"
 
-browserIcon :: HtmlExp
+browserIcon :: HTML h => h
 browserIcon = glyphicon "list"
 
-codeIcon :: HtmlExp
+codeIcon :: HTML h => h
 codeIcon = glyphicon "file"
 
-commentIcon :: HtmlExp
+commentIcon :: HTML h => h
 commentIcon = glyphicon "comment"
 
-createdIcon :: HtmlExp
+createdIcon :: HTML h => h
 createdIcon = glyphicon "calendar"
 
-dashboardIcon :: HtmlExp
+dashboardIcon :: HTML h => h
 dashboardIcon = glyphicon "dashboard"
 
-deleteIcon :: HtmlExp
+deleteIcon :: HTML h => h
 deleteIcon = glyphicon "trash"
 
-descriptionIcon :: HtmlExp
+descriptionIcon :: HTML h => h
 descriptionIcon = glyphicon "align-left"
 
-downloadIcon :: HtmlExp
+downloadIcon :: HTML h => h
 downloadIcon = glyphicon "download"
 
-uploadIcon :: HtmlExp
+uploadIcon :: HTML h => h
 uploadIcon = glyphicon "upload"
 
-executionIcon :: HtmlExp
+executionIcon :: HTML h => h
 executionIcon = glyphicon "cog"
 
-execErrorIcon :: HtmlExp
+execErrorIcon :: HTML h => h
 execErrorIcon = glyphicon "exclamation-sign"
 
-execSuccessIcon :: HtmlExp
+execSuccessIcon :: HTML h => h
 execSuccessIcon = glyphicon "ok-sign"
 
-favoriteIcon :: HtmlExp
+favoriteIcon :: HTML h => h
 favoriteIcon = glyphicon "heart"
 
-filterIcon :: HtmlExp
+filterIcon :: HTML h => h
 filterIcon = glyphicon "filter"
 
-helpIcon :: HtmlExp
+helpIcon :: HTML h => h
 helpIcon = glyphicon "question-sign"
 
-idIcon :: HtmlExp
+idIcon :: HTML h => h
 idIcon = glyphicon "tag"
 
-infoIcon :: HtmlExp
+infoIcon :: HTML h => h
 infoIcon = glyphicon "info-sign"
 
-languageIcon :: HtmlExp
+languageIcon :: HTML h => h
 languageIcon = glyphicon "pencil"
 
-modifiedIcon :: HtmlExp
+modifiedIcon :: HTML h => h
 modifiedIcon = glyphicon "pencil"
 
-nextIcon :: HtmlExp
+nextIcon :: HTML h => h
 nextIcon = glyphicon "chevron-right"
 
-notVisibleIcon :: HtmlExp
+notVisibleIcon :: HTML h => h
 notVisibleIcon = glyphicon "eye-close"
 
-openIcon :: HtmlExp
+openIcon :: HTML h => h
 openIcon = glyphicon "share"
 
-optionsIcon :: HtmlExp
+optionsIcon :: HTML h => h
 optionsIcon = glyphicon "list-alt"
 
-passwordIcon :: HtmlExp
+passwordIcon :: HTML h => h
 passwordIcon = glyphicon "lock"
 
-previousIcon :: HtmlExp
+previousIcon :: HTML h => h
 previousIcon = glyphicon "chevron-left"
 
-programsIcon :: HtmlExp
+programsIcon :: HTML h => h
 programsIcon = glyphicon "list"
 
-recentIcon :: HtmlExp
+recentIcon :: HTML h => h
 recentIcon = glyphicon "time"
 
-reloadIcon :: HtmlExp
+reloadIcon :: HTML h => h
 reloadIcon = glyphicon "retweet"
 
-resetIcon :: HtmlExp
+resetIcon :: HTML h => h
 resetIcon = glyphicon "refresh"
 
-saveIcon :: HtmlExp
+saveIcon :: HTML h => h
 saveIcon = glyphicon "floppy-save"
 
-searchIcon :: HtmlExp
+searchIcon :: HTML h => h
 searchIcon = glyphicon "search"
 
-signInIcon :: HtmlExp
+signInIcon :: HTML h => h
 signInIcon = glyphicon "log-in"
 
-signOutIcon :: HtmlExp
+signOutIcon :: HTML h => h
 signOutIcon = glyphicon "log-out"
 
-signUpIcon :: HtmlExp
+signUpIcon :: HTML h => h
 signUpIcon = glyphicon "pencil"
 
-smapIcon :: HtmlExp
+smapIcon :: HTML h => h
 smapIcon = glyphicon "edit"
 
-smapIEIcon :: HtmlExp
+smapIEIcon :: HTML h => h
 smapIEIcon = glyphicon "edit"
 
-sortIcon :: HtmlExp
+sortIcon :: HTML h => h
 sortIcon = glyphicon "sort"
 
-tagsIcon :: HtmlExp
+tagsIcon :: HTML h => h
 tagsIcon = glyphicon "tags"
 
-titleIcon :: HtmlExp
+titleIcon :: HTML h => h
 titleIcon = glyphicon "bookmark"
 
-userIcon :: HtmlExp
+userIcon :: HTML h => h
 userIcon = glyphicon "user"
 
-userFavoritesIcon :: HtmlExp
+userFavoritesIcon :: HTML h => h
 userFavoritesIcon = glyphicon "heart"
 
-userProgramsIcon :: HtmlExp
+userProgramsIcon :: HTML h => h
 userProgramsIcon = glyphicon "th-list"
 
-versionIcon :: HtmlExp
+versionIcon :: HTML h => h
 versionIcon = glyphicon "random"
 
-visibleIcon :: HtmlExp
+visibleIcon :: HTML h => h
 visibleIcon = glyphicon "eye-open"
 
-warningMessageIcon :: HtmlExp
+warningMessageIcon :: HTML h => h
 warningMessageIcon = glyphicon "warning-sign"
 
 --------------------------------------------------------------------------------
 --- Standard table in Smap.
-spTable :: [[[HtmlExp]]] -> HtmlExp
+spTable :: HTML h => [[[h]]] -> h
 spTable items = table items  `addClass` "table table-hover table-condensed"
 

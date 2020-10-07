@@ -63,7 +63,7 @@ showSignUpPage :: (String,String,String,String) -> Controller
 showSignUpPage initCreationData =
   checkAuthorization (authNOperation SignUp) $ \_ -> do
     setWuiStore signUpStore initCreationData
-    return [formExp signUpForm]
+    return [formElem signUpForm]
 
 --- A WUI form to sign up.
 --- The default values for the fields are stored in 'signUpStore'.
@@ -113,7 +113,7 @@ showSignInPage muser =
   checkAuthorization (authNOperation SignIn) $ \_ -> do
     let initUsername  = maybe "" userName muser
     setParWuiStore signInStore (isNothing muser) (initUsername,"")
-    return [formExp signInForm]
+    return [formElem signInForm]
 
 --- A WUI form to sign in.
 --- The default values for the fields are stored in 'signInStore'.
@@ -169,7 +169,7 @@ showForgotPasswordPage :: Controller
 showForgotPasswordPage = 
   checkAuthorization (authNOperation SendNewPassword) $ \_ -> do
     setWuiStore forgotPWStore ""
-    return [formExp forgotPasswordForm]
+    return [formElem forgotPasswordForm]
 
 --- A WUI form to request a new password.
 --- The default values for the fields are stored in 'forgotPWStore'.
@@ -235,7 +235,7 @@ showChangePasswdForm =
                     (getUsernameFromAuthZData authzData)
      maybe (showStdErrorPage userNotFoundErr)
            (\user -> do setParWuiStore changePWStore user ("","","")
-                        return [formExp changePasswordForm])
+                        return [formElem changePasswordForm])
            mUser
  where
   userNotFoundErr = "Unexpectedly, no user was found with the signed-in user."

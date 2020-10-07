@@ -7,7 +7,7 @@
 --- [this web page](http://www.informatik.uni-kiel.de/~pakcs/WUI).
 ---
 --- @author Michael Hanus
---- @version July 2020
+--- @version September 2020
 ------------------------------------------------------------------------------
 
 {-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
@@ -39,12 +39,12 @@ module WUI
   )
  where
 
-import Char(isDigit,isSpace)
-import FunctionInversion (invf1)
+import Char              ( isDigit, isSpace )
+import FunctionInversion ( invf1 )
 import Global
-import List(elemIndex)
+import List              ( elemIndex )
 import Maybe
-import Read(readNat)
+import Read              ( readNat )
 import ReadShowTerm
 
 import HTML.Base
@@ -826,6 +826,16 @@ wListWithHeadings headings wspec =
  where
   renderHeadings hs = addHeadings (renderList hs) (map (\s->[htxt s]) headings)
 
+--- Add a row of items (where each item is a list of HTML expressions)
+--- as headings to a table. If the first argument is not a table,
+--- the headings are ignored.
+addHeadings :: HtmlExp -> [[HtmlExp]] -> HtmlExp
+addHeadings htable headings = case htable of
+   HtmlStruct "table" attrs rows ->
+     HtmlStruct "table" attrs
+       (HtmlStruct "tr" [] (map (HtmlStruct "th" []) headings) : rows)
+   _ -> htable
+
 --- WUI combinator for list structures where the list elements are horizontally
 --- aligned in a table.
 wHList :: Eq a => WuiSpec a -> WuiSpec [a]
@@ -1037,21 +1047,22 @@ type WuiStore a = (Bool, Maybe a)
 
 --- Sets the initial data which are edited in a WUI form in the session store.
 setWuiStore :: Global (SessionStore (WuiStore a)) -> a -> IO ()
-setWuiStore wuistore val = putSessionData wuistore (True, Just val)
+setWuiStore wuistore val = writeSessionData wuistore (True, Just val)
 
 --- Reads the data which are edited in a WUI form from the session store.
-getWuiStore :: Global (SessionStore (WuiStore a)) -> IO (WuiStore a)
+getWuiStore :: Global (SessionStore (WuiStore a)) -> FormReader (WuiStore a)
 getWuiStore wuistore = getSessionData wuistore (True, Nothing)
 
 --- Sets the initial data which are edited in a parameterized WUI form
 --- in the session store.
 setParWuiStore :: Global (SessionStore (b,WuiStore a)) -> b -> a -> IO ()
 setParWuiStore wuistore par val =
-  putSessionData wuistore (par, (True, Just val))
+  writeSessionData wuistore (par, (True, Just val))
 
 --- Reads the data which are edited in a parameterized WUI form
 --- from the session store.
-getParWuiStore :: Global (SessionStore (b,WuiStore a)) -> IO (b,WuiStore a)
+getParWuiStore :: Global (SessionStore (b,WuiStore a))
+               -> FormReader (b,WuiStore a)
 getParWuiStore wuistore = getSessionData wuistore (failed, (True, Nothing))
 
 -- Main operations to generate HTML form definitions from WUI specifications:
@@ -1067,8 +1078,8 @@ getParWuiStore wuistore = getSessionData wuistore (failed, (True, Nothing))
 wui2FormDef :: String
             -> Global (SessionStore (WuiStore a))
             -> WuiSpec a
-            -> (a -> IO [HtmlExp])
-            -> (HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+            -> (a -> IO [BaseHtml])
+            -> (HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp])
             -> HtmlFormDef (WuiStore a)
 wui2FormDef formqname wuistore wuispec storepage renderwui =
   let wuiformdef = formDefWithID formqname (getWuiStore wuistore)
@@ -1088,8 +1099,8 @@ wui2FormDef formqname wuistore wuispec storepage renderwui =
 --- and the actual data of the store.
 wui2HtmlExp :: Global (SessionStore (WuiStore a))
             -> WuiSpec a
-            -> (a -> IO [HtmlExp])
-            -> (HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+            -> (a -> IO [BaseHtml])
+            -> (HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp])
             -> HtmlFormDef (WuiStore a)
             -> WuiStore a -> [HtmlExp]
 wui2HtmlExp _ _ _ _ _ (_,Nothing) =
@@ -1101,12 +1112,12 @@ wui2HtmlExp wuistore (WuiSpec wparams wshow wcor wread) storepage renderwui
   in renderwui hexp (handler wst)
  where
   handler wst env = do
-    let newval = wread env wst
+    let newval = id $## wread env wst -- ensure that everything is evaluated
     if (wcor wparams) newval
-      then do putSessionData wuistore (True, Nothing)
+      then do writeSessionData wuistore (True, Nothing)
               storepage newval
-      else do putSessionData wuistore (False, Just newval)
-              return [formExp wuiformdef]
+      else do writeSessionData wuistore (False, Just newval)
+              return [formElem wuiformdef]
 
 
 --- Generates an HTML form definition similarly to `wui2FormDef`
@@ -1114,8 +1125,8 @@ wui2HtmlExp wuistore (WuiSpec wparams wshow wcor wread) storepage renderwui
 pwui2FormDef :: String
              -> Global (SessionStore (b, WuiStore a))
              -> (b -> WuiSpec a)
-             -> (b -> a -> IO [HtmlExp])
-             -> (b -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+             -> (b -> a -> IO [BaseHtml])
+             -> (b -> HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp])
              -> HtmlFormDef (b, WuiStore a)
 pwui2FormDef formqname wuistore wuispec storepage renderwui =
   let wuiformdef = formDefWithID formqname (getParWuiStore wuistore)
@@ -1129,8 +1140,8 @@ pwui2FormDef formqname wuistore wuispec storepage renderwui =
 --- but with some additional data on which the further arguments depend.
 pwui2HtmlExp :: Global (SessionStore (b, WuiStore a))
              -> (b -> WuiSpec a)
-             -> (b -> a -> IO [HtmlExp])
-             -> (b -> HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp])
+             -> (b -> a -> IO [BaseHtml])
+             -> (b -> HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp])
              -> HtmlFormDef (b,WuiStore a)
              -> (b, WuiStore a) -> [HtmlExp]
 pwui2HtmlExp _ _ _ _ _ (_,(_,Nothing)) =
@@ -1143,17 +1154,17 @@ pwui2HtmlExp wuistore pwuispec storepage renderwui
   in renderwui par hexp (handler wparams wcor wread wst)
  where
   handler wparams wcor wread wst env = do
-    let newval = wread env wst
+    let newval = id $## wread env wst -- ensure that everything is evaluated
     if (wcor wparams) newval
-      then do putSessionData wuistore (par, (True, Nothing))
+      then do writeSessionData wuistore (par, (True, Nothing))
               storepage par newval
-      else do putSessionData wuistore (par, (False, Just newval))
-              return [formExp wuiformdef]
+      else do writeSessionData wuistore (par, (False, Just newval))
+              return [formElem wuiformdef]
 
 --- A standard rendering for WUI forms.
 --- The arguments are the HTML expression representing the WUI fields
 --- and the handler for the "submit" button.
-wuiSimpleRenderer :: HtmlExp -> (CgiEnv -> IO [HtmlExp]) -> [HtmlExp]
+wuiSimpleRenderer :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
 wuiSimpleRenderer inputhexp storehandler =
   [inputhexp, breakline,
    button "Submit" (\env -> storehandler env >>= return . page "Answer")]

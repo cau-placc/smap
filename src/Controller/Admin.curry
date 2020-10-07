@@ -64,7 +64,7 @@ showLanguageCreationForm :: Controller
 showLanguageCreationForm = 
   checkAuthorization (adminOperation CreateLanguage) $ \_ -> do
     setWuiStore langCreateStore ("","","")
-    return [formExp langCreateForm]
+    return [formElem langCreateForm]
 
 --- A WUI form to create a new language supported by Smap.
 --- The default values for the fields are stored in 'langCreateStore'.
@@ -98,7 +98,7 @@ showSystemCreationForm =
   checkAuthorization (adminOperation CreateSystem) $ \_ -> do
     langs <- getAllLanguages
     setParWuiStore sysCreateStore langs ("","",head langs)
-    return [formExp sysCreateForm]
+    return [formElem sysCreateForm]
 
 --- A WUI form to create a new system supported by Smap.
 --- The default values for the fields are stored in 'sysCreateStore'.
@@ -133,7 +133,7 @@ editSystemController systemToEdit =
     langImplLanguage <- runJustT (getLangImplLanguage systemToEdit)
     setParWuiStore sysEditStore (systemToEdit,langImplLanguage,allLanguages)
                                 systemToEdit
-    return [formExp sysEditForm]
+    return [formElem sysEditForm]
 
 --- A WUI form to create a new system supported by Smap.
 --- The default values for the fields are stored in 'sysEditStore'.

@@ -22,7 +22,7 @@ import List
 import Sort
 import Time
 
-import HTML.Base ( HtmlFormDef, formDefWithID, formExp )
+import HTML.Base ( HtmlFormDef, formDefWithID, formElem )
 import HTML.Session
 
 import Model.Comment
@@ -225,8 +225,8 @@ modifyProgramController (progKey,versNum) = getProgramByKey progKey >>=
   maybe (showStdErrorPage programNotFoundErr)
         (\prog ->
            checkAuthorization (browserOperation $ ModifyProgram prog) $ \_ -> do
-             putSessionData browserStore (prog,versNum)
-             return [formExp modifyProgramForm])
+             writeSessionData browserStore (prog,versNum)
+             return [formElem modifyProgramForm])
 
 --- The data stored for executing the "modifyProgram" form.
 browserStore :: Global (SessionStore (Program,Int))
@@ -253,8 +253,8 @@ createCommentController (progKey,versNum) = getProgramByKey progKey >>=
   maybe (showStdErrorPage programNotFoundErr)
         (\prog ->
            checkAuthorization (browserOperation $ CreateComment) $ \_ -> do
-             putSessionData browserStore (prog,versNum)
-             return [formExp createCommentForm])
+             writeSessionData browserStore (prog,versNum)
+             return [formElem createCommentForm])
 
 createCommentForm :: HtmlFormDef (Program,Int)
 createCommentForm =
@@ -328,12 +328,12 @@ showProgramPage (progKey,versNum) = do
     (showStdErrorPage programNotFoundErr)
     (\prog ->
         checkAuthorization (browserOperation $ ShowProgram prog) $ \azData -> do
-          putSessionData browserStore (prog,versNum)
+          writeSessionData browserStore (prog,versNum)
           maybe (showStdErrorPage $ versionNotFoundErr prog)
                 (\validVersNum -> return $ programPage
                                              (prog,validVersNum)
-                                             (formExp modifyProgramForm)
-                                             (formExp createCommentForm)
+                                             (formElem modifyProgramForm)
+                                             (formElem createCommentForm)
                                              azData)
                 (validVersionNumber (length $ programVersions prog)))
     mProg

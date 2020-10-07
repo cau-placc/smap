@@ -16,6 +16,7 @@ module System.Alerts (
 
 import Global
 
+import HTML.Base ( fromFormReader )
 import HTML.Bootstrap3
 import HTML.Html5
 import HTML.Session
@@ -55,12 +56,12 @@ alert = global emptySessionStore Temporary
 --- Sets the alert of the current session.
 --- @param nAlert - the next alert
 setAlert :: Alert -> IO ()
-setAlert nAlert = putSessionData alert nAlert
+setAlert nAlert = writeSessionData alert nAlert
 
 --- Gets the current alert and deletes it from the session.
 getAlert :: IO (Maybe Alert)
 getAlert = 
-  do mAlert <- getSessionMaybeData alert
+  do mAlert <- fromFormReader $ getSessionMaybeData alert
      removeSessionData alert
      return mAlert
 
@@ -81,7 +82,7 @@ maybeSetAlert = maybe done setAlert
 --- with additional contextual classes (representing the alert types) whose
 --- styles are specified in `public/css/smap.css`.
 --- @param alert - the current alert
-renderAlert :: Alert -> HtmlExp
+renderAlert :: HTML h => Alert -> h
 renderAlert alert =
   stdModal modalId labelId
     [icon,text $ ' ':header]
@@ -89,7 +90,7 @@ renderAlert alert =
     [buttonButton [classA "btn btn-default",modalDismiss]
       [glyphicon "remove",text " Dismiss"]]
   where 
-    modalId = "alert-"++alertTypeStr++"-dialog-box"
+    modalId = "alert-" ++ alertTypeStr ++ "-dialog-box"
     labelId = "alert-dialog-box-title"
     (alertTypeStr,alertMsg,header,icon) = 
       case alert of

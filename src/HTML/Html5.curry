@@ -45,120 +45,120 @@ type HtmlAttr = (String,String)
 
 --------------------------------------------------------------------------------
 
-text :: String -> HtmlExp
-text = HtmlText
+text :: HTML h => String -> h
+text = htmlText
 
-empty :: HtmlExp
-empty = HtmlText ""
+empty :: HTML h => h
+empty = htmlText ""
 
 --------------------------------------------------------------------------------
 
 -- HTML elements
 
-a :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-a = HtmlStruct "a"
+a :: HTML h => [HtmlAttr] -> [h] -> h
+a = htmlStruct "a"
 
-article :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-article = HtmlStruct "article"
+article :: HTML h => [HtmlAttr] -> [h] -> h
+article = htmlStruct "article"
 
-aside :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-aside = HtmlStruct "aside"
+aside :: HTML h => [HtmlAttr] -> [h] -> h
+aside = htmlStruct "aside"
 
-b :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-b = HtmlStruct "b"
+b :: HTML h => [HtmlAttr] -> [h] -> h
+b = htmlStruct "b"
 
-body :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-body = HtmlStruct "body"
+body :: HTML h => [HtmlAttr] -> [h] -> h
+body = htmlStruct "body"
 
-br :: [HtmlAttr] -> HtmlExp
-br attrs = HtmlStruct "br" attrs []
+br :: HTML h => [HtmlAttr] -> h
+br attrs = htmlStruct "br" attrs []
 
-button :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-button = HtmlStruct "button"
+button :: HTML h => [HtmlAttr] -> [h] -> h
+button = htmlStruct "button"
 
-code :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-code = HtmlStruct "code"
+code :: HTML h => [HtmlAttr] -> [h] -> h
+code = htmlStruct "code"
 
-div :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-div = HtmlStruct "div"
+div :: HTML h => [HtmlAttr] -> [h] -> h
+div = htmlStruct "div"
 
-em :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-em = HtmlStruct "em"
+em :: HTML h => [HtmlAttr] -> [h] -> h
+em = htmlStruct "em"
 
-fieldset :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-fieldset = HtmlStruct "fieldset"
+fieldset :: HTML h => [HtmlAttr] -> [h] -> h
+fieldset = htmlStruct "fieldset"
 
-figcaption :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-figcaption = HtmlStruct "figcaption"
+figcaption :: HTML h => [HtmlAttr] -> [h] -> h
+figcaption = htmlStruct "figcaption"
 
-figure :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-figure = HtmlStruct "figure"
+figure :: HTML h => [HtmlAttr] -> [h] -> h
+figure = htmlStruct "figure"
 
-footer :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-footer = HtmlStruct "footer"
+footer :: HTML h => [HtmlAttr] -> [h] -> h
+footer = htmlStruct "footer"
 
---form :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
---form = HtmlStruct "form"
+--form :: HTML h => [HtmlAttr] -> [h] -> h
+--form = htmlStruct "form"
 
-h1 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h1 = HtmlStruct "h1"
+h1 :: HTML h => [HtmlAttr] -> [h] -> h
+h1 = htmlStruct "h1"
 
-h2 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h2 = HtmlStruct "h2"
+h2 :: HTML h => [HtmlAttr] -> [h] -> h
+h2 = htmlStruct "h2"
 
-h3 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h3 = HtmlStruct "h3"
+h3 :: HTML h => [HtmlAttr] -> [h] -> h
+h3 = htmlStruct "h3"
 
-h4 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h4 = HtmlStruct "h4"
+h4 :: HTML h => [HtmlAttr] -> [h] -> h
+h4 = htmlStruct "h4"
 
-h5 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h5 = HtmlStruct "h5"
+h5 :: HTML h => [HtmlAttr] -> [h] -> h
+h5 = htmlStruct "h5"
 
-h6 :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-h6 = HtmlStruct "h6"
+h6 :: HTML h => [HtmlAttr] -> [h] -> h
+h6 = htmlStruct "h6"
 
-header :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-header = HtmlStruct "header"
+header :: HTML h => [HtmlAttr] -> [h] -> h
+header = htmlStruct "header"
 
-hr :: [HtmlAttr] -> HtmlExp
-hr attrs = HtmlStruct "hr" attrs []
+hr :: HTML h => [HtmlAttr] -> h
+hr attrs = htmlStruct "hr" attrs []
 
-i :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-i = HtmlStruct "i"
+i :: HTML h => [HtmlAttr] -> [h] -> h
+i = htmlStruct "i"
 
-img :: [HtmlAttr] -> HtmlExp
-img attrs = HtmlStruct "img" attrs []
+img :: HTML h => [HtmlAttr] -> h
+img attrs = htmlStruct "img" attrs []
 
-input :: [HtmlAttr] -> HtmlExp
-input attrs = HtmlStruct "input" attrs []
+input :: HTML h => [HtmlAttr] -> h
+input attrs = htmlStruct "input" attrs []
 
-label :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-label  = HtmlStruct "label"
+label :: HTML h => [HtmlAttr] -> [h] -> h
+label  = htmlStruct "label"
 
-li :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-li = HtmlStruct "li"
+li :: HTML h => [HtmlAttr] -> [h] -> h
+li = htmlStruct "li"
 
-meta :: [HtmlAttr] -> HtmlExp
-meta attrs = HtmlStruct "meta" attrs []
+meta :: HTML h => [HtmlAttr] -> h
+meta attrs = htmlStruct "meta" attrs []
 
-nav :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-nav = HtmlStruct "nav"
+nav :: HTML h => [HtmlAttr] -> [h] -> h
+nav = htmlStruct "nav"
 
-ol :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-ol = HtmlStruct "ol"
+ol :: HTML h => [HtmlAttr] -> [h] -> h
+ol = htmlStruct "ol"
 
-option :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-option = HtmlStruct "option"
+option :: HTML h => [HtmlAttr] -> [h] -> h
+option = htmlStruct "option"
 
-p :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-p = HtmlStruct "p"
+p :: HTML h => [HtmlAttr] -> [h] -> h
+p = htmlStruct "p"
 
-script :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-script = HtmlStruct "script"
+script :: HTML h => [HtmlAttr] -> [h] -> h
+script = htmlStruct "script"
 
-section :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-section = HtmlStruct "section"
+section :: HTML h => [HtmlAttr] -> [h] -> h
+section = htmlStruct "section"
 
 select :: [HtmlAttr] -> CgiRef -> [(String,String)] -> String -> HtmlExp
 select attrs cRef selMenu initSelVal =
@@ -174,30 +174,29 @@ select attrs cRef selMenu initSelVal | cRef =:= CgiRef ref =
     mSel val = if val==initSelVal then [selected] else []
 -}
 
-selectNoRef :: [HtmlAttr] -> [(String,String)] -> String -> HtmlExp
+selectNoRef :: HTML h => [HtmlAttr] -> [(String,String)] -> String -> h
 selectNoRef attrs selMenu initSelVal =
   sI selMenu initSel `addAttrs` attrs
  where
   initSel = maybe 0 Prelude.id (findIndex (==initSelVal) (map snd selMenu))
 
-  sI :: [(String,String)] -> Int -> HtmlExp
-  sI sellist sel = HtmlStruct "select" [] (selOption sellist sel)
+  sI sellist sel = htmlStruct "select" [] (selOption sellist sel)
    where
     selOption [] _ = []
     selOption ((n,v):nvs) i =
-      HtmlStruct "option"
+      htmlStruct "option"
         ([("value",v)] ++ if i==0 then [("selected","selected")] else [])
         [htxt n] : selOption nvs (i-1)
 
 
-small :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-small = HtmlStruct "small"
+small :: HTML h => [HtmlAttr] -> [h] -> h
+small = htmlStruct "small"
 
-span :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-span = HtmlStruct "span"
+span :: HTML h => [HtmlAttr] -> [h] -> h
+span = htmlStruct "span"
 
-strong :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-strong = HtmlStruct "strong"
+strong :: HTML h => [HtmlAttr] -> [h] -> h
+strong = htmlStruct "strong"
 
 textArea :: [HtmlAttr] -> CgiRef -> String -> HtmlExp
 textArea attrs cRef cont =
@@ -208,34 +207,34 @@ textArea attrs cRef cont =
   where ref free
 -}
 
-textAreaNoRef :: [HtmlAttr] -> String -> HtmlExp
+textAreaNoRef :: HTML h => [HtmlAttr] -> String -> h
 textAreaNoRef attrs cont =
   deleteAttr (deleteAttr (tA (80,10) cont) "rows") "cols"
     `addAttrs` attrs
  where
   tA (height,width) contents =
-    HtmlStruct "textarea" [("rows",show height),("cols",show width)]
+    htmlStruct "textarea" [("rows",show height),("cols",show width)]
                           [htxt contents]
 
-ul :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
-ul = HtmlStruct "ul"
+ul :: HTML h => [HtmlAttr] -> [h] -> h
+ul = htmlStruct "ul"
 
 --------------------------------------------------------------------------------
 
 -- Complex elements
 
-buttonButton :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
+buttonButton :: HTML h => [HtmlAttr] -> [h] -> h
 buttonButton attrs = button $ ("type","button"):attrs
 
-resetButton :: [HtmlAttr] -> [HtmlExp] -> HtmlExp
+resetButton :: HTML h => [HtmlAttr] -> [h] -> h
 resetButton attrs = button $ ("type","reset"):attrs
 
 submitButton :: [HtmlAttr] -> HtmlHandler -> [HtmlExp] -> HtmlExp
 submitButton attrs hdlr btnLabel
   | idOfCgiRef cref =:= ref -- instantiate cref argument
-  = HtmlEvent
+  = HtmlEvent cref hdlr
       (HtmlStruct "input" (("type","submit") : (name ref) : attrs) btnLabel)
-                  cref hdlr
+
  where
   cref,ref free
 
@@ -348,60 +347,40 @@ value valueVal = ("value",valueVal)
 
 -- Helpers for assigning attributes to HTML elements
 
-consAttrs :: [(String,String)] -> HtmlExp -> HtmlExp
-consAttrs _    (HtmlText txt)            = HtmlText txt
-consAttrs nats (HtmlStruct tag [] hexps) = HtmlStruct tag nats hexps
-consAttrs nats (HtmlStruct tag ((n,v):ats) hexps) 
-  | n == "type" = HtmlStruct tag ((n,v):nats++ats) hexps -- skip type attribute
-  | otherwise   = HtmlStruct tag (nats++(n,v):ats) hexps
-consAttrs nats (HtmlCRef hexp cref)      = HtmlCRef  (consAttrs nats hexp) cref
-consAttrs nats (HtmlEvent hexp cref hdlr) =
-  HtmlEvent (consAttrs nats hexp) cref hdlr
-consAttrs _    (HtmlAction act) = HtmlAction act
+consAttrs :: HTML h => [(String,String)] -> h -> h
+consAttrs nats he = updAttrs consAttrs' he
+ where
+  consAttrs' [] = nats
+  consAttrs' ((n,v):ats)
+   | n == "type" = ((n,v):nats++ats) -- skip type attribute
+   | otherwise   = (nats++(n,v):ats)
 
-consAttr :: (String,String) -> HtmlExp -> HtmlExp
+consAttr :: HTML h => (String,String) -> h -> h
 consAttr nat = consAttrs [nat]
 
-consClass :: String -> HtmlExp -> HtmlExp
+consClass :: HTML h => String -> h -> h
 consClass cvalue = consAttr ("class",cvalue)
 
-addToAttr :: HtmlExp -> (String,String) -> HtmlExp
-addToAttr (HtmlText txt)            _      = HtmlText txt
-addToAttr (HtmlStruct tag ats hexps) (n,v) = 
-  HtmlStruct tag (addToAttr' ats) hexps
+addToAttr :: HTML h => h -> (String,String) -> h
+addToAttr he (n,v) = updAttrs addToAttr' he
   where addToAttr' []                         = [(n,v)]
         addToAttr' ((n',v'):ats') | n' == n   = (n',v'++" "++v):ats'
                                   | otherwise = (n',v'):(addToAttr' ats')
-addToAttr (HtmlCRef hexp cref)       at    = HtmlCRef  (addToAttr hexp at) cref
-addToAttr (HtmlEvent hexp cref hdlr) at    =
-  HtmlEvent (addToAttr hexp at) cref hdlr
-addToAttr (HtmlAction act) _               = HtmlAction act
 
-addToClass :: HtmlExp -> String -> HtmlExp
+addToClass :: HTML h => h -> String -> h
 addToClass hexp cvalue = addToAttr hexp ("class",cvalue)
 
-setAttr :: HtmlExp -> (String,String) -> HtmlExp
-setAttr (HtmlText txt)        _  = HtmlText txt
-setAttr (HtmlStruct tag ats hexps) (n,v) =
-  HtmlStruct tag (setAttr' ats) hexps
+setAttr :: HTML h => h -> (String,String) -> h
+setAttr he (n,v) = updAttrs setAttr' he
   where setAttr' [] = [(n,v)]
         setAttr' ((n',v'):ats') | n' == n   = ((n,v):ats')
                                    | otherwise = (n',v'):(setAttr' ats') 
-setAttr (HtmlCRef hexp cref)       at = HtmlCRef  (setAttr hexp at) cref
-setAttr (HtmlEvent hexp cref hdlr) at = HtmlEvent (setAttr hexp at) cref hdlr
-setAttr (HtmlAction act)           _  = HtmlAction act
 
-deleteAttr :: HtmlExp -> String -> HtmlExp
-deleteAttr (HtmlText txt)        _  = HtmlText txt
-deleteAttr (HtmlStruct tag ats hexps) n =
-  HtmlStruct tag (deleteAttr' ats) hexps
+deleteAttr :: HTML h => h -> String -> h
+deleteAttr he n = updAttrs deleteAttr' he
   where deleteAttr' [] = []
         deleteAttr' ((n',v):ats') | n' == n   = ats'
                                   | otherwise = (n',v):(deleteAttr' ats') 
-deleteAttr (HtmlCRef hexp cref)  at = HtmlCRef  (deleteAttr hexp at) cref
-deleteAttr (HtmlEvent hexp cref hdlr) at =
-  HtmlEvent (deleteAttr hexp at) cref hdlr
-deleteAttr (HtmlAction act) _ = HtmlAction act
 
 
 toValidAttrValue :: String -> String
@@ -410,24 +389,22 @@ toValidAttrValue = map (\c -> if c==' ' then '-' else toLower c)
 stringToValidAttrValue :: String -> String
 stringToValidAttrValue = map (\c -> if c==' ' then '-' else toLower c)
 
-withClass :: ([HtmlExp] -> HtmlExp) -> String -> ([HtmlExp] -> HtmlExp)
+withClass :: HTML h => ([h] -> h) -> String -> ([h] -> h)
 withClass helem classVal = consClass classVal . helem
 
-withAddClass :: ([HtmlExp] -> HtmlExp) -> String -> ([HtmlExp] -> HtmlExp)
+withAddClass :: HTML h => ([h] -> h) -> String -> ([h] -> h)
 withAddClass helem classVal hexps = helem hexps `addToClass` classVal
 
-withAttrs
-  :: ([HtmlExp] -> HtmlExp) -> [(String,String)] -> ([HtmlExp] -> HtmlExp)
+withAttrs :: HTML h => ([h] -> h) -> [(String,String)] -> ([h] -> h)
 withAttrs helem attrs hexps = helem hexps `addAttrs` attrs
 
-withAttr 
-  :: ([HtmlExp] -> HtmlExp) -> (String,String) -> ([HtmlExp] -> HtmlExp)
+withAttr :: HTML h => ([h] -> h) -> (String,String) -> ([h] -> h)
 withAttr helem attr = withAttrs helem [attr]
 
-withId :: ([HtmlExp] -> HtmlExp) -> String -> ([HtmlExp] -> HtmlExp)
+withId :: HTML h => ([h] -> h) -> String -> ([h] -> h)
 withId helem idVal = withAttr helem ("id",idVal)
 
-addId :: HtmlExp -> String -> HtmlExp
+addId :: HTML h => h -> String -> h
 addId hExp idVal = addAttr hExp ("id",idVal)
 
 --------------------------------------------------------------------------------

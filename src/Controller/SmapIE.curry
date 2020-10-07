@@ -5,7 +5,7 @@
 --- program and version creation and executing programs.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module Controller.SmapIE (
@@ -15,7 +15,7 @@ module Controller.SmapIE (
 import Global
 import Maybe
 import Time
-import HTML.Base ( HtmlFormDef, formDefWithID, formExp, urlencoded2string )
+import HTML.Base ( HtmlFormDef, formDefWithID, formElem, urlencoded2string )
 import HTML.Session
 import WUI
 
@@ -141,11 +141,11 @@ showSmapIE
   -> Controller
 showSmapIE mProg execEnv mExecRes initCode initSystemKey =
   checkAuthorization (smapIEOperation $ ShowSmapIE mProg) $ \authzData -> do
-    putSessionData smapIEStore
+    writeSessionData smapIEStore
       (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData)
     return [ -- for styling purposes (to increase container to 100%)
             input [("type","hidden"),value "smap-ie"],
-            formExp smapIEForm]
+            formElem smapIEForm]
 
 -- The state of the SmapIE containing:
 -- - the program that will be opened (if given)
@@ -228,7 +228,7 @@ tryShowProgramCreationForm (execEnv@(lang,systems),execSystemKey,code) =
                      setParWuiStore pcCreateStore
                        (execEnv,execRes,execSystemKey,code)
                        ("","",True,lang,user,code,"")
-                     return [formExp pcCreateForm])
+                     return [formElem pcCreateForm])
                   mUser
        ExecError   _ -> -- execution failed
          do setAlert executionFailedErrAlert
@@ -293,7 +293,7 @@ tryShowVersionCreationForm (execEnv@(lang,systems),execSystemKey,code,prog) =
          setParWuiStore pvCreateStore
                         (execEnv,execRes,execSystemKey,code,prog)
                         (number,code,"",prog)
-         return [formExp pvCreateForm]
+         return [formElem pvCreateForm]
        ExecError   _ -> -- execution failed
          do setAlert executionFailedAlert
             showSmapIE (Just prog) execEnv (Just execRes) code execSystemKey

@@ -17,6 +17,7 @@ module System.Authentication (
 import FilePath ( (</>) )
 
 import Global
+import HTML.Base
 import HTML.Session
 
 import Model.User
@@ -39,13 +40,13 @@ sessionAuthNData =
 
 --- Gets the current authentication data from the session store.
 getSessionAuthNData :: IO (Maybe AuthNData)
-getSessionAuthNData = getSessionMaybeData sessionAuthNData
+getSessionAuthNData = fromFormReader $ getSessionMaybeData sessionAuthNData
 
 --- Stores new authentication data in the current session (after the user
 --- authentication).
 --- @param authNData - authentication data of the user
 signInToSession :: AuthNData -> IO ()
-signInToSession authNData = putSessionData sessionAuthNData authNData
+signInToSession authNData = writeSessionData sessionAuthNData authNData
 
 --- Removes authentication data from the current session.
 signOutFromSession :: IO ()
