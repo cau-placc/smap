@@ -7,7 +7,7 @@
 --- provides some helper functions for assigning attributes to HTML elements.
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module HTML.Html5 (
@@ -160,14 +160,14 @@ script = htmlStruct "script"
 section :: HTML h => [HtmlAttr] -> [h] -> h
 section = htmlStruct "section"
 
-select :: [HtmlAttr] -> CgiRef -> [(String,String)] -> String -> HtmlExp
+select :: [HtmlAttr] -> HtmlRef -> [(String,String)] -> String -> HtmlExp
 select attrs cRef selMenu initSelVal =
   HTML.Base.selectionInitial cRef selMenu initSel `addAttrs` attrs
  where
   initSel = maybe 0 Prelude.id (findIndex (==initSelVal) (map snd selMenu))
 {- OLD:
-select attrs cRef selMenu initSelVal | cRef =:= CgiRef ref =
-  HtmlCRef (HtmlStruct "select" ((name ref):attrs) options) cRef
+select attrs cRef selMenu initSelVal | cRef =:= HtmlRef ref =
+  HtmlInput (HtmlStruct "select" ((name ref):attrs) options) cRef
   where
     ref free
     options  = map (\(n,v) -> option ((value v):(mSel v)) [text n]) selMenu
@@ -198,12 +198,12 @@ span = htmlStruct "span"
 strong :: HTML h => [HtmlAttr] -> [h] -> h
 strong = htmlStruct "strong"
 
-textArea :: [HtmlAttr] -> CgiRef -> String -> HtmlExp
+textArea :: [HtmlAttr] -> HtmlRef -> String -> HtmlExp
 textArea attrs cRef cont =
   deleteAttr (deleteAttr (HTML.Base.textArea cRef (80,10) cont) "rows") "cols"
     `addAttrs` attrs
 {- OLD:
-  HtmlCRef (HtmlStruct "textarea" ((name ref):attrs) [text cont]) cRef
+  HtmlInput (HtmlStruct "textarea" ((name ref):attrs) [text cont]) cRef
   where ref free
 -}
 
@@ -231,7 +231,7 @@ resetButton attrs = button $ ("type","reset"):attrs
 
 submitButton :: [HtmlAttr] -> HtmlHandler -> [HtmlExp] -> HtmlExp
 submitButton attrs hdlr btnLabel
-  | idOfCgiRef cref =:= ref -- instantiate cref argument
+  | idOfHtmlRef cref =:= ref -- instantiate cref argument
   = HtmlEvent cref hdlr
       (HtmlStruct "input" (("type","submit") : (name ref) : attrs) btnLabel)
 
@@ -242,12 +242,12 @@ formSubmitButton :: [HtmlAttr] -> String -> HtmlHandler -> HtmlExp
 formSubmitButton attrs btnLabel hdlr =
   consAttrs attrs (HTML.Base.button btnLabel hdlr)
 
-selectInput :: [HtmlAttr] -> CgiRef -> [(String,String)] -> Int -> HtmlExp
+selectInput :: [HtmlAttr] -> HtmlRef -> [(String,String)] -> Int -> HtmlExp
 selectInput attrs cref sels initSel =
   selectionInitial cref sels initSel `addAttrs` attrs
 {- OLD:
-selectInput attrs cref sels initSel | cref =:= CgiRef ref =
-  HtmlCRef (HtmlStruct "select" ((name ref):attrs) options) cref
+selectInput attrs cref sels initSel | cref =:= HtmlRef ref =
+  HtmlInput (HtmlStruct "select" ((name ref):attrs) options) cref
   where
     ref free
     options = map (\(j,(n,v)) -> option ((value v):(mSel j)) [text n])

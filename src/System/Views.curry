@@ -5,7 +5,7 @@
 --- type synonym for views.
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module System.Views (
@@ -72,7 +72,7 @@ withConfirmation dialogId trigger message acturl =
 --- @param hexp    - the HTML expression representing the WUI form
 --- @param handler - the handler for submitting data
 renderWui :: [HtmlExp] -> [HtmlExp] -> String -> [HtmlExp] -> [HtmlExp]
-          -> HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+          -> HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 renderWui header info label addNav footer hexp hdlr =
       [(container `withId` "wui-form")
         [row

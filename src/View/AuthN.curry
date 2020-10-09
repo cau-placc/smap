@@ -3,7 +3,7 @@
 --- for signing in, signing up and password requests).
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module View.AuthN (
@@ -24,7 +24,7 @@ import System.Views
 
 --- A rendering to sign in to Smap with a user name and a password. If
 --- given, an initial user name is set.
-signInRenderer :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+signInRenderer :: HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 signInRenderer hexp hdlr =
   [(container `withId` "sign-in-page")
     [row
@@ -43,7 +43,7 @@ signInRenderer hexp hdlr =
 
 --- A rendering to send a new password to an user with a given email
 --- address (if this email address is associated to an user account).
-forgotPasswordRenderer :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+forgotPasswordRenderer :: HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 forgotPasswordRenderer hexp hdlr =
   [(container `withId` "forgot-password-page")
     [row

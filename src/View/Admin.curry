@@ -3,7 +3,7 @@
 --- exports pages with WUI forms for entity creation (languages and systems).
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version July 2020
+--- @version October 2020
 --------------------------------------------------------------------------------
 
 module View.Admin (
@@ -28,7 +28,7 @@ import Model.Smap
 --------------------------------------------------------------------------------
 
 --- A rendering for a WUI form to create a new language.
-languageCreationRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+languageCreationRendering :: HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 languageCreationRendering =
   renderWui
     [h3 [] [addIcon, text " Add a new language to Smap"]]
@@ -38,7 +38,7 @@ languageCreationRendering =
     []
 
 --- A rendering for a WUI form to create a new system.
-systemCreationRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+systemCreationRendering :: HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 systemCreationRendering =
   renderWui
     [h3 [] [addIcon, text " Add a new system to Smap"]]
@@ -50,7 +50,7 @@ systemCreationRendering =
 --- Supplies a WUI form to edit the given System entity.
 --- Takes also associated entities and a list of possible associations
 --- for every associated entity type.
-editSystemRendering :: HtmlExp -> (CgiEnv -> IO [BaseHtml]) -> [HtmlExp]
+editSystemRendering :: HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp]
 editSystemRendering =
   renderWui [text "Edit System"]  [] "Change!" [] []
 
