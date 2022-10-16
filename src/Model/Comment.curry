@@ -13,7 +13,7 @@
 --- for stackability reasons. Always modify or import `CommentModel` instead.)
 ---
 --- @author Lasse Kristopher Meyer
---- @version November 2018
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Model.Comment (
@@ -22,9 +22,9 @@ module Model.Comment (
   createComment,deleteComment
 ) where
 
+import Data.Time
 import KeyDatabase
 import Model.Smap
-import Time
 
 import Model.Program
 

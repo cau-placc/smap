@@ -3,7 +3,7 @@
 module Config.Smap
  where
 
-import FilePath ( (</>) )
+import System.FilePath ( (</>) )
 
 --- Location of the directory containing private run-time data.
 smapDataDir :: String

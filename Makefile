@@ -1,11 +1,11 @@
 # Generic Makefile for Spicey applications
 
 # Definition of the root of the Curry system to be used:
-SYSTEM=/home/mh/pakcs
-#SYSTEM=/opt/kics2/kics2
+#CURRYHOME=$(HOME)/pakcs3
+CURRYHOME=/opt/kics2/kics3
 
 # Curry bin directory to be used:
-export CURRYBIN=$(SYSTEM)/bin
+export CURRYBIN=$(CURRYHOME)/bin
 
 CURRYOPTIONS=:set -time
 
@@ -23,7 +23,7 @@ CURRY2CGI := $(shell which curry2cgi)
 
 .PHONY: all
 all:
-	@echo "SYSTEM: $(SYSTEM)"
+	@echo "CURRYHOME: $(CURRYHOME)"
 	@echo "make: deploy install compile load run clean?"
 
 # Install the packages required by the generated Spicey application:
@@ -72,7 +72,8 @@ deploy: checkdeploy
 	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
 
 $(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
-	$(CPM) exec $(CURRY2CGI) --system="$(SYSTEM)" \
+	$(CPM) exec $(CURRY2CGI) --cpmexec \"$(CPM) exec\" \
+	  --system="$(CURRYHOME)" \
 	  -i Controller.Admin \
 	  -i Controller.AuthN \
 	  -i Controller.Browser \
@@ -82,7 +83,7 @@ $(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
 # clean up generated the package directory
 .PHONY: clean
 clean: 
-	$(CPM) clean
+	$(CPM) $(CPMOPTIONS) clean
 
 # clean everything, including the deployed files (be sure to save the
 # database files first!)

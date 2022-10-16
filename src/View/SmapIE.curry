@@ -7,16 +7,16 @@
 --- functionality.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module View.SmapIE (
   smapIEPage, removeCRs, wProgram, wVersion
  ) where
 
-import Char
-import List
-import Prelude hiding (div,span)
+import Data.Char
+import Data.List
+import Prelude hiding (div,span,empty)
 
 import Model.ExecEnv
 import Model.Program

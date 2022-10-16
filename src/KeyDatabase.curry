@@ -53,13 +53,14 @@ module KeyDatabase (
 
   ) where
 
-import Global       ( Global, GlobalSpec(..), global, readGlobal, writeGlobal )
-import IO           ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
-import IOExts       ( connectToCommand )
-import List         ( intersperse, insertBy )
-import ReadNumeric  ( readInt )
-import ReadShowTerm ( readQTerm, showQTerm, readsQTerm )
-import Maybe        ( mapMMaybe )
+import Control.Monad  ( when )
+import Data.List      ( intersperse, insertBy )
+import Data.Maybe
+import System.IO      ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
+
+import Data.Global    ( GlobalT, globalT, readGlobalT, writeGlobalT )
+import System.IOExts  ( connectToCommand )
+import System.Process ( system )
 
 infixl 1 |>>, |>>=
 
@@ -125,8 +126,8 @@ runT trans =
 catchTrans :: IO (TransResult a) -> IO (TransResult a)
 catchTrans action =
   action `catch` \ (IOError msg) ->
-    do err <- readGlobal lastQueryError
-       writeGlobal lastQueryError Nothing
+    do err <- readGlobalT lastQueryError
+       writeGlobalT lastQueryError Nothing
        return . Error $ maybe (TError ExecutionError msg) id err
 
 --- Executes a possibly composed transaction on the current state
@@ -158,7 +159,7 @@ returnT = transIO . return
 --- Returns the unit value in a transaction that does not access the
 --- database. Useful to ignore results when composing transactions.
 doneT :: Transaction ()
-doneT = transIO done
+doneT = transIO (return ())
 
 --- Aborts a transaction with an error.
 errorT :: TError -> Transaction a
@@ -192,7 +193,10 @@ t1 |>> t2 = t1 |>>= const t2
 sequenceT :: [Transaction a] -> Transaction [a]
 sequenceT = foldr seqT (returnT [])
  where
-  seqT t ts = t |>>= \x -> ts |>>= \xs -> returnT (x:xs)
+  --seqT t ts = t |>>= \x -> ts |>>= \xs -> returnT (x:xs)
+  seqT t ts = do x  <- t
+                 xs <- ts
+                 return (x:xs)
 
 --- Executes a list of transactions sequentially, ignoring their
 --- results.
@@ -220,7 +224,9 @@ type ColName = String
 --- Result type of database predicates.
 data Dynamic = DBInfo DBFile TableName [ColName]
 
+--- The general type of database keys.
 type Key = Int
+
 type KeyPred a = Key -> a -> Dynamic -- for interface compatibility
 
 dbInfo :: KeyPred a -> (DBFile,(TableName,[ColName]))
@@ -274,26 +280,26 @@ existsDBKey keyPred key = Query $
 allDBKeys :: KeyPred _ -> Query [Key]
 allDBKeys keyPred = Query $
   do rows <- selectRows keyPred "_rowid_" ""
-     mapIO readIntOrExit rows
+     mapM readIntOrExit rows
 
 --- Returns a list of all info parts of stored entries. Do not use this
 --- function unless the database is small.
-allDBInfos :: KeyPred a -> Query [a]
+allDBInfos :: (Read a, Show a) => KeyPred a -> Query [a]
 allDBInfos keyPred = Query $
   do rows <- selectRows keyPred "*" ""
      return $!! map readInfo rows
 
-readInfo :: String -> a
-readInfo str = readQTerm $ "(" ++ str ++ ")"
+readInfo :: Read a => String -> a
+readInfo str = read $ "(" ++ str ++ ")"
 
 --- Returns a list of all stored entries. Do not use this function
 --- unless the database is small.
-allDBKeyInfos :: KeyPred a -> Query [(Key,a)]
+allDBKeyInfos :: (Read a, Show a) => KeyPred a -> Query [(Key,a)]
 allDBKeyInfos keyPred = Query $
   do rows <- selectRows keyPred "_rowid_,*" ""
-     mapIO readKeyInfo rows
+     mapM readKeyInfo rows
 
-readKeyInfo :: String -> IO (Key,a)
+readKeyInfo :: (Read a, Show a) => String -> IO (Key,a)
 readKeyInfo row =
   do key <- readIntOrExit keyStr
      return $!! (key, readInfo infoStr)
@@ -302,7 +308,7 @@ readKeyInfo row =
 
 --- Queries the information stored under the given key. Yields
 --- <code>Nothing</code> if the given key is not present.
-getDBInfo :: KeyPred a -> Key -> Query (Maybe a)
+getDBInfo :: (Read a, Show a) => KeyPred a -> Key -> Query (Maybe a)
 getDBInfo keyPred key = Query $
   do rows <- selectRows keyPred "*" $ "where _rowid_ = " ++ show key
      readHeadIfExists rows
@@ -312,15 +318,15 @@ getDBInfo keyPred key = Query $
 
 --- Queries the information stored under the given keys. Yields
 --- <code>Nothing</code> if a given key is not present.
-getDBInfos :: KeyPred a -> [Key] -> Query (Maybe [a])
+getDBInfos :: (Read a, Show a) => KeyPred a -> [Key] -> Query (Maybe [a])
 getDBInfos keyPred keys = Query $
   do rows <- selectRows keyPred "_rowid_,*" $
                "where _rowid_ in (" ++ commaSep (map show keys) ++ ")"
      sortByIndexInGivenList rows
  where
   sortByIndexInGivenList rows =
-    do keyInfos <- mapIO readKeyInfo rows
-       return $ mapMMaybe (\key -> lookup key keyInfos) keys
+    do keyInfos <- mapM readKeyInfo rows
+       return $ mapM (\key -> lookup key keyInfos) keys
 
 commaSep :: [String] -> String
 commaSep = concat . intersperse ", "
@@ -342,7 +348,7 @@ deleteDBEntries keyPred keys =
 --- Updates the information stored under the given key. The
 --- transaction is aborted with a <code>KeyNotExistsError</code> if
 --- the given key is not present in the database.
-updateDBEntry :: KeyPred a -> Key -> a -> Transaction ()
+updateDBEntry :: Show a => KeyPred a -> Key -> a -> Transaction ()
 updateDBEntry keyPred key info =
   errorUnlessKeyExists keyPred key ("updateDBEntry, " ++ show key) |>>
   modify keyPred "update"
@@ -356,13 +362,13 @@ errorUnlessKeyExists keyPred key msg =
     then errorT $ TError KeyNotExistsError msg
     else doneT
 
-colVals :: KeyPred a -> a -> [String]
+colVals :: Show a => KeyPred a -> a -> [String]
 colVals keyPred info =
   zipWith (\c v -> c ++ " = " ++ v) (colNames keyPred) (infoVals keyPred info)
 
-infoVals :: KeyPred a -> a -> [String]
+infoVals :: Show a => KeyPred a -> a -> [String]
 infoVals keyPred info
-  | null . tail $ colNames keyPred = [quote $ showQTerm info]
+  | null . tail $ colNames keyPred = [quote $ show info]
   | otherwise                      = map quote $ showTupleArgs info
 
 quote :: String -> String
@@ -372,7 +378,7 @@ quote s = "'" ++ concatMap quoteChar s ++ "'"
 
 --- Stores new information in the database and yields the newly
 --- generated key.
-newDBEntry :: KeyPred a -> a -> Transaction Key
+newDBEntry :: Show a => KeyPred a -> a -> Transaction Key
 newDBEntry keyPred info =
   modify keyPred "insert into"
     ("(" ++ commaSep (colNames keyPred) ++ ") values " ++
@@ -384,7 +390,7 @@ newDBEntry keyPred info =
 --- @param db - the database (a dynamic predicate)
 --- @param key - the key of the new entry (an integer)
 --- @param info - the information to be stored in the new entry
-newDBKeyEntry :: KeyPred a -> Key -> a -> Transaction ()
+newDBKeyEntry :: Show a => KeyPred a -> Key -> a -> Transaction ()
 newDBKeyEntry keyPred key info =
   getDB (existsDBKey keyPred key) |>>= \b ->
   if b
@@ -417,10 +423,10 @@ hPutAndFlush :: Handle -> String -> IO ()
 hPutAndFlush h s = hPutStrLn h s >> hFlush h
 
 modify :: KeyPred _ -> String -> String -> Transaction ()
-modify keyPred before after = transIO $
-  do sqlite3 keyPred $
-       before ++ " " ++ tableName keyPred ++ " " ++ after
-     done
+modify keyPred before after = transIO $ do
+  sqlite3 keyPred $
+    before ++ " " ++ tableName keyPred ++ " " ++ after
+  return ()
 
 selectInt :: KeyPred _ -> String -> String -> IO Int
 selectInt keyPred aggr cond =
@@ -431,10 +437,11 @@ selectInt keyPred aggr cond =
 
 -- yields 1 for "1a" and exits for ""
 readIntOrExit :: String -> IO Int
-readIntOrExit s = maybe err (return . fst) $ readInt s
- where
-  err = dbError ExecutionError $
-    "readIntOrExit: cannot parse integer from string '" ++ show s ++ "'"
+readIntOrExit s = case reads s of
+  [(n,_)] -> return n
+  _       -> dbError ExecutionError $
+               "readIntOrExit: cannot parse integer from string '" ++
+               show s ++ "'"
 
 -- When selecting an unknown number of rows it is necessary to know
 -- when to stop. One way to be able to stop is to select 'count(*)'
@@ -467,17 +474,17 @@ hGetLinesBefore h stop =
 closeDBHandles :: IO ()
 closeDBHandles =
   do withAllDBHandles hClose
-     writeGlobal openDBHandles []
+     writeGlobalT openDBHandles []
 
 -- helper functions and globaly stored information
 
 dbError :: TErrorKind -> String -> IO a
 dbError kind msg =
-  do writeGlobal lastQueryError . Just $ TError kind msg
+  do writeGlobalT lastQueryError . Just $ TError kind msg
      error msg
 
-lastQueryError :: Global (Maybe TError)
-lastQueryError = global Nothing Temporary
+lastQueryError :: GlobalT (Maybe TError)
+lastQueryError = globalT "KeyDatabase.lastQueryError" Nothing
 
 getDBHandle :: KeyPred _ -> IO Handle
 getDBHandle keyPred = 
@@ -496,73 +503,76 @@ ensureDBFor keyPred =
   (db,(table,cols)) = dbInfo keyPred
 
 readDBHandle :: DBFile -> IO Handle
-readDBHandle db = readGlobal openDBHandles >>= maybe err return . lookup db
+readDBHandle db = readGlobalT openDBHandles >>= maybe err return . lookup db
  where
   err = dbError ExecutionError $ "readDBHandle: no handle for '" ++ db ++ "'"
 
-openDBHandles :: Global [(DBFile,Handle)]
-openDBHandles = global [] Temporary
+openDBHandles :: GlobalT [(DBFile,Handle)]
+openDBHandles = globalT "KeyDatabase.openDBHandles" []
 
 withAllDBHandles :: (Handle -> IO _) -> IO ()
 withAllDBHandles f =
-  do dbHandles <- readGlobal openDBHandles
-     mapIO_ (f . snd) dbHandles
+  do dbHandles <- readGlobalT openDBHandles
+     mapM_ (f . snd) dbHandles
 
 ensureDBHandle :: DBFile -> IO ()
 ensureDBHandle db =
-  do dbHandles <- readGlobal openDBHandles
+  do dbHandles <- readGlobalT openDBHandles
      unless (db `elem` map fst dbHandles) $ addNewDBHandle dbHandles
  where
-  addNewDBHandle dbHandles =
-    do h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db
-       hPutAndFlush h ".separator ','"
-       writeGlobal openDBHandles $ -- sort against deadlock
-         insertBy ((<=) `on` fst) (db,h) dbHandles
-       isTrans <- readGlobal currentlyInTransaction
-       unless (not isTrans) $ hPutStrLn h "begin immediate;"
+  addNewDBHandle dbHandles = do
+    exsqlite3 <- system $ "which " ++ path'to'sqlite3 ++ " > /dev/null"
+    when (exsqlite3>0) $
+      error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
+    h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db
+    hPutAndFlush h ".separator ','"
+    writeGlobalT openDBHandles $ -- sort against deadlock
+      insertBy ((<=) `on` fst) (db,h) dbHandles
+    isTrans <- readGlobalT currentlyInTransaction
+    unless (not isTrans) $ hPutStrLn h "begin immediate;"
 
 unless :: Bool -> IO () -> IO ()
 unless False action = action
-unless True  _      = done
+unless True  _      = return ()
 
 on :: (b -> b -> c) -> (a -> b) -> a -> a -> c
-(f `on` g) x y = f (g x) (g y)
+on f g x y = f (g x) (g y)
 
 ensureDBTable :: DBFile -> TableName -> [ColName] -> IO ()
 ensureDBTable db table cols =
-  do dbTables <- readGlobal knownDBTables
+  do dbTables <- readGlobalT knownDBTables
      unless ((db,table) `elem` dbTables) $
        do h <- readDBHandle db
           hPutAndFlush h $
             "create table if not exists " ++ table ++
             " (Key integer primary key autoincrement, " ++ commaSep cols ++ ");"
-          writeGlobal knownDBTables $ (db,table) : dbTables
+          writeGlobalT knownDBTables $ (db,table) : dbTables
 
-knownDBTables :: Global [(DBFile,TableName)]
-knownDBTables = global [] Temporary
+knownDBTables :: GlobalT [(DBFile,TableName)]
+knownDBTables = globalT "KeyDatabase.knownDBTables" []
 
 beginTransaction :: IO ()
 beginTransaction =
-  do writeGlobal currentlyInTransaction True
+  do writeGlobalT currentlyInTransaction True
      withAllDBHandles (`hPutAndFlush` "begin immediate;")
 
 commitTransaction :: IO ()
 commitTransaction =
   do withAllDBHandles (`hPutAndFlush` "commit;")
-     writeGlobal currentlyInTransaction False
+     writeGlobalT currentlyInTransaction False
 
 rollbackTransaction :: IO ()
 rollbackTransaction =
   do withAllDBHandles (`hPutAndFlush` "rollback;")
-     writeGlobal currentlyInTransaction False
+     writeGlobalT currentlyInTransaction False
 
-currentlyInTransaction :: Global Bool
-currentlyInTransaction = global False Temporary
+currentlyInTransaction :: GlobalT Bool
+currentlyInTransaction = globalT "KeyDatabase.currentlyInTransaction" False
 
 -- converting arguments of a tuple to strings
 
-showTupleArgs :: a -> [String]
-showTupleArgs = splitTLC . removeOuterParens . showQTerm
+showTupleArgs :: Show a => a -> [String]
+showTupleArgs = splitTLC . removeOuterParens . show
 
 removeOuterParens :: String -> String
 removeOuterParens ('(':cs) = init cs
@@ -636,6 +646,7 @@ updStack char stack =
 
 --- The type of errors that might occur during a transaction.
 data TError = TError TErrorKind String
+ deriving (Eq,Show)
 
 --- The various kinds of transaction errors.
 data TErrorKind = KeyNotExistsError
@@ -647,9 +658,31 @@ data TErrorKind = KeyNotExistsError
                 | MaxError
                 | UserDefinedError
                 | ExecutionError
- deriving Show
+ deriving (Eq,Show)
 
 --- Transforms a transaction error into a string.
 showTError :: TError -> String
 showTError (TError k s) = "Transaction error " ++ show k ++ ": " ++ s
 
+------------------------------------------------------------------------------
+-- Define Monad instance for `Transaction`.
+
+mapTransResult :: (a -> b) -> TransResult a -> TransResult b
+mapTransResult f (OK a)     = OK (f a)
+mapTransResult _ (Error te) = Error te
+
+mapTrans :: (a -> b) -> Transaction a -> Transaction b
+mapTrans f (Trans act) = Trans (fmap (mapTransResult f) act)
+
+instance Functor Transaction where
+  fmap = mapTrans
+
+instance Applicative Transaction where
+  pure x = returnT x
+  tf <*> x = tf |>>= \f -> fmap f x
+
+instance Monad Transaction where
+  a1 >>= a2 = a1 |>>= a2
+  a1 >>  a2 = a1 |>>  a2
+
+------------------------------------------------------------------------------

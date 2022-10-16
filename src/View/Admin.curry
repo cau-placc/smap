@@ -13,7 +13,7 @@ module View.Admin (
 ) where
 
 import Prelude hiding (div)
-import Sort    ( sortBy )
+import Data.List      ( sortBy )
 
 import System.Controllers
 import Model.ExecEnv

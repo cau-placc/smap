@@ -45,13 +45,12 @@ module Model.Program (
   leqProgramLatestVersionDate,leqProgramFavoriterCount
 ) where
 
-import Char
+import Data.Char
+import Data.List        (last, (\\), isInfixOf, sortBy)
+import Data.Maybe
+import Data.Time
 import KeyDatabase
-import List        (last, (\\), isInfixOf)
-import Maybe
-import ReadNumeric
-import Sort        ( leqStringIgnoreCase, sortBy )
-import Time
+import Numeric
 
 import System.Models
 import Model.Smap
@@ -73,7 +72,7 @@ import System.Url
 --- Since this information is needed at once in most instances, program objects
 --- encapsulate all of the corresponding entities.
 data Program = Program Metadata Language User [Version] [Tag] [Comment] [User]
-  deriving Eq
+  deriving (Eq, Read, Show)
 
 --- The key of a program is identical to the key of its associated `Metadata`
 --- entity.
@@ -188,7 +187,9 @@ readProgramKey = readMetadataKey . ("Metadata"++)
 --- string does not contain a reasonable version number.
 --- @param str - the string that possibly contains a version number
 readVersionNumber :: String -> Maybe Int
-readVersionNumber = maybe Nothing (Just . fst) . readNat 
+readVersionNumber s =
+  case readNat s of [(n,"")] -> Just n
+                    _        -> Nothing
 
 --- Reads a program key and a version number from a pair of strings. `Nothing`
 --- is returned if one of the strings is not a valid value.
@@ -497,15 +498,18 @@ getFilter (ProgramQuery mK kw (ti,d,ta) v l a fs _ _) =
 
 --- Compares two programs regarding their titles.
 leqProgramTitle :: Sorting Program
-leqProgramTitle = (LEQ,\prog1 prog2 ->
-  programTitle prog1 `leqStringIgnoreCase`
-  programTitle prog2)
+leqProgramTitle =
+  (LEQ,
+   \prog1 prog2 ->
+      map toUpper (programTitle prog1) <= map toUpper (programTitle prog2))
 
 --- Compares two programs regarding the name of their implementation languages.
 leqProgramImplLangName :: Sorting Program
-leqProgramImplLangName = (LEQ,\prog1 prog2 ->
-  (languageName $ programImplLang prog1) `leqStringIgnoreCase`
-  (languageName $ programImplLang prog2))
+leqProgramImplLangName =
+  (LEQ,
+   \prog1 prog2 ->
+     map toUpper (languageName $ programImplLang prog1) <=
+     map toUpper (languageName $ programImplLang prog2))
 
 --- Compares two programs regarding their creation dates.
 leqProgramFirstVersionDate :: Sorting Program

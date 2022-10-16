@@ -46,40 +46,53 @@ module Model.Smap (
 
 import ERDGeneric
 import KeyDatabase
-import Time
+import Data.Time as Time
 
 import Config.Smap ( smapDB )
 
 data Metadata
  = Metadata ERDGeneric.Key String String Bool ERDGeneric.Key ERDGeneric.Key 
- deriving Eq
+ deriving (Eq, Read, Show)
 type MetadataTuple = (String,String,Bool,ERDGeneric.Key,ERDGeneric.Key)
+
 data Version
  = Version ERDGeneric.Key Int String String Time.CalendarTime ERDGeneric.Key 
- deriving Eq
+ deriving (Eq, Read, Show)
 type VersionTuple = (Int,String,String,Time.CalendarTime,ERDGeneric.Key)
-data Language = Language ERDGeneric.Key String String String deriving Eq
+
+data Language = Language ERDGeneric.Key String String String
+ deriving (Eq, Read, Show)
 type LanguageTuple = (String,String,String)
+
 data System = System ERDGeneric.Key String String ERDGeneric.Key 
+ deriving (Read, Show)
 type SystemTuple = (String,String,ERDGeneric.Key)
-data User = User ERDGeneric.Key String String String Bool deriving Eq
+
+data User = User ERDGeneric.Key String String String Bool
+ deriving (Eq, Read, Show)
 type UserTuple = (String,String,String,Bool)
-data Tag = Tag ERDGeneric.Key String   deriving Eq
+
+data Tag = Tag ERDGeneric.Key String   deriving (Eq, Read, Show)
 type TagTuple = String
+
 data Comment
  = Comment ERDGeneric.Key String Time.CalendarTime ERDGeneric.Key
-    ERDGeneric.Key deriving Eq
+    ERDGeneric.Key deriving (Eq, Read, Show)
 type CommentTuple = (String,Time.CalendarTime,ERDGeneric.Key,ERDGeneric.Key)
 data MetadataKey = MetadataKey ERDGeneric.Key  deriving (Eq, Show)
 data VersionKey = VersionKey ERDGeneric.Key 
-data LanguageKey = LanguageKey ERDGeneric.Key deriving (Eq, Show)
+data LanguageKey = LanguageKey ERDGeneric.Key deriving (Eq, Read, Show)
 data SystemKey = SystemKey ERDGeneric.Key 
-data UserKey = UserKey ERDGeneric.Key  deriving (Eq, Show)
+data UserKey = UserKey ERDGeneric.Key  deriving (Eq, Read, Show)
 data TagKey = TagKey ERDGeneric.Key  deriving (Eq, Show)
 data CommentKey = CommentKey ERDGeneric.Key 
+
 data Favoriting = Favoriting ERDGeneric.Key ERDGeneric.Key 
+ deriving (Read, Show)
 type FavoritingTuple = (ERDGeneric.Key,ERDGeneric.Key)
-data Tagging = Tagging ERDGeneric.Key ERDGeneric.Key 
+
+data Tagging = Tagging ERDGeneric.Key ERDGeneric.Key
+ deriving (Read, Show)
 type TaggingTuple = (ERDGeneric.Key,ERDGeneric.Key)
 
 --- Transforms entity Metadata into tuple representation.

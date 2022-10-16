@@ -4,7 +4,7 @@
 --- and a list of associated systems.
 ---
 --- @author Lasse Kristopher Meyer
---- @version November 2018
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Model.ExecEnv (
@@ -16,9 +16,9 @@ module Model.ExecEnv (
   createLanguage,getAllLanguages,createSystem
 ) where
 
-import Char
+import Data.Char ( toLower )
 import KeyDatabase
-import Maybe
+import Data.Maybe ( listToMaybe )
 
 import Model.Smap
 

@@ -6,10 +6,9 @@
 module ERDGeneric where
 
 import KeyDatabase
-import List
+import Data.List
 import ReadShowTerm
-import Read
-import Char(isDigit)
+import Data.Char(isDigit)
 
 ------------------------------------------------------------------------------
 -- Handling of database keys
@@ -29,7 +28,7 @@ showDatabaseKey en fromenkey enkey = en ++ show (fromenkey enkey)
 readDatabaseKey :: String -> (Key -> enkey) -> String -> Maybe enkey
 readDatabaseKey en toenkey s =
   let (ens,ks) = splitAt (length en) s
-   in if ens==en && all isDigit ks then Just (toenkey (readNat ks))
+   in if ens==en && all isDigit ks then Just (toenkey (read ks))
                                    else Nothing
 
 
@@ -37,15 +36,18 @@ readDatabaseKey en toenkey s =
 -- Generic operations to modify the database
 
 --- Insert a new entity and assign a new key for it.
-newEntry :: (Key -> t -> Dynamic) -> (Key -> t -> en) -> t -> Transaction en
+newEntry :: Show t =>
+            (Key -> t -> Dynamic) -> (Key -> t -> en) -> t -> Transaction en
 newEntry pred info2entry info =
   newDBEntry pred info |>>= \k -> returnT (info2entry k info)
 
 -- Insert new relationship represented as an entity.
-newEntryR :: (Key -> (a,b) -> Dynamic) -> a -> b -> Transaction ()
+newEntryR :: (Show a, Show b) =>
+             (Key -> (a,b) -> Dynamic) -> a -> b -> Transaction ()
 newEntryR entrypred key1 key2 = newDBEntry entrypred (key1,key2) |>> doneT
 
-getEntry :: (Key -> t -> Dynamic) -> (Key -> t -> en) -> Key -> Transaction en
+getEntry :: (Read t, Show t) =>
+            (Key -> t -> Dynamic) -> (Key -> t -> en) -> Key -> Transaction en
 getEntry pred info2entry key = seq pred $ seq key $
   getDB (getDBInfo pred key) |>>=
   maybe (errorT (TError KeyNotExistsError
@@ -54,7 +56,7 @@ getEntry pred info2entry key = seq pred $ seq key $
 
 -- Delete a relationship represented as an entity.
 -- If the relationship does not exist, a NoRelationshipError is raised.
-deleteEntryR :: (Eq a, Show a, Eq b, Show b) =>
+deleteEntryR :: (Eq a, Read a, Show a, Eq b, Read b, Show b) =>
                 (Key -> (a,b) -> Dynamic) -> a -> b -> Transaction ()
 deleteEntryR entrypred key1 key2 =
   getDB (transformQ (map fst . filter (\ (_,i) -> i==(key1,key2)))
@@ -70,7 +72,8 @@ deleteEntryR entrypred key1 key2 =
 -- Generic integrity tests for keys.
 
 -- If there is no entry with a given key, raise a transaction error.
-existsEntryWithDBKey :: String -> (Key -> t -> Dynamic) -> Key -> Transaction ()
+existsEntryWithDBKey :: (Read t, Show t) =>
+                        String -> (Key -> t -> Dynamic) -> Key -> Transaction ()
 existsEntryWithDBKey ename entrypred key =
   getDB (getDBInfo entrypred key) |>>=
   maybe (errorT (TError KeyNotExistsError
@@ -80,7 +83,7 @@ existsEntryWithDBKey ename entrypred key =
 
 -- If a given key occurs in a (foreign key) attribute of an entity,
 -- raise a transaction error.
-requiredForeignDBKey :: (Eq k, Show k) =>
+requiredForeignDBKey :: (Read t, Show t, Eq k, Show k) =>
                         String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
                      -> (en -> k) -> k -> Transaction ()
 requiredForeignDBKey ename entrypred info2entry keyf key =
@@ -90,7 +93,8 @@ requiredForeignDBKey ename entrypred info2entry keyf key =
    else errorT (TError KeyRequiredError
                        ("key: "++show key ++ " required in table: " ++ ename))
 
-getAllEntities :: (Key -> t -> Dynamic) -> (Key -> t -> en) -> Query [en]
+getAllEntities :: (Read t, Show t) =>
+                  (Key -> t -> Dynamic) -> (Key -> t -> en) -> Query [en]
 getAllEntities entrypred info2entry =
   transformQ (map (uncurry info2entry)) (allDBKeyInfos entrypred)
 
@@ -113,7 +117,7 @@ duplicatePTest xs =
 -- Uniqueness tests.
  
 -- Test whether an attribute value does not yet exist
-unique :: (Eq a, Show a) => 
+unique :: (Eq a, Show a, Read t, Show t) => 
           String -> (Key -> t -> Dynamic) -> (Key -> t -> en) -> (en -> a) -> a
        -> Transaction ()
 unique ename entrypred info2entry selector attrval =
@@ -125,7 +129,7 @@ unique ename entrypred info2entry selector attrval =
                        (ename++" entry for unique attribute "
                         ++show attrval++" already exists"))
 
-uniqueUpdate :: (Eq a, Show a) => 
+uniqueUpdate :: (Eq a, Show a, Read t, Show t) => 
                 String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
              -> (en -> Key) -> (en -> a) -> en -> Transaction ()
 uniqueUpdate ename entrypred info2entry keyf selector obj =
@@ -145,7 +149,8 @@ uniqueUpdate ename entrypred info2entry keyf selector obj =
                                    (ename++" entry for unique attribute "
                                     ++show (selector obj)++" already exists")))
 
-uniqueC :: (Eq a, Show a) => String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
+uniqueC :: (Eq a, Show a, Read t, Show t) =>
+           String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
         -> (en -> a) -> en -> Transaction ()
 uniqueC ename entrypred info2entry selector obj =
   getDB (allDBKeyInfos entrypred) |>>= \kis ->
@@ -160,7 +165,7 @@ uniqueC ename entrypred info2entry selector obj =
 -- Uniqueness of a combination of two attributes.
 -- Check whether this combination already exists.
 -- If it exists, a transaction error is generated, otherwise everything is ok.
-unique2 :: (Eq a, Eq b) =>
+unique2 :: (Eq a, Read a, Show a, Eq b, Read b, Show b) =>
            (Key -> (a,b) -> Dynamic) -> a -> b -> Transaction ()
 unique2 entrypred k1 k2 =
   getDB (allDBInfos entrypred) |>>= \is ->
@@ -168,7 +173,7 @@ unique2 entrypred k1 k2 =
    then doneT
    else errorT (TError UniqueError "relationship already exists")
 
-unique2C :: (Eq a, Eq b) =>
+unique2C :: (Eq a, Read a, Show a, Eq b, Read b, Show b) =>
             (Key -> (a,b) -> Dynamic) ->  a -> b -> Transaction ()
 unique2C entrypred k1 k2 =
   getDB (allDBInfos entrypred) |>>= \is ->
@@ -186,7 +191,7 @@ maxPTest max xs =
   else doneT
 
 
-maxTest :: (Eq a, Show a) => 
+maxTest :: (Read t, Show t, Eq a, Show a) => 
            String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
         -> (en -> a) -> Int -> a -> Transaction ()
 maxTest ename entrypred info2entry selector max attr =
@@ -197,7 +202,7 @@ maxTest ename entrypred info2entry selector max attr =
    else errorT (TError MaxError ("max reached for attribute " 
                                  ++show attr++" in entity "++ename))
 
-maxTestUpdate :: (Eq a, Show a) =>
+maxTestUpdate :: (Read t, Show t, Eq a, Show a) =>
                  String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
               -> (en -> Key) -> (en -> a) -> Int -> en -> Transaction ()
 maxTestUpdate ename entrypred info2entry keyf selector max obj =
@@ -210,7 +215,7 @@ maxTestUpdate ename entrypred info2entry keyf selector max obj =
    else errorT (TError MaxError ("max reached for attribute "
                                  ++show (selector obj)++" in entity "++ename))
 
-maxTestC :: (Eq a, Show a) =>
+maxTestC :: (Read t, Show t, Eq a, Show a) =>
             String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
          -> (en -> a) -> Int -> a -> Transaction ()
 maxTestC ename entrypred info2entry selector max attr =
@@ -220,7 +225,7 @@ maxTestC ename entrypred info2entry selector max attr =
    else errorT (TError MaxError ("maximum exceeded for attribute " 
                                  ++show attr++" in entity "++ename))
 
-minTestC :: (Eq a, Show a) =>
+minTestC :: (Read t, Show t, Eq a, Show a) =>
             String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
          -> (en -> a) -> Int -> a -> Transaction ()
 minTestC ename entrypred info2entry selector min attr =
@@ -231,7 +236,7 @@ minTestC ename entrypred info2entry selector min attr =
                                    ++show attr++" in entity "++ename))
 
 -- Maximum test before inserting a relationship with a given key:
-maxTestInsert :: (Eq a, Show a) =>
+maxTestInsert :: (Read t, Show t, Eq a, Show a) =>
                  String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
               -> (en -> a) -> Int -> a -> Transaction ()
 maxTestInsert ename entrypred info2entry selector maxrange attr =
@@ -242,7 +247,7 @@ maxTestInsert ename entrypred info2entry selector maxrange attr =
                                  ++show attr++" in entity "++ename))
 
 -- Minimum test before deleting a relationship
-minTestDelete :: (Eq a, Show a) =>
+minTestDelete :: (Read t, Show t, Eq a, Show a) =>
                  String -> (Key -> t -> Dynamic) -> (Key -> t -> en)
               -> (en -> a) -> Int -> a -> Transaction ()
 minTestDelete ename entrypred info2entry selector min attr =
@@ -256,31 +261,34 @@ minTestDelete ename entrypred info2entry selector min attr =
 -------------------------------------------------------------------------
 -- Saving and restoring dynamic predicates.
 
-saveDBTerms :: String -> String -> (Key -> a -> Dynamic)
-            -> (Key -> a -> _) -> IO ()
+saveDBTerms :: (Read a, Show a, Show b) =>
+               String -> String -> (Key -> a -> Dynamic)
+            -> (Key -> a -> b) -> IO ()
 saveDBTerms path ename dynpred toentity = do
   keyinfos <- runQ (allDBKeyInfos dynpred)
   let savefile = path++"/"++ename++".terms"
       terms = map (uncurry toentity) keyinfos
   if null path
-   then putStrLn (unlines (map showQTerm terms)) -- show only
+   then putStrLn (unlines (map show terms)) -- show only
    else do putStrLn $ "Saving into "++savefile
-           writeQTermListFile savefile terms
+           writeFile savefile (unlines (map show terms))
 
-restoreDBTerms :: String -> String -> (Key -> a -> Dynamic)
+restoreDBTerms :: (Read en, Show a) =>
+                  String -> String -> (Key -> a -> Dynamic)
                -> (en->Key) -> (en->a)  -> IO ()
 restoreDBTerms path ename dynpred enkey eninfo = do
   let savefile = path++"/"++ename++".terms"
-  putStrLn $ "Restoring from "++savefile
-  terms <- readQTermListFile savefile
+  putStrLn $ "Restoring from " ++ savefile
+  terms <- readFile savefile >>= return . map read . lines
   runJustT (mapT_ (\t -> newDBKeyEntry dynpred (enkey t) (eninfo t)) terms)
 
-restoreDBRelTerms :: String -> String -> (Key -> a -> Dynamic)
+restoreDBRelTerms :: (Read en, Show a) =>
+                     String -> String -> (Key -> a -> Dynamic)
                   -> (en->a)  -> IO ()
 restoreDBRelTerms path ename dynpred eninfo = do
   let savefile = path++"/"++ename++".terms"
   putStrLn $ "Restoring from "++savefile
-  terms <- readQTermListFile savefile
+  terms <- readFile savefile >>= return . map read . lines
   runJustT (mapT_ (\t -> newDBEntry dynpred (eninfo t)) terms)
 
 -------------------------------------------------------------------------

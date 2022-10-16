@@ -12,7 +12,7 @@ module System.Views (
   View, withConfirmation, renderWui
 ) where
 
-import Prelude hiding (div)
+import Prelude hiding (div,empty)
 
 import System.Controllers
 import System.SmapHtml

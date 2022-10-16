@@ -3,7 +3,7 @@
 --- essentially the CGI parameter strings passed to the main script).
 ---
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.Url (
@@ -12,8 +12,8 @@ module System.Url (
 ) where
 
 import HTML.Base
-import List
-import ReadNumeric
+import Data.List
+import Numeric
 
 --------------------------------------------------------------------------------
 
@@ -70,9 +70,9 @@ getIntValueFromQueryString :: String -> [(String,String)] -> IO (Maybe Int)
 getIntValueFromQueryString field qStr =
   let mValStr = lookup field qStr
    in return $ maybe Nothing
-                     (\valStr -> maybe Nothing
-                                       (Just . fst)
-                                       (readInt valStr))
+                     (\valStr -> case readInt valStr of
+                                   [(n,_)] -> Just n
+                                   _       -> Nothing )
                      mValStr
 
 --- Looks up a field in a query string and returns its value as an URL encoded

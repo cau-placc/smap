@@ -6,22 +6,22 @@
 --- the execution results.
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version April 2019
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.Execution (
   ExecResult(..), execute
 ) where
 
-import Directory
-import IO
-import IOExts    ( connectToCommand, readCompleteFile )
-import List      ( last )
-import Maybe
-import Read
-import ReadNumeric
-import System
-import Time
+import Data.List      ( last )
+import Data.Time
+import Numeric            ( readNat )
+import System.Directory
+import System.Environment ( getEnv )
+import System.IO
+import System.IOExts      ( connectToCommand, readCompleteFile )
+import System.Process     ( getPID, system )
+import System.PreludeHelpers
 
 import HTML.Base     ( string2urlencoded )
 import Network.Socket
@@ -38,6 +38,7 @@ import Model.ExecEnv
 --- @cons ExecSuccess out - the constructor for successful executions
 --- @cons ExecError out   - the constructor for failed executions
 data ExecResult = ExecSuccess String | ExecError String
+ deriving (Read, Show)
 
 --- Executes the given source code with the given language implementation
 --- system and returns an `ExecResult` containing the execution output. If no
@@ -91,12 +92,12 @@ connectToCGI url input =
 -- @param postResponse - the response to the POST request as plain text
 readResult :: String -> (Int,String)
 readResult postResponse =
-  maybe (1,"No exit code found in answer from execution service:\n"++
-           postResponse)
-        (\(exitCode,_) -> (exitCode,drop 1 rest))
-        (ReadNumeric.readNat fstLn)
-  where
-    (fstLn,rest) = break (=='\n') postResponse
+  case readNat fstLn of
+    [(exitCode,_)] ->  (exitCode,drop 1 rest)
+    _ -> (1,"No exit code found in answer from execution service:\n" ++
+            postResponse)
+ where
+  (fstLn,rest) = break (=='\n') postResponse
 
 -- An I/O action that shows the answer of a web server to the request of a
 -- document with the GET method where the input is separated in the URL
@@ -154,7 +155,7 @@ partitionUrl purl = let (protocol,url) = splitAt 7 purl in
   where
     result host path snrs = if snr == 0 then Nothing else Just (host,path,snr)
       where
-        snr = Read.readNat snrs
+        snr = read snrs
 
 -- Yield content (i.e., the string following the first empty line).
 -- @author Michael Hanus
@@ -181,7 +182,7 @@ logProgram prog fnameextension sysname = do
               concatMap (\f->'_':show (f ct))
                         [ctYear,ctMonth,ctDay,ctHour,ctMin,ctSec] ++
               "." ++ fnameextension
-  raddr <- getEnviron "REMOTE_ADDR"
+  raddr <- getEnv "REMOTE_ADDR"
   rhost <- if null raddr then return "???" else getHostnameForIP raddr
   writeFile fname
             ("-- From: "++rhost++"\n"++"-- System: "++sysname++"\n"++prog++"\n")
@@ -197,6 +198,6 @@ getHostnameForIP ipaddr = (flip catch) (\_ -> return "") $ do
 ensureDirectoryExists :: String -> IO ()
 ensureDirectoryExists dir = do
   exdir <- doesDirectoryExist dir
-  if exdir then done else createDirectory dir
+  if exdir then return () else createDirectory dir
 
 ------------------------------------------------------------------------------

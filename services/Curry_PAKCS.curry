@@ -2,12 +2,13 @@
 -- Implementation of a simple web service to execute Curry programs with PAKCS
 --------------------------------------------------------------------------------
 
-import Directory
-import FilePath
-import IO
-import IOExts
-import List
-import System
+import Control.Monad    ( when )
+import Data.List
+import System.Directory
+import System.FilePath
+import System.IO
+import System.IOExts    ( evalCmd )
+import System.Process   ( getPID, system )
 
 import HTML.Base        ( urlencoded2string )
 

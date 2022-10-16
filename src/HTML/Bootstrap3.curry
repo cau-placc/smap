@@ -2,7 +2,7 @@
 --- Library for Bootstrap 3 components (work in progress).
 ---
 --- @author Lasse Kristopher Meyer
---- @version October 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module HTML.Bootstrap3 (
@@ -16,8 +16,8 @@ module HTML.Bootstrap3 (
   parentId,targetClass,targetId,withLoadingText
 ) where
 
-import Char
-import List
+import Data.Char
+import Data.List
 
 import HTML.Base
 import HTML.Html5

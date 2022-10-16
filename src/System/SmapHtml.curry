@@ -3,7 +3,7 @@
 --- the basic layout, WUI forms and views.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version July 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.SmapHtml (
@@ -28,9 +28,9 @@ module System.SmapHtml (
   spTable
 ) where
 
-import Char
-import List
-import Prelude hiding (div,span)
+import Data.Char
+import Data.List
+import Prelude hiding (div,span,empty)
 import qualified Prelude(div)
 
 import HTML.Html5 hiding (id)
@@ -222,7 +222,7 @@ stickyFooter =
   (div [] `withId` "sticky-footer")
     [container
       [p [classA "text-muted"]
-        [text "&copy; 2014-2020, Lasse Kristopher Meyer, Michael Hanus &bull; "
+        [text "&copy; 2014-2022, Lasse Kristopher Meyer, Michael Hanus &bull; "
         ,a [href "?about"] [text " About"]]]]
 
 -- A panel with a width (in columns between 2 and 12), title, body, and footer.

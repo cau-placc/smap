@@ -22,10 +22,9 @@ module System.SmapWui (
 ) where
 
 import HTML.Bootstrap3
-import Char
-import List
-import Prelude hiding (div,span)
-import Time
+import Data.Char
+import Data.List
+import Prelude hiding (div,span,empty)
 import WUI
 
 import System.SmapHtml
@@ -38,7 +37,7 @@ import System.SmapHtml
 --- a label and a value.
 --- @param renderedLabel - HTML expressions for the label
 --- @param renderValue   - a rendering for the value of the given type
-wSmapConstant :: [HtmlExp] -> (a -> [HtmlExp]) -> WuiSpec a
+wSmapConstant :: (Read a, Show a) => [HtmlExp] -> (a -> [HtmlExp]) -> WuiSpec a
 wSmapConstant renderedLabel renderValue = wConstant $ \value ->
   div [classA "clearfix"]
     [div [classA "pull-left"]
@@ -92,35 +91,38 @@ wSmapSelectBool label true false = wSelectBool true false
   `withRendering` smapSelectRendering label
 
 --- A widget combinator for pairs of values.
-wSmapPair :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
+wSmapPair :: (Data a, Data b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
 wSmapPair wa wb = wPair wa wb
   `withRendering` smapTupleRendering
 
 -- A widget combinator for triples of values.
-wSmapTriple :: (Eq a, Eq b, Eq c) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec (a,b,c)
+wSmapTriple :: (Data a, Data b, Data c) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec (a,b,c)
 wSmapTriple wa wb wc = wTriple wa wb wc
   `withRendering` smapTupleRendering
 
 -- A widget combinator for 4-tuples of values.
-wSmap4Tuple :: (Eq a, Eq b, Eq c, Eq d) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d 
-  -> WuiSpec (a,b,c,d)
+wSmap4Tuple :: (Data a, Data b, Data c, Data d) =>
+               WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d 
+            -> WuiSpec (a,b,c,d)
 wSmap4Tuple wa wb wc wd = w4Tuple wa wb wc wd
   `withRendering` smapTupleRendering
 
 -- A widget combinator for 5-tuples of values.
-wSmap5Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
-  -> WuiSpec (a,b,c,d,e)
+wSmap5Tuple :: (Data a, Data b, Data c, Data d, Data e) =>
+               WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
+            -> WuiSpec (a,b,c,d,e)
 wSmap5Tuple wa wb wc wd we = w5Tuple wa wb wc wd we
   `withRendering` smapTupleRendering
 
 -- A widget combinator for 6-tuples of values.
-wSmap6Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
-  -> WuiSpec f -> WuiSpec (a,b,c,d,e,f)
+wSmap6Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f) =>
+               WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
+            -> WuiSpec f -> WuiSpec (a,b,c,d,e,f)
 wSmap6Tuple wa wb wc wd we wf = w6Tuple wa wb wc wd we wf
   `withRendering` smapTupleRendering
 
 -- A widget combinator for 7-tuples of values.
-wSmap7Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => 
+wSmap7Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g) => 
      WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
   -> WuiSpec f -> WuiSpec g -> WuiSpec (a,b,c,d,e,f,g)
 wSmap7Tuple wa wb wc wd we wf wg = w7Tuple wa wb wc wd we wf wg

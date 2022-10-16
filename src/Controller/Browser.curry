@@ -15,12 +15,7 @@ module Controller.Browser (
   browserController, modifyProgramForm, createCommentForm
 ) where
 
-import Char
-import Float
-import Global
-import List
-import Sort
-import Time
+import Data.List ( split )
 
 import HTML.Base ( HtmlFormDef, formDefWithID, formElem )
 import HTML.Session
@@ -155,27 +150,26 @@ applySearchAndListPrograms
   -> (ProgramQuery -> IO [Program])
   -> ([Program] -> [(Tag,Int)] -> Int -> SearchPanelData -> PagerData -> View)
   -> Controller
-applySearchAndListPrograms url@(_,qStr) getProgs programListView =
-  do (query,sets) <- getQueryAndSettingsFromQueryString qStr
-     results      <- getProgs query
-     totalResults <- return $ length results
-     popularTags  <- getAllPopularTags
-     langs        <- getAllLanguages
-     sortMenu     <- return $ map fst programSortingOptions
-     pagerData    <- getPagerData totalResults
-     pageResults  <- getPageResults pagerData results
-     return $ programListView pageResults popularTags totalResults
-                              (langs,sortMenu,sets) pagerData
-  where
-    getPagerData totalResults = 
-      do mPage <- getIntValueFromQueryString "page" qStr
-         return (getCurrPage mPage,getTotalPages totalResults,url)
-    getCurrPage 
-      = maybe 1 (\page -> if page <= 0 then 1 else page)
-    getTotalPages totalResults 
-      = round $ (i2f totalResults) /. (i2f resultsPerPage) +. 0.49
-    getPageResults (currPage,_,_) =
-      return . take resultsPerPage . drop ((currPage-1)*resultsPerPage)
+applySearchAndListPrograms url@(_,qStr) getProgs programListView = do
+  (query,sets) <- getQueryAndSettingsFromQueryString qStr
+  results      <- getProgs query
+  totalResults <- return $ length results
+  popularTags  <- getAllPopularTags
+  langs        <- getAllLanguages
+  sortMenu     <- return $ map fst programSortingOptions
+  pagerData    <- getPagerData totalResults
+  pageResults  <- getPageResults pagerData results
+  return $ programListView pageResults popularTags totalResults
+                           (langs,sortMenu,sets) pagerData
+ where
+  getPagerData totalResults = 
+    do mPage <- getIntValueFromQueryString "page" qStr
+       return (getCurrPage mPage,getTotalPages totalResults,url)
+  getCurrPage = maybe 1 (\page -> if page <= 0 then 1 else page)
+  getTotalPages totalResults =
+    round $ (fromInt totalResults) / (fromInt resultsPerPage) + 0.49
+  getPageResults (currPage,_,_) =
+    return . take resultsPerPage . drop ((currPage-1)*resultsPerPage)
 
 -- Returns a controller that simply displays a list of all tags on Smap sorted
 -- by name in ascending order.
@@ -225,13 +219,12 @@ modifyProgramController (progKey,versNum) = getProgramByKey progKey >>=
   maybe (showStdErrorPage programNotFoundErr)
         (\prog ->
            checkAuthorization (browserOperation $ ModifyProgram prog) $ \_ -> do
-             writeSessionData browserStore (prog,versNum)
+             putSessionData browserStore (prog,versNum)
              return [formElem modifyProgramForm])
 
 --- The data stored for executing the "modifyProgram" form.
-browserStore :: Global (SessionStore (Program,Int))
-browserStore =
-  global emptySessionStore (Persistent (inSessionDataDir "browserStore"))
+browserStore :: SessionStore (Program,Int)
+browserStore = sessionStore "browserStore"
 
 modifyProgramForm :: HtmlFormDef (Program,Int)
 modifyProgramForm =
@@ -253,7 +246,7 @@ createCommentController (progKey,versNum) = getProgramByKey progKey >>=
   maybe (showStdErrorPage programNotFoundErr)
         (\prog ->
            checkAuthorization (browserOperation $ CreateComment) $ \_ -> do
-             writeSessionData browserStore (prog,versNum)
+             putSessionData browserStore (prog,versNum)
              return [formElem createCommentForm])
 
 createCommentForm :: HtmlFormDef (Program,Int)
@@ -328,7 +321,7 @@ showProgramPage (progKey,versNum) = do
     (showStdErrorPage programNotFoundErr)
     (\prog ->
         checkAuthorization (browserOperation $ ShowProgram prog) $ \azData -> do
-          writeSessionData browserStore (prog,versNum)
+          putSessionData browserStore (prog,versNum)
           maybe (showStdErrorPage $ versionNotFoundErr prog)
                 (\validVersNum -> return $ programPage
                                              (prog,validVersNum)

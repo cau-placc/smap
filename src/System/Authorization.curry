@@ -4,7 +4,7 @@
 --- `AuthorizedOperations`.
 --- 
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.Authorization (
@@ -51,6 +51,7 @@ checkAuthorization getAccResult controller =
 --- @cons Standard name - user type: standard user with name `name`
 --- @cons Admin name    - user type: admin with name `name`
 data AuthZData = Guest | Standard String | Admin String
+ deriving (Read,Show)
 
 --- Turns authentication data stored in the current session to authorization
 --- data for access requests.

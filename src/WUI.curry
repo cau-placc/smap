@@ -7,10 +7,10 @@
 --- [this web page](http://www.informatik.uni-kiel.de/~pakcs/WUI).
 ---
 --- @author Michael Hanus
---- @version October 2020
+--- @version October 2022
 ------------------------------------------------------------------------------
 
-{-# OPTIONS_CYMAKE -Wno-incomplete-patterns #-}
+{-# OPTIONS_FRONTEND -Wno-incomplete-patterns #-}
 
 module WUI
   ( --WuiState,cgiRef2state,state2cgiRef,value2state,state2value,
@@ -34,19 +34,16 @@ module WUI
     WTree(..),wTree,
     WuiHandler,wuiHandler2button,
     renderTuple,renderTaggedTuple,renderList,
-    WuiStore, setWuiStore, wui2FormDef, setParWuiStore, pwui2FormDef,
+    WuiStore, WuiSessionStore, setWuiStore, wui2FormDef,
+    ParWuiSessionStore, setParWuiStore, pwui2FormDef,
     wuiSimpleRenderer, ErrorRendering, withErrorRendering
   )
  where
 
-import Char              ( isDigit, isSpace )
-import FunctionInversion ( invf1 )
-import Global
-import List              ( elemIndex )
-import Maybe
-import Read              ( readNat )
-import ReadShowTerm
+import Data.Char               ( isDigit, isSpace )
+import Data.List               ( elemIndex )
 
+import Data.Function.Inversion ( invf1 )
 import HTML.Base
 import HTML.Session
 
@@ -72,11 +69,11 @@ cgiRef2state cr = Ref cr
 state2cgiRef :: WuiState -> HtmlRef
 state2cgiRef (Ref cr) = cr
 
-value2state :: _ -> WuiState
-value2state v = Hidden (showQTerm v)
+value2state :: Show a => a -> WuiState
+value2state v = Hidden (show v)
 
-state2value :: WuiState -> _
-state2value (Hidden s) = readQTerm s
+state2value :: Read a => WuiState -> a
+state2value (Hidden s) = read s
 
 states2state :: [WuiState] -> WuiState
 states2state sts = CompNode sts
@@ -190,7 +187,7 @@ transformWSpec (a2b,b2a) (WuiSpec wparamsa showhtmla correcta readvaluea) =
 --- from the old type to the new type. This function must be bijective
 --- and operationally invertible (i.e., the inverse must be computable
 --- by narrowing). Otherwise, use <code>transformWSpec</code>!
-adaptWSpec :: (a->b) -> WuiSpec a -> WuiSpec b
+adaptWSpec :: (Data a, Data b) => (a -> b) -> WuiSpec a -> WuiSpec b
 adaptWSpec a2b = transformWSpec (a2b, invf1 a2b)
 
 ------------------------------------------------------------------------------
@@ -199,7 +196,7 @@ adaptWSpec a2b = transformWSpec (a2b, invf1 a2b)
 --- A hidden widget for a value that is not shown in the WUI.
 --- Usually, this is used in components of larger
 --- structures, e.g., internal identifiers, data base keys.
-wHidden :: WuiSpec a
+wHidden :: (Read a, Show a) => WuiSpec a
 wHidden =
   WuiSpec (head, renderError "?", const True) -- dummy values, not used
           (\_ _ v -> (hempty, value2state v))
@@ -209,7 +206,7 @@ wHidden =
 --- A widget for values that are shown but cannot be modified.
 --- The first argument is a mapping of the value into a HTML expression
 --- to show this value.
-wConstant :: (a -> HtmlExp) -> WuiSpec a
+wConstant :: (Read a, Show a) => (a -> HtmlExp) -> WuiSpec a
 wConstant showhtml =
   WuiSpec (head, renderError "?", const True)
           (\wparams _ v -> ((renderOf wparams) [showhtml v], value2state v))
@@ -319,7 +316,7 @@ wSelect showelem selset =
   WuiSpec (head, renderError "?", const True)
           (checkLegalInput selWidget)
           (\wparams -> conditionOf wparams)
-          (\env s -> selset !! readNat (env (state2cgiRef s)))
+          (\env s -> selset !! read (env (state2cgiRef s)))
  where
   selWidget render v =
     let ref free
@@ -382,7 +379,7 @@ wMultiCheckSelect showelem selset =
      in (render (map showItem numsetitems),
          states2state (map cgiRef2state refs))
 
-newVars :: [_]
+newVars :: Data a => [a]
 newVars = unknown : newVars
 
 --- A widget to select a value from a given list of values via a radio button.
@@ -394,7 +391,7 @@ wRadioSelect showelem selset =
   WuiSpec (renderTuple, tupleErrorRendering, const True)
           (checkLegalInput radioWidget)
           (\wparams -> conditionOf wparams)
-          (\env s -> selset !! readNat (env (state2cgiRef s)))
+          (\env s -> selset !! read (env (state2cgiRef s)))
  where
   radioWidget render v =
     let ref free
@@ -416,7 +413,7 @@ wRadioBool truehexps falsehexps =
   wRadioSelect (\b -> if b then truehexps else falsehexps) [True,False]
 
 --- WUI combinator for pairs.
-wPair :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
+wPair :: (Data a, Data b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
 -- This simple implementation does not work in KiCS2 due to non-determinism
 -- cause by functional patterns:
 -- wPair = wCons2 (\a b -> (a,b))
@@ -441,7 +438,8 @@ wPair (WuiSpec wparamsa showa cora reada) (WuiSpec wparamsb showb corb readb) =
 --- The first argument is the binary constructor.
 --- The second and third arguments are the WUI specifications
 --- for the argument types.
-wCons2 :: (Eq a, Eq b) => (a->b->c) -> WuiSpec a -> WuiSpec b -> WuiSpec c
+wCons2 :: (Data a, Data b, Data c) =>
+          (a->b->c) -> WuiSpec a -> WuiSpec b -> WuiSpec c
 wCons2 cons (WuiSpec wparamsa showa cora reada)
             (WuiSpec wparamsb showb corb readb) =
   WuiSpec (renderTuple, tupleErrorRendering, const True) showc corc readc
@@ -464,8 +462,8 @@ wCons2 cons (WuiSpec wparamsa showa cora reada)
 
 
 --- WUI combinator for triples.
-wTriple :: (Eq a, Eq b, Eq c) => WuiSpec a -> WuiSpec b -> WuiSpec c
-                              -> WuiSpec (a,b,c)
+wTriple :: (Data a, Data b, Data c) =>
+           WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec (a,b,c)
 -- This simple implementation does not work in KiCS2 due to non-determinism
 -- cause by functional patterns:
 --wTriple = wCons3 (\a b c -> (a,b,c))
@@ -495,8 +493,8 @@ wTriple (WuiSpec wparamsa showa cora reada)
 --- WUI combinator for constructors of arity 3.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons3 :: (Eq a, Eq b, Eq c) => (a -> b -> c -> d) -> WuiSpec a -> WuiSpec b
-                             -> WuiSpec c -> WuiSpec d
+wCons3 :: (Data a, Data b, Data c, Data d) => (a -> b -> c -> d)
+       -> WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d
 wCons3 cons (WuiSpec wparamsa showa cora reada)
             (WuiSpec wparamsb showb corb readb)
             (WuiSpec wparamsc showc corc readc) =
@@ -524,7 +522,7 @@ wCons3 cons (WuiSpec wparamsa showa cora reada)
 
 
 --- WUI combinator for tuples of arity 4.
-w4Tuple :: (Eq a, Eq b, Eq c, Eq d) => WuiSpec a -> WuiSpec b -> WuiSpec c
+w4Tuple :: (Data a, Data b, Data c, Data d) => WuiSpec a -> WuiSpec b -> WuiSpec c
                                     -> WuiSpec d -> WuiSpec (a,b,c,d)
 --w4Tuple = wCons4 (\a b c d -> (a,b,c,d)) -- does not work for KiCS2
 w4Tuple wa wb wc wd =
@@ -536,7 +534,7 @@ w4Tuple wa wb wc wd =
 --- WUI combinator for constructors of arity 4.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons4  :: (Eq a, Eq b, Eq c, Eq d) => (a->b->c->d->e) ->
+wCons4  :: (Data a, Data b, Data c, Data d, Data e) => (a->b->c->d->e) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e
 wCons4 cons wa wb wc wd =
   adaptWSpec (\ ((a,b),(c,d)) -> cons a b c d)
@@ -544,7 +542,7 @@ wCons4 cons wa wb wc wd =
 
 
 --- WUI combinator for tuples of arity 5.
-w5Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w5Tuple :: (Data a, Data b, Data c, Data d, Data e) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec (a,b,c,d,e)
 --w5Tuple = wCons5 (\a b c d e -> (a,b,c,d,e)) -- does not work for KiCS2
 w5Tuple wa wb wc wd we =
@@ -555,7 +553,7 @@ w5Tuple wa wb wc wd we =
 --- WUI combinator for constructors of arity 5.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons5  :: (Eq a, Eq b, Eq c, Eq d, Eq e) => (a->b->c->d->e->f) ->
+wCons5  :: (Data a, Data b, Data c, Data d, Data e, Data f) => (a->b->c->d->e->f) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f
 wCons5 cons wa wb wc wd we =
@@ -564,7 +562,7 @@ wCons5 cons wa wb wc wd we =
 
 
 --- WUI combinator for tuples of arity 6.
-w6Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w6Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec (a,b,c,d,e,f)
 --w6Tuple = wCons6 (\a b c d e f -> (a,b,c,d,e,f))
 w6Tuple wa wb wc wd we wf =
@@ -575,7 +573,8 @@ w6Tuple wa wb wc wd we wf =
 --- WUI combinator for constructors of arity 6.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons6  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => (a->b->c->d->e->f->g) ->
+wCons6  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g) =>
+           (a->b->c->d->e->f->g) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g
 wCons6 cons wa wb wc wd we wf =
@@ -584,7 +583,7 @@ wCons6 cons wa wb wc wd we wf =
 
 
 --- WUI combinator for tuples of arity 7.
-w7Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w7Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec (a,b,c,d,e,f,g)
 --w7Tuple = wCons7 (\a b c d e f g -> (a,b,c,d,e,f,g))
 w7Tuple wa wb wc wd we wf wg =
@@ -595,7 +594,8 @@ w7Tuple wa wb wc wd we wf wg =
 --- WUI combinator for constructors of arity 7.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons7  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => (a->b->c->d->e->f->g->h) ->
+wCons7  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h) =>
+           (a->b->c->d->e->f->g->h) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h
 wCons7 cons wa wb wc wd we wf wg =
@@ -604,7 +604,7 @@ wCons7 cons wa wb wc wd we wf wg =
 
 
 --- WUI combinator for tuples of arity 8.
-w8Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w8Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec (a,b,c,d,e,f,g,h)
 --w8Tuple = wCons8 (\a b c d e f g h -> (a,b,c,d,e,f,g,h))
 w8Tuple wa wb wc wd we wf wg wh =
@@ -615,7 +615,8 @@ w8Tuple wa wb wc wd we wf wg wh =
 --- WUI combinator for constructors of arity 8.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons8  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => (a->b->c->d->e->f->g->h->i) ->
+wCons8 :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i) =>
+          (a->b->c->d->e->f->g->h->i) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i
 wCons8 cons wa wb wc wd we wf wg wh =
@@ -624,7 +625,7 @@ wCons8 cons wa wb wc wd we wf wg wh =
 
 
 --- WUI combinator for tuples of arity 9.
-w9Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w9Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i ->
            WuiSpec (a,b,c,d,e,f,g,h,i)
 --w9Tuple = wCons9 (\a b c d e f g h i -> (a,b,c,d,e,f,g,h,i))
@@ -636,7 +637,7 @@ w9Tuple wa wb wc wd we wf wg wh wi =
 --- WUI combinator for constructors of arity 9.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons9  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => (a->b->c->d->e->f->g->h->i->j) ->
+wCons9  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i, Data j) => (a->b->c->d->e->f->g->h->i->j) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j
 wCons9 cons wa wb wc wd we wf wg wh wi =
@@ -645,7 +646,7 @@ wCons9 cons wa wb wc wd we wf wg wh wi =
 
 
 --- WUI combinator for tuples of arity 10.
-w10Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w10Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i, Data j) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec (a,b,c,d,e,f,g,h,i,j)
 --w10Tuple = wCons10 (\a b c d e f g h i j -> (a,b,c,d,e,f,g,h,i,j))
@@ -657,7 +658,7 @@ w10Tuple wa wb wc wd we wf wg wh wi wj =
 --- WUI combinator for constructors of arity 10.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons10  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => (a->b->c->d->e->f->g->h->i->j->k) ->
+wCons10  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i, Data j, Data k) => (a->b->c->d->e->f->g->h->i->j->k) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k
@@ -667,7 +668,7 @@ wCons10 cons wa wb wc wd we wf wg wh wi wj =
 
 
 --- WUI combinator for tuples of arity 11.
-w11Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
+w11Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i, Data j, Data k) => WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k)
 --w11Tuple = wCons11 (\a b c d e f g h i j k -> (a,b,c,d,e,f,g,h,i,j,k))
@@ -679,7 +680,7 @@ w11Tuple wa wb wc wd we wf wg wh wi wj wk =
 --- WUI combinator for constructors of arity 11.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons11 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j, Eq k) =>
+wCons11 :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h, Data i, Data j, Data k, Data l) =>
            (a->b->c->d->e->f->g->h->i->j->k->l) ->
            WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
            WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
@@ -690,8 +691,8 @@ wCons11 cons wa wb wc wd we wf wg wh wi wj wk =
 
 
 --- WUI combinator for tuples of arity 12.
-w12Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l) =>
+w12Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l) =>
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec l -> WuiSpec (a,b,c,d,e,f,g,h,i,j,k,l)
@@ -704,8 +705,8 @@ w12Tuple wa wb wc wd we wf wg wh wi wj wk wl =
 --- WUI combinator for constructors of arity 12.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons12  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l) =>
+wCons12  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l, Data m) =>
             (a->b->c->d->e->f->g->h->i->j->k->l->m) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
@@ -715,8 +716,8 @@ wCons12 cons wa wb wc wd we wf wg wh wi wj wk wl =
        (wJoinTuple (w6Tuple wa wb wc wd we wf) (w6Tuple wg wh wi wj wk wl))
 
 --- WUI combinator for tuples of arity 13.
-w13Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l, Eq m) =>
+w13Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l, Data m) =>
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec l -> WuiSpec m ->
@@ -731,8 +732,8 @@ w13Tuple wa wb wc wd we wf wg wh wi wj wk wl wm =
 --- WUI combinator for constructors of arity 13.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons13  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l, Eq m) =>
+wCons13  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l, Data m, Data n) =>
             (a->b->c->d->e->f->g->h->i->j->k->l->m->n) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
@@ -743,8 +744,8 @@ wCons13 cons wa wb wc wd we wf wg wh wi wj wk wl wm =
     (wJoinTuple (w6Tuple wa wb wc wd we wf) (w7Tuple wg wh wi wj wk wl wm))
 
 --- WUI combinator for tuples of arity 14.
-w14Tuple :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) =>
+w14Tuple :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l, Data m, Data n) =>
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
             WuiSpec k -> WuiSpec l -> WuiSpec m -> WuiSpec n ->
@@ -759,8 +760,8 @@ w14Tuple wa wb wc wd we wf wg wh wi wj wk wl wm wn =
 --- WUI combinator for constructors of arity 14.
 --- The first argument is the ternary constructor.
 --- The further arguments are the WUI specifications for the argument types.
-wCons14  :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h,
-             Eq i, Eq j, Eq k, Eq l, Eq m, Eq n) =>
+wCons14  :: (Data a, Data b, Data c, Data d, Data e, Data f, Data g, Data h,
+             Data i, Data j, Data k, Data l, Data m, Data n, Data o) =>
             (a->b->c->d->e->f->g->h->i->j->k->l->m->n->o) ->
             WuiSpec a -> WuiSpec b -> WuiSpec c -> WuiSpec d -> WuiSpec e ->
             WuiSpec f -> WuiSpec g -> WuiSpec h -> WuiSpec i -> WuiSpec j ->
@@ -776,7 +777,7 @@ wCons14 cons wa wb wc wd we wf wg wh wi wj wk wl wm wn =
 --- tuple provided that the components are already rendered as tuples,
 --- i.e., by the rendering function <code>renderTuple</code>.
 --- This combinator is useful to define combinators for large tuples.
-wJoinTuple :: (Eq a, Eq b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
+wJoinTuple :: (Data a, Data b) => WuiSpec a -> WuiSpec b -> WuiSpec (a,b)
 wJoinTuple (WuiSpec wparamsa showa cora reada)
            (WuiSpec wparamsb showb corb readb) =
   WuiSpec (renderTuple, tupleErrorRendering, const True) showc corc readc
@@ -1045,24 +1046,35 @@ mergeRowWithSingleTableData
 --- The second component is `Nothing` if the data is not yet set.
 type WuiStore a = (Bool, Maybe a)
 
+--- A `WuiSessionStore` is a persistent global entity to store the
+--- information required for WUIs in HTML sessions.
+type WuiSessionStore a = SessionStore (WuiStore a)
+
+--- A `ParWuiSessionStore b a` is a persistent global entity to store the
+--- information required for WUIs in HTML sessions which manipulates
+--- data of type `a` and depend on additional information of type `b`.
+type ParWuiSessionStore b a = SessionStore (b, WuiStore a)
+
 --- Sets the initial data which are edited in a WUI form in the session store.
-setWuiStore :: Global (SessionStore (WuiStore a)) -> a -> IO ()
-setWuiStore wuistore val = writeSessionData wuistore (True, Just val)
+setWuiStore :: (Read a, Show a) => WuiSessionStore a -> a -> IO ()
+setWuiStore wuistore val = putSessionData wuistore (True, Just val)
 
 --- Reads the data which are edited in a WUI form from the session store.
-getWuiStore :: Global (SessionStore (WuiStore a)) -> FormReader (WuiStore a)
+getWuiStore :: (Read a, Show a) =>
+               WuiSessionStore a -> FormReader (WuiStore a)
 getWuiStore wuistore = getSessionData wuistore (True, Nothing)
 
 --- Sets the initial data which are edited in a parameterized WUI form
 --- in the session store.
-setParWuiStore :: Global (SessionStore (b,WuiStore a)) -> b -> a -> IO ()
+setParWuiStore :: (Read a, Show a, Read b, Show b) =>
+                  ParWuiSessionStore b a -> b -> a -> IO ()
 setParWuiStore wuistore par val =
-  writeSessionData wuistore (par, (True, Just val))
+  putSessionData wuistore (par, (True, Just val))
 
 --- Reads the data which are edited in a parameterized WUI form
 --- from the session store.
-getParWuiStore :: Global (SessionStore (b,WuiStore a))
-               -> FormReader (b,WuiStore a)
+getParWuiStore :: (Read a, Show a, Read b, Show b) =>
+                  ParWuiSessionStore b a -> FormReader (b,WuiStore a)
 getParWuiStore wuistore = getSessionData wuistore (failed, (True, Nothing))
 
 -- Main operations to generate HTML form definitions from WUI specifications:
@@ -1075,8 +1087,9 @@ getParWuiStore wuistore = getSessionData wuistore (failed, (True, Nothing))
 --- an operation to render the WUI (e.g., `wuiSimpleRenderer`), and
 --- which is used when input errors must be corrected,
 --- from the HTML WUI expression and submit handler.
-wui2FormDef :: String
-            -> Global (SessionStore (WuiStore a))
+wui2FormDef :: (Read a, Show a) =>
+               String
+            -> WuiSessionStore a
             -> WuiSpec a
             -> (a -> IO [BaseHtml])
             -> (HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp])
@@ -1097,7 +1110,8 @@ wui2FormDef formqname wuistore wuispec storepage renderwui =
 --- which is used when input errors must be corrected,
 --- an HTML form definition representing the generated form,
 --- and the actual data of the store.
-wui2HtmlExp :: Global (SessionStore (WuiStore a))
+wui2HtmlExp :: (Read a, Show a) =>
+               WuiSessionStore a
             -> WuiSpec a
             -> (a -> IO [BaseHtml])
             -> (HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp])
@@ -1114,16 +1128,17 @@ wui2HtmlExp wuistore (WuiSpec wparams wshow wcor wread) storepage renderwui
   handler wst env = do
     let newval = id $## wread env wst -- ensure that everything is evaluated
     if (wcor wparams) newval
-      then do writeSessionData wuistore (True, Nothing)
+      then do putSessionData wuistore (True, Nothing)
               storepage newval
-      else do writeSessionData wuistore (False, Just newval)
+      else do putSessionData wuistore (False, Just newval)
               return [formElem wuiformdef]
 
 
 --- Generates an HTML form definition similarly to `wui2FormDef`
 --- but with some additional data on which the further arguments depend.
-pwui2FormDef :: String
-             -> Global (SessionStore (b, WuiStore a))
+pwui2FormDef :: (Read a, Show a, Read b, Show b) =>
+                String
+             -> ParWuiSessionStore b a
              -> (b -> WuiSpec a)
              -> (b -> a -> IO [BaseHtml])
              -> (b -> HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp])
@@ -1138,7 +1153,8 @@ pwui2FormDef formqname wuistore wuispec storepage renderwui =
 
 --- Generates an HTML form expression similarly to `wui2HtmlExp`
 --- but with some additional data on which the further arguments depend.
-pwui2HtmlExp :: Global (SessionStore (b, WuiStore a))
+pwui2HtmlExp :: (Read a, Show a, Read b, Show b) =>
+                ParWuiSessionStore b a
              -> (b -> WuiSpec a)
              -> (b -> a -> IO [BaseHtml])
              -> (b -> HtmlExp -> (HtmlEnv -> IO [BaseHtml]) -> [HtmlExp])
@@ -1156,9 +1172,9 @@ pwui2HtmlExp wuistore pwuispec storepage renderwui
   handler wparams wcor wread wst env = do
     let newval = id $## wread env wst -- ensure that everything is evaluated
     if (wcor wparams) newval
-      then do writeSessionData wuistore (par, (True, Nothing))
+      then do putSessionData wuistore (par, (True, Nothing))
               storepage par newval
-      else do writeSessionData wuistore (par, (False, Just newval))
+      else do putSessionData wuistore (par, (False, Just newval))
               return [formElem wuiformdef]
 
 --- A standard rendering for WUI forms.

@@ -11,11 +11,10 @@ module Controller.AuthN (
   signUpForm, signInForm, forgotPasswordForm, changePasswordForm
 ) where
 
-import Global
-import Maybe     ( isNothing )
+import Data.Maybe      ( isNothing )
 
 import HTML.Session
-import Mail      ( sendMail )
+import System.Mail     ( sendMail )
 import WUI
 
 import Config.Smap        ( smapEmail )
@@ -95,9 +94,8 @@ signUpForm =
       "You can now sign in to Smap with your user name and password!"
 
 --- The data stored for executing the "signUp" WUI form.
-signUpStore :: Global (SessionStore (WuiStore (String,String,String,String)))
-signUpStore =
-  global emptySessionStore (Persistent (inSessionDataDir "signUpStore"))
+signUpStore :: SessionStore (WuiStore (String,String,String,String))
+signUpStore = sessionStore "signUpStore"
                       
 --------------------------------------------------------------------------------
 -- Signing in                                                                 --
@@ -127,9 +125,8 @@ signInForm =
    (\_ -> signInRenderer)
 
 --- The data stored for executing the "signIn" WUI form.
-signInStore :: Global (SessionStore (Bool, WuiStore (String,String)))
-signInStore =
-  global emptySessionStore (Persistent (inSessionDataDir "signInStore"))
+signInStore :: SessionStore (Bool, WuiStore (String,String))
+signInStore = sessionStore "signInStore"
 
 -- Performs the sign in process and stores the authentication data in the
 -- current session (see module `Authentication`). An error alert is displayed if
@@ -183,9 +180,8 @@ forgotPasswordForm =
    forgotPasswordRenderer
 
 --- The data stored for executing the "forgotPassword" WUI form.
-forgotPWStore :: Global (SessionStore (WuiStore String))
-forgotPWStore =
-  global emptySessionStore (Persistent (inSessionDataDir "forgotPWStore"))
+forgotPWStore :: SessionStore (WuiStore String)
+forgotPWStore = sessionStore "forgotPWStore"
 
 -- Takes an email address and sends a new password if the email address is 
 -- associated to an actual user account. Otherwise, an error alert is displayed.
@@ -253,9 +249,8 @@ changePasswordForm =
                     [] "Change!" [] [])
 
 --- The data stored for executing the "changePassword" WUI form.
-changePWStore :: Global (SessionStore (User, WuiStore (String,String,String)))
-changePWStore =
-  global emptySessionStore (Persistent (inSessionDataDir "changePWStore"))
+changePWStore :: SessionStore (User, WuiStore (String,String,String))
+changePWStore = sessionStore "changePWStore"
                       
 doChangePasswdCtrl :: (String,String,String) -> User -> Controller
 doChangePasswdCtrl (oldpass,newpass,newpass2) user = do

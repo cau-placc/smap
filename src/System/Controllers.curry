@@ -5,7 +5,7 @@
 --- also exports the general type synonym for controllers.
 ---
 --- @author Lasse Kristopher Meyer
---- @version July 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.Controllers (
@@ -18,7 +18,7 @@ module System.Controllers (
 ) where
 
 import KeyDatabase
-import Prelude hiding (div)
+import Prelude hiding (div, empty)
 
 import HTML.Session
 
@@ -27,7 +27,6 @@ import System.Authentication
 import Model.ExecEnv
 import System.SmapHtml
 import System.Url
-
 
 --------------------------------------------------------------------------------
 -- Controller type                                                            --
@@ -48,7 +47,7 @@ type Controller = IO [BaseHtml]
 --- @param controllerMsg - an error message specified in the calling controller
 --- @param mInternalMsg  - an error message from an internal operation
 showErrorPage :: String -> String -> Maybe String -> Controller
-showErrorPage title controllerMsg mInternalMsg = 
+showErrorPage title controllerMsg mInternalMsg =
   return [renderErrorPage (title,controllerMsg,mInternalMsg)]
 
 --- Returns a controller that displays a standard error page with a given
@@ -69,12 +68,12 @@ showAccessDeniedErrorPage reason =
 --- requests.
 --- @param url - the url that caused the error
 showInvalidUrlErrorPage :: Url -> Controller
-showInvalidUrlErrorPage url = 
+showInvalidUrlErrorPage url =
   showErrorPage stdErrorPageTitle invalidUrlMsg Nothing
-  where 
-    invalidUrlMsg =
-      "The requested URL <code>\""++(drop 1 $ showPath url)++"\"</code> was n"++
-      "ot found on this server."
+ where 
+  invalidUrlMsg =
+    "The requested URL <code>\""++(drop 1 $ showPath url)++"\"</code> was n"++
+    "ot found on this server."
 
 --- Returns a controller that displays a standard error page for internal
 --- transaction errors.

@@ -14,8 +14,6 @@ module System.Alerts (
   renderAlert
 ) where
 
-import Global
-
 import HTML.Base ( fromFormReader )
 import HTML.Bootstrap3
 import HTML.Html5
@@ -42,6 +40,7 @@ data Alert = ErrorAlert String
            | InfoAlert String
            | SuccessAlert String
            | WarningAlert String
+ deriving (Read, Show)
 
 --------------------------------------------------------------------------------
 -- Storing alerts in sessions                                                 --
@@ -50,13 +49,13 @@ data Alert = ErrorAlert String
 -- Basic storing
 
 -- Definition of the session state to store the alert.
-alert :: Global (SessionStore Alert)
-alert = global emptySessionStore Temporary
+alert :: SessionStore Alert
+alert = sessionStore "alertMessage"
 
 --- Sets the alert of the current session.
 --- @param nAlert - the next alert
 setAlert :: Alert -> IO ()
-setAlert nAlert = writeSessionData alert nAlert
+setAlert nAlert = putSessionData alert nAlert
 
 --- Gets the current alert and deletes it from the session.
 getAlert :: IO (Maybe Alert)
@@ -71,7 +70,7 @@ getAlert =
 --- applied on `Nothing`.
 --- @param mAlert - a possibly given alert
 maybeSetAlert :: Maybe Alert -> IO ()
-maybeSetAlert = maybe done setAlert
+maybeSetAlert = maybe (return ()) setAlert
 
 --------------------------------------------------------------------------------
 -- Rendering alerts                                                           --

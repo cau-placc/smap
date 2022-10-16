@@ -13,8 +13,6 @@ module Controller.Admin (
   adminController, langCreateForm, sysCreateForm, sysEditForm
 ) where
 
-import Global
-
 import KeyDatabase
 import Model.Smap
 import Model.ExecEnv
@@ -87,9 +85,8 @@ langCreateForm =
 
 
 --- The data stored for executing the "langCreate" WUI form.
-langCreateStore :: Global (SessionStore (WuiStore (String,String,String)))
-langCreateStore =
-  global emptySessionStore (Persistent (inSessionDataDir "langCreateStore"))
+langCreateStore :: SessionStore (WuiStore (String,String,String))
+langCreateStore = sessionStore "langCreateStore"
 
 ------------------------------------------------------------------------------
 -- Returns a controller that displays a WUI form to create a new system.
@@ -119,10 +116,8 @@ sysCreateForm =
       "now available as a new execution system for the choosen language."
 
 --- The data stored for executing the "sysCreate" WUI form.
-sysCreateStore ::
-  Global (SessionStore ([Language], WuiStore (String,String,Language)))
-sysCreateStore =
-  global emptySessionStore (Persistent (inSessionDataDir "sysCreateStore"))
+sysCreateStore :: SessionStore ([Language], WuiStore (String,String,Language))
+sysCreateStore = sessionStore "sysCreateStore"
                       
 ------------------------------------------------------------------------------
 --- Shows a form to edit the given System entity.
@@ -148,10 +143,8 @@ sysEditForm =
    (\_ -> editSystemRendering)
 
 --- The data stored for executing the "sysEdit" WUI form.
-sysEditStore ::
-  Global (SessionStore ((System,Language,[Language]), WuiStore System))
-sysEditStore =
-  global emptySessionStore (Persistent (inSessionDataDir "sysEditStore"))
+sysEditStore :: SessionStore ((System,Language,[Language]), WuiStore System)
+sysEditStore = sessionStore "sysEditStore"
 
 --- Persists modifications of a given System entity to the
 --- database depending on the Boolean argument. If the Boolean argument

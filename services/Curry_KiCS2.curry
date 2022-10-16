@@ -2,13 +2,14 @@
 -- Implementation of a simple web service to execute Curry programs with KiCS2
 --------------------------------------------------------------------------------
 
-import Directory
-import FilePath
-import IOExts
-import List
-import System
+import Data.List
+import System.Directory
+import System.FilePath
+import System.IOExts    ( evalCmd )
+import System.Process   ( getPID, system )
 
 import HTML.Base        ( urlencoded2string )
+
 import SimpleWebService ( runServiceAsCGI )
 
 --------------------------------------------------------------------------------

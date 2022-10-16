@@ -5,17 +5,15 @@
 --- program and version creation and executing programs.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version October 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Controller.SmapIE (
   smapIEController, smapIEForm, pcCreateForm, pvCreateForm
  ) where
 
-import Global
-import Maybe
-import Time
-import HTML.Base ( HtmlFormDef, formDefWithID, formElem, urlencoded2string )
+import Data.Maybe ( listToMaybe )
+import HTML.Base  ( HtmlFormDef, formDefWithID, formElem, urlencoded2string )
 import HTML.Session
 import WUI
 
@@ -141,7 +139,7 @@ showSmapIE
   -> Controller
 showSmapIE mProg execEnv mExecRes initCode initSystemKey =
   checkAuthorization (smapIEOperation $ ShowSmapIE mProg) $ \authzData -> do
-    writeSessionData smapIEStore
+    putSessionData smapIEStore
       (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData)
     return [ -- for styling purposes (to increase container to 100%)
             input [("type","hidden"),value "smap-ie"],
@@ -158,9 +156,8 @@ type SmapIEData =
        (Maybe Program, ExecEnv, Maybe ExecResult, String, String, AuthZData)
 
 --- The data stored for executing the "smapIO" form.
-smapIEStore :: Global (SessionStore SmapIEData)
-smapIEStore =
-  global emptySessionStore (Persistent (inSessionDataDir "smapIEStore"))
+smapIEStore :: SessionStore SmapIEData
+smapIEStore = sessionStore "smapIEStore"
 
 smapIEForm :: HtmlFormDef SmapIEData
 smapIEForm = formDefWithID "Controller.SmapIE.smapIEForm" readData formHTML
@@ -206,11 +203,10 @@ pcCreateForm =
       "aved and is now available on Smap. Choose <code>\"Options > View in Br"++
       "owser\"</code> to view the Browser page of your program."
 
-pcCreateStore :: Global
-  (SessionStore ((ExecEnv,ExecResult,String,String),
-                 WuiStore (String,String,Bool,Language,User,String,String)))
-pcCreateStore =
-  global emptySessionStore (Persistent (inSessionDataDir "pcCreateStore"))
+pcCreateStore ::
+  SessionStore ((ExecEnv,ExecResult,String,String),
+                WuiStore (String,String,Bool,Language,User,String,String))
+pcCreateStore = sessionStore "pcCreateStore"
 
 -- Returns a controller that displays a WUI form to create a new program if the
 -- given code executes successfully with the choosen execution system.
@@ -275,10 +271,9 @@ pvCreateForm =
     "he left!"
 
 pvCreateStore ::
-  Global (SessionStore ((ExecEnv,ExecResult,String,String,Program),
-                        WuiStore (Int,String,String,Program)))
-pvCreateStore =
-  global emptySessionStore (Persistent (inSessionDataDir "pvCreateStore"))
+  SessionStore ((ExecEnv,ExecResult,String,String,Program),
+                WuiStore (Int,String,String,Program))
+pvCreateStore = sessionStore "pvCreateStore"
 
 -- Returns a controller that displays a WUI form to create a new version if the
 -- given code executes successfully with the choosen execution system.

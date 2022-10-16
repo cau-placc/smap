@@ -16,7 +16,7 @@ module Controller.Comments (
   doCreateComment,doCreateCommentForCurrentUser
 ) where
 
-import Time
+import Data.Time ( getLocalTime )
 
 import Model.Comment
 import Model.Program

@@ -2,14 +2,16 @@
 -- Web service to execute Haskell programs
 ------------------------------------------------------------------------------
 
-import Directory
-import FilePath
-import IOExts
-import List
-import System
+import Data.List
+import System.Directory
+import System.Environment ( setEnv )
+import System.FilePath
+import System.IOExts      ( evalCmd )
+import System.Process     ( getPID, system )
 
-import HTML.Base        ( urlencoded2string )
-import SimpleWebService ( runServiceAsCGI )
+import HTML.Base          ( urlencoded2string )
+
+import SimpleWebService   ( runServiceAsCGI )
 
 ------------------------------------------------------------------------------
 -- Installing the web service                                                 
@@ -62,7 +64,7 @@ executeWithGHC urlparam inputprog = do
                   in "import qualified " ++ mname ++ 
                      "\n\nmain = print " ++ mname ++ ".main\n"
   currDir <- getCurrentDirectory
-  setEnviron "HOME" currDir -- since GHC requires HOME for getAppUserDataDirectory
+  setEnv "HOME" currDir -- since GHC requires HOME for getAppUserDataDirectory
   createDirectoryIfMissing True execDir
   setCurrentDirectory execDir
   writeFile fileName (moduleHeader ++ prog)

@@ -7,7 +7,7 @@
 --- provides some helper functions for assigning attributes to HTML elements.
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version October 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module HTML.Html5 (
@@ -28,8 +28,8 @@ module HTML.Html5 (
   withAttrs,withId
 ) where
 
-import Char
-import List ( findIndex )
+import Data.Char
+import Data.List ( findIndex )
 import HTML.Base hiding ( button, resetButton, code, footer {-, form-}
                         , h1, h2, h3, h4, h5, h6
                         , header, href, nav, section, strong, style, textArea )

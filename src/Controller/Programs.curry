@@ -9,7 +9,7 @@
 --- controller usually is applicable on the result of this operation.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version November 2018
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Controller.Programs (
@@ -18,9 +18,8 @@ module Controller.Programs (
   doDeleteProgram
 ) where
 
-import Char
-import List
-import Time
+import Data.Char ( toLower)
+import Data.Time ( getLocalTime )
 
 import Model.Program
 

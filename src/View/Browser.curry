@@ -13,10 +13,10 @@ module View.Browser (
   SearchSettings,SearchPanelData,PagerData,defaultSearchSettings
 ) where
 
-import Char
-import List
-import Prelude hiding (div,span)
-import Time
+import Prelude hiding (div,span,empty)
+import Data.Char ( toLower, toUpper )
+import Data.List
+import Data.Time
 
 import System.Authorization
 import System.AuthorizedOperations

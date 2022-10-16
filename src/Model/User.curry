@@ -14,7 +14,7 @@
 --- stackability reasons. Always modify or import `UserModel` instead.)
 ---
 --- @author Lasse Kristopher Meyer
---- @version February 2014
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Model.User (
@@ -27,8 +27,8 @@ module Model.User (
   authored,favorites
 ) where
 
+import Data.Maybe
 import KeyDatabase
-import Maybe
 
 import Model.Program
 import Model.Smap

@@ -7,15 +7,16 @@
 --- such a web services.
 ---
 --- @author Michael Hanus
---- @version April 2019
+--- @version October 2022
 ------------------------------------------------------------------------
 
-module SimpleWebService(runServiceAsCGI,connectToCGI) where
+module SimpleWebService
+  ( runServiceAsCGI, connectToCGI )
+ where
 
-import IO
-import Maybe  ( isJust )
-import Read   ( readNat )
-import System ( getEnviron )
+import Data.Maybe         ( isJust )
+import System.Environment ( getEnv )
+import System.IO
 
 import Network.Socket
 
@@ -36,9 +37,9 @@ import Network.Socket
 ---                  URL parameter and stdin contents as parameters
 runServiceAsCGI :: (String -> String -> IO String) -> IO ()
 runServiceAsCGI service = do
-  param <- getEnviron "QUERY_STRING"
-  clen  <- getEnviron "CONTENT_LENGTH"
-  cont  <- getNChars (readNat clen)
+  param <- getEnv "QUERY_STRING"
+  clen  <- getEnv "CONTENT_LENGTH"
+  cont  <- getNChars (read clen)
   result <- service param cont
   putStrLn "Content-type: text/plain"
   putStrLn ""  -- end of HTTP header
@@ -77,7 +78,7 @@ partitionUrl purl = let (protocol,url) = splitAt 7 purl in
   where
     result host path pnrs = if pnr == 0 then Nothing else Just (host,path,pnr)
       where
-        pnr = readNat pnrs
+        pnr = read pnrs
 
 --- validate given url
 isValidUrl :: String -> Bool

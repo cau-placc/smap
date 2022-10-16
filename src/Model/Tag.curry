@@ -20,8 +20,9 @@ module Model.Tag (
   deleteTag,leqTagName
 ) where
 
+import Data.Char ( toUpper )
+import Data.List (sortBy )
 import KeyDatabase
-import Sort (sortBy, leqStringIgnoreCase )
 
 import System.Models
 import Model.Smap
@@ -82,8 +83,8 @@ deleteTag tag = runT (Model.Smap.deleteTag tag)
 
 --- Compares two tags regarding to their names.
 leqTagName :: Sorting Tag
-leqTagName = (LEQ,\tag1 tag2 ->
-  (tagName tag1) `leqStringIgnoreCase`
-  (tagName tag2))
+leqTagName =
+  (LEQ,
+   \tag1 tag2 -> map toUpper (tagName tag1) <= map toUpper (tagName tag2))
 
 --------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 --- The main module of this Spicey application.
 --- @author Lasse Kristopher Meyer
---- @version January 2014
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module Main (

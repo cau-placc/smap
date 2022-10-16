@@ -5,7 +5,7 @@
 --- data in sessions.
 ---
 --- @author Michael Hanus, Lasse Kristopher Meyer
---- @version July 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module System.Authentication (
@@ -14,14 +14,13 @@ module System.Authentication (
   getUserHash,randomPassword
 ) where
 
-import FilePath ( (</>) )
+import System.FilePath ( (</>) )
 
-import Global
 import HTML.Base
 import HTML.Session
 
 import Model.User
-import System.Crypto
+import Crypto.Hash
 
 --------------------------------------------------------------------------------
 -- Authentication data storing                                                --
@@ -34,9 +33,8 @@ import System.Crypto
 type AuthNData = (String,Bool)
 
 -- Definition of the session state to store the authentication data.
-sessionAuthNData :: Global (SessionStore AuthNData)
-sessionAuthNData =
-  global emptySessionStore (Persistent  (inSessionDataDir "sessionAuthData"))
+sessionAuthNData :: SessionStore AuthNData
+sessionAuthNData = sessionStore "sessionAuthData"
 
 --- Gets the current authentication data from the session store.
 getSessionAuthNData :: IO (Maybe AuthNData)
@@ -46,7 +44,7 @@ getSessionAuthNData = fromFormReader $ getSessionMaybeData sessionAuthNData
 --- authentication).
 --- @param authNData - authentication data of the user
 signInToSession :: AuthNData -> IO ()
-signInToSession authNData = writeSessionData sessionAuthNData authNData
+signInToSession authNData = putSessionData sessionAuthNData authNData
 
 --- Removes authentication data from the current session.
 signOutFromSession :: IO ()
@@ -77,7 +75,7 @@ getCurrentUser =
 getUserHash :: String -> String -> IO String
 getUserHash username userpassword = do
   let systemkey = "smap2014" -- change this key for every spicey instance
-  getHash $ username++userpassword++systemkey
+  getHash $ username ++ userpassword ++ systemkey
 
 --- Returns a random password (a hexadecimal string) of a particular length.
 --- @param length - length of the desired password

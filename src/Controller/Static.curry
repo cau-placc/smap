@@ -38,7 +38,7 @@ showLandingPage = return landingPage
 -- Returns a controller that displays the help page of this application.
 showHelpPage :: Controller
 showHelpPage = do
-  helpTexts <- mapIO readHelpFile helpTextFiles
+  helpTexts <- mapM readHelpFile helpTextFiles
   return $ helpPage helpTexts
 
 -- Returns a controller that displays the about page of this application.

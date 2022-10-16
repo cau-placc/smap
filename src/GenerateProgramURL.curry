@@ -3,9 +3,9 @@
 
 module GenerateProgramURL(generateUploadURL) where
 
-import System    (system)
+import System.Process ( system )
 
-import HTML.Base (string2urlencoded)
+import HTML.Base      ( string2urlencoded )
 
 -- The base url of Smap:
 smapBaseUrl :: String
