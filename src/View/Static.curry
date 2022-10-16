@@ -3,7 +3,7 @@
 --- page, the help page or the about page).
 ---
 --- @author Lasse Kristopher Meyer
---- @version July 2020
+--- @version October 2022
 --------------------------------------------------------------------------------
 
 module View.Static (
@@ -163,20 +163,19 @@ aboutPage =
     mail =
       "lkm@informatik.uni-kiel.de"
     cauUrl =
-      "http://www.uni-kiel.de/index-e.shtml"
+      "http://www.uni-kiel.de/"
     ifiUrl =
       "http://www.inf.uni-kiel.de/en"
     psUrl =
-      "https://www.informatik.uni-kiel.de/en/programming-languages-and-compil"++
-      "er-construction/"
+      "https://www.ps.informatik.uni-kiel.de/"
     cauTxt =
-      "University of Kiel"
+      "Kiel University"
     ifiTxt =
       "Department of Computer Science"
     psTxt =
       "Research group of Programming Languages and Compiler Construction"
     curryUrl =
-      "http://www-ps.informatik.uni-kiel.de/currywiki/"
+      "http://www.curry-lang.org"
     spiceyUrl = 
       "http://www.informatik.uni-kiel.de/~pakcs/spicey/"
     codemirrorUrl =
