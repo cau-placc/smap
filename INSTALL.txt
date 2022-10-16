@@ -9,12 +9,28 @@ Installation directory: /var/www/smap
 Install new version:
 --------------------
 
-- Login at lascombes and set SYSTEM to kics2 in Makefile
-- > make deploy
-- Login at smap.informatik.uni-kiel.de:
-  > sudo cp ~mh/public_html/smap/smap.cgi.bin /var/www/smap
+1. Login at lepin
+
+2. Create local installation for deploy:
+
+   - either set SYSTEM to kics2 in Makefile and run `make deploy`
+   - or run `make SYSTEM=/opt/kics2/kics2 deploy`
+
+3 Login at smap.informatik.uni-kiel.de and execute:
+
+      > sudo cp ~mh/public_html/smap/smap.cgi.bin /var/www/smap
 
 
+
+Install the execution services:
+-------------------------------
+
+- Login as pakcs@lepin
+- > cd smap/services
+- Follow the instructions "INSTALL.txt"
+
+
+------------------------------------------------------------------------------
 Old installation:
 -----------------
 
@@ -51,10 +67,3 @@ OLD (apache 2.2):
 	   Allow from all
 </Directory>
 
-
-Install the execution services:
--------------------------------
-
-- Login as pakcs@siran
-- > cd smap/services
-- Follow the instructions "INSTALL.txt"

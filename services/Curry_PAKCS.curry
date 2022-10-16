@@ -98,10 +98,11 @@ executeWithPAKCS urlparam inputprog = do
   writeFile filename prog
   writeFile shFile
             ("#!/bin/sh\n"++
-             unwords [addBinPath version,
-                      pakcsFrontend version,
-                      "--flat", "--extended",
-                      "-i", pakcsLib version, modName])
+             unwords [ addBinPath version
+                     , pakcsFrontend version
+                     , "--flat", "--extended"
+                     , "-D__PAKCS__=" ++ versionAsCPP version
+                     , "-i", pakcsLib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
   if exit1 > 0
     then do setCurrentDirectory currDir
@@ -124,6 +125,12 @@ executeWithPAKCS urlparam inputprog = do
   -- add the Curry system bin directory and a CPM bin directory to the path
   addBinPath v = "PATH=" ++ pakcsBin v ++ ":" ++ cpmBin v ++
                  ":$PATH && export PATH && "
+
+  versionAsCPP vs = case splitOn "." vs of
+    (maj:min:_) -> case (reads maj, reads min) of
+                     ([(ma,"")], [(mi,"")]) -> show ((ma*100+mi) :: Int)
+                     _                      -> "100"
+    _           -> "100" -- some default
 
 --- Copies some standard libraries (e.g., for set functions, default rules)
 --- to the given directory.

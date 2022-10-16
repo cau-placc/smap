@@ -1,5 +1,5 @@
 # The Curry system used to compile the web service script:
-CURRYSYSTEM=/opt/pakcs/bin/curry
+CURRYSYSTEM=/opt/pakcs/pakcs2/bin/curry
 #CURRYSYSTEM=/opt/kics2/bin/curry
 CURRYOPTS=:set -time
 # The main directory of the smap installation:

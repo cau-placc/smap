@@ -89,6 +89,7 @@ executeWithKiCS2 urlparam inputprog = do
              unwords [ addBinPath version
                      , kics2Frontend version
                      , target, "--extended"
+                     , "-D__KICS2__=" ++ versionAsCPP version
                      , "-i", kics2Lib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
   if exit1 > 0
@@ -112,6 +113,13 @@ executeWithKiCS2 urlparam inputprog = do
   -- add the Curry system bin directory and a CPM bin directory to the path
   addBinPath v = "PATH=" ++ kics2Bin v ++ ":" ++ cpmBin v ++
                  ":$PATH && export PATH && "
+
+
+  versionAsCPP vs = case splitOn "." vs of
+    (maj:min:_) -> case (reads maj, reads min) of
+                     ([(ma,"")], [(mi,"")]) -> show ((ma*100+mi) :: Int)
+                     _                      -> "100"
+    _           -> "100" -- some default
 
 --- Turns the result of the PAKCS execution into the proper plain text
 --- representation.

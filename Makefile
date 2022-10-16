@@ -23,6 +23,7 @@ CURRY2CGI := $(shell which curry2cgi)
 
 .PHONY: all
 all:
+	@echo "SYSTEM: $(SYSTEM)"
 	@echo "make: deploy install compile load run clean?"
 
 # Install the packages required by the generated Spicey application:
