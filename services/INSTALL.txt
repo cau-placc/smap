@@ -1,13 +1,13 @@
 To install all current web services on www-ps:
 
-Login as "mh@lepin"
--------------------
+Login as "mh@bellecombe"
+------------------------
 
     > cd home/curry/smap/services && make
 
-Login as "pakcs@lepin"
-----------------------
+Login as "pakcs@bellecombe"
+---------------------------
 
     > cd public_html/smap/exec
     > cp -p ~mh/public_html/smap/exec/*.cgi .
-    > rm -rf curry_libs && cp -a ~mh/public_html/smap/exec/curry_libs .
+    > rm -rf curry_libs* && cp -a ~mh/public_html/smap/exec/curry_libs* .

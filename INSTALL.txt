@@ -9,7 +9,7 @@ Installation directory: /var/www/smap
 Install new version:
 --------------------
 
-1. Login at lepin
+1. Login at bellecombe
 
 2. Create local installation for deploy:
 
@@ -25,7 +25,7 @@ Install new version:
 Install the execution services:
 -------------------------------
 
-- Login as pakcs@lepin
+- Login as pakcs@bellecombe
 - > cd smap/services
 - Follow the instructions "INSTALL.txt"
 

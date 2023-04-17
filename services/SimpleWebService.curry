@@ -39,7 +39,8 @@ runServiceAsCGI :: (String -> String -> IO String) -> IO ()
 runServiceAsCGI service = do
   param <- getEnv "QUERY_STRING"
   clen  <- getEnv "CONTENT_LENGTH"
-  cont  <- getNChars (read clen)
+  cont  <- getNChars $ case reads clen of [(n,"")] -> n
+                                          _        -> 0
   result <- service param cont
   putStrLn "Content-type: text/plain"
   putStrLn ""  -- end of HTTP header

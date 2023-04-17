@@ -53,13 +53,11 @@ timeout = "/usr/bin/timeout"
 --- Parameters for execution with PAKCS.
 pakcsParams :: [String]
 pakcsParams =
-  ["-Dparsermessages=no"
-  ,"-Dshowfcyload=no"
-  ,"-Dshowplload=no"
-  ,"-Dpakcsextensions=yes"
+  ["-Dcurryextensions=yes"
   ,"--quiet"
   ,"--nocypm"
-  ,":set","-verbose"
+  ,":set","v0"
+  --,":set","-verbose"
   ,":set","+time"
   ,":set","printdepth 0"
   ,":set","-interactive"]
@@ -81,11 +79,11 @@ timeLimit = "15"
 executeWithPAKCS :: String -> String -> IO String
 executeWithPAKCS urlparam inputprog = do
   pid <- getPID
-  let execDir  = "tmpPAKCSEXEC_"++show pid
+  let execDir  = "tmpPAKCSEXEC_" ++ show pid
       modName  = getModuleName prog
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
-      version  = if null urlparams then "1.15.0" else head urlparams
+      version  = if null urlparams then "3.5.1" else head urlparams
       allsols  = (not (null urlparams) && head urlparams == "all") ||
                  (length urlparams > 1 && urlparams!!1 == "all")
       prog = if null inputprog && not (null urlparams)
@@ -94,7 +92,7 @@ executeWithPAKCS urlparam inputprog = do
       shFile   = "./PAKCSCALL.sh"
   currDir <- getCurrentDirectory
   createDirectoryIfMissing True execDir
-  copyStandardLibs execDir
+  copyStandardLibs version execDir
   setCurrentDirectory execDir
   writeFile filename prog
   writeFile shFile
@@ -134,10 +132,11 @@ executeWithPAKCS urlparam inputprog = do
     _           -> "100" -- some default
 
 --- Copies some standard libraries (e.g., for set functions, default rules)
---- to the given directory.
-copyStandardLibs :: String -> IO ()
-copyStandardLibs dir = do
-  c <- system $ "/bin/cp -a " ++ "curry_libs/* " ++ dir
+--- to the given directory. The first argument is the version number of
+--- the PAKCS system to be used (e.g., `"3.5.1"`).
+copyStandardLibs :: String -> String -> IO ()
+copyStandardLibs vers dir = do
+  c <- system $ "/bin/cp -a " ++ "curry_libs_pakcs_" ++ vers ++ "/* " ++ dir
   when (c > 0) $ hPutStrLn stderr "Cannot copy standard libraries!"
 
 --- Turns the result of the PAKCS execution into the proper plain text
