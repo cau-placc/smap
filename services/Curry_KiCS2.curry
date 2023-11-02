@@ -73,7 +73,7 @@ executeWithKiCS2 urlparam inputprog = do
       modName  = getModuleName prog
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
-      version  = if null urlparams then "0.6.0" else head urlparams
+      version  = if null urlparams then "3.1.0" else head urlparams
       allsols  = (not (null urlparams) && head urlparams == "all") ||
                  (length urlparams > 1 && urlparams!!1 == "all")
       prog = if null inputprog && not (null urlparams)

@@ -83,7 +83,7 @@ executeWithPAKCS urlparam inputprog = do
       modName  = getModuleName prog
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
-      version  = if null urlparams then "3.5.1" else head urlparams
+      version  = if null urlparams then "3.6.0" else head urlparams
       allsols  = (not (null urlparams) && head urlparams == "all") ||
                  (length urlparams > 1 && urlparams!!1 == "all")
       prog = if null inputprog && not (null urlparams)
@@ -133,7 +133,7 @@ executeWithPAKCS urlparam inputprog = do
 
 --- Copies some standard libraries (e.g., for set functions, default rules)
 --- to the given directory. The first argument is the version number of
---- the PAKCS system to be used (e.g., `"3.5.1"`).
+--- the PAKCS system to be used (e.g., `"3.6.0"`).
 copyStandardLibs :: String -> String -> IO ()
 copyStandardLibs vers dir = do
   c <- system $ "/bin/cp -a " ++ "curry_libs_pakcs_" ++ vers ++ "/* " ++ dir
@@ -144,11 +144,12 @@ copyStandardLibs vers dir = do
 --- @param result - exit status, stdin content and stderr content
 parseResult :: (Int,String,String) -> String
 parseResult (exit,out,err)
-  | exit == 0   = show exit++"\n"++dropWarning out++err
-  | exit == 2   =           "0\n"++dropWarning out++err -- no more solutions
-  | exit == 124 = "124\nTIME OUT (after "++timeLimit++" seconds)!"
-  | otherwise   = show exit++"\n"++
-                  "ERROR (exit code: "++show exit++")\n"++out++dropWarning err
+  | exit == 0   = show exit ++ "\n" ++ dropWarning out ++ err
+  | exit == 2   =           "0\n" ++ dropWarning out ++ err -- no more solutions
+  | exit == 124 = "124\nTIME OUT (after " ++ timeLimit ++ " seconds)!"
+  | otherwise   = show exit ++ "\n" ++
+                  "ERROR (exit code: " ++ show exit ++ ")\n" ++ out ++
+                  dropWarning err
   where
     dropWarning res =
       if "Warning" `isPrefixOf` res
@@ -167,7 +168,7 @@ getModuleName prog =
        else "Main"
   where
     progWOLeadingWSP = dropWhile isSpace prog
-    isSpace c        = c==' '||c=='\n'||c=='\r'||c=='\t'
+    isSpace c        = c==' ' || c=='\n' || c=='\r' || c=='\t'
     dropLine         = drop 1 . dropWhile (/='\n')
 
 --------------------------------------------------------------------------------

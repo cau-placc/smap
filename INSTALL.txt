@@ -1,7 +1,7 @@
 Installation of Smap at
 =======================
 
-http://smap.informatik.uni-kiel.de/
+https://smap.informatik.uni-kiel.de/
 --------------------------------------
 
 Installation directory: /var/www/smap
@@ -29,6 +29,12 @@ Install the execution services:
 - > cd smap/services
 - Follow the instructions "INSTALL.txt"
 
+
+Save current data to local files:
+---------------------------------
+
+Login on `smap.informatik.uni-kiel.de` and execute `update-from-smap`
+ 
 
 ------------------------------------------------------------------------------
 Old installation:

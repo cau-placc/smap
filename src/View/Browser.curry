@@ -543,9 +543,15 @@ renderOptionsPanel options =
     renderOptions = ul [classA "list-unstyled"] $ 
       filter isNotEmptyLI $ map (\o -> li [] [o]) options
 
-    isNotEmptyLI he = case toBaseHtml he of
+    isNotEmptyLI he =
+      maybe True
+            (\ (t,ats,hs) -> t /= "li" || not (null ats && null (textOf hs)))
+            (fromHtmlStruct he)
+    {-
+    isNotEmptyLI' he = case toBaseHtml he of
       BaseStruct "li" [] [BaseText ""] -> False
       _                                -> True
+    -}
 
 -- The standard renderung for the search panel.
 -- @param searchPanelData - initial data for the input elements

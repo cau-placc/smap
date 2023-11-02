@@ -1,10 +1,10 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE primitives SYSTEM "http://www.informatik.uni-kiel.de/~pakcs/primitives.dtd">
 <primitives>
- <primitive name="minimumFor" arity="2">
+ <primitive name="prim_minimumFor" arity="2">
   <entry>prim_minimumFor[raw]</entry>
  </primitive>
- <primitive name="maximumFor" arity="2">
+ <primitive name="prim_maximumFor" arity="2">
   <entry>prim_maximumFor[raw]</entry>
  </primitive>
 </primitives>

@@ -1,8 +1,8 @@
 # Generic Makefile for Spicey applications
 
 # Definition of the root of the Curry system to be used:
-#CURRYHOME=$(HOME)/pakcs3
-CURRYHOME=/opt/kics2/kics3
+CURRYHOME=$(HOME)/pakcs
+#CURRYHOME=/opt/kics2/kics2
 
 # Curry bin directory to be used:
 export CURRYBIN=$(CURRYHOME)/bin

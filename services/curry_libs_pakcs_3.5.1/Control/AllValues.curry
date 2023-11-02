@@ -1,42 +1,86 @@
 ------------------------------------------------------------------------------
---- Library with some operations for encapsulating search.
---- Note that some of these operations are not fully declarative,
+--- Library with operations to encapsulate search, i.e., non-deterministic
+--- computations. Note that some of these operations are not fully declarative,
 --- i.e., the results depend on the order of evaluation and program rules.
 --- There are newer and better approaches the encapsulate search,
---- in particular, set functions (see module `Control.SetFunctions` in
---- package `setfunctions`), which should be used.
+--- in particular, set functions (see module `Control.SetFunctions`
+--- in package `setfunctions`), which should be used.
 ---
 --- @author Michael Hanus
 --- @version November 2022
 ------------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 
-module Control.Findall
-  ( getAllValues
+module Control.AllValues
+  ( getAllValues, getOneValue
+  , getAllSolutions, getOneSolution, getAllFailures
   , allValues, someValue, oneValue
-  , allSolutions, someSolution, oneSolution
-  , isFail
+  , allSolutions, someSolution, oneSolution, isFail
 #ifdef __PAKCS__
   , rewriteAll, rewriteSome
 #endif
   ) where
 
-#ifdef __KICS2__
-import qualified Control.SearchTree as ST
-#endif
+import qualified Control.Findall as CF
 
---- Gets all values of an expression (currently, via an incomplete
---- depth-first strategy). Conceptually, all values are computed
+------------------------------------------------------------------------------
+-- Encapsulated search operations as I/O operations in order to make
+-- the results dependend on the external world, e.g., the schedule
+-- for non-determinism.
+
+--- Gets all values of an expression (similarly to Prolog's `findall`).
+--- Conceptually, all values are computed
 --- on a copy of the expression, i.e., the evaluation of the expression
 --- does not share any results. In PAKCS, the evaluation suspends
 --- as long as the expression contains unbound variables or the computed
 --- values contain unbound variables.
---- Similar to Prolog's findall.
 getAllValues :: a -> IO [a]
 getAllValues e = return (allValues e)
 
---- Returns all values of an expression (currently, via an incomplete
---- depth-first strategy). Conceptually, all values are computed on a copy
+--- Gets one value of an expression. Returns Nothing if the search space
+--- is finitely failed.
+--- Conceptually, the value is computed on a copy
+--- of the expression, i.e., the evaluation of the expression does not share
+--- any results. In PAKCS, the evaluation suspends as long as the expression
+--- contains unbound variables or the computed
+--- value contains unbound variables.
+getOneValue :: a -> IO (Maybe a)
+getOneValue x = return (oneValue x)
+
+--- Gets all solutions to a constraint. Conceptually, all solutions
+--- are computed on a copy of the constraint, i.e., the evaluation
+--- of the constraint does not share any results. Moreover, this
+--- evaluation suspends if the constraints contain unbound variables.
+--- Similar to Prolog's findall.
+getAllSolutions :: Data a => (a -> Bool) -> IO [a]
+getAllSolutions c = return (allSolutions c)
+
+--- Gets one solution to a constraint.
+--- Returns Nothing if the search space is finitely failed.
+getOneSolution :: Data a => (a -> Bool) -> IO (Maybe a)
+getOneSolution c = return (oneSolution c)
+
+--- Returns a list of values that do not satisfy a given constraint.
+--- @param x - an expression (a generator evaluable to various values)
+--- @param c - a constraint that should not be satisfied
+--- @return A list of all values of e such that (c e) is not provable
+getAllFailures :: a -> (a -> Bool) -> IO [a]
+getAllFailures generator test = do
+  xs <- getAllValues generator
+  failures <- mapM (naf test) xs
+  return $ concat failures
+
+-- (naf c x) returns [x] if (c x) fails, and [] otherwise.
+naf :: (a -> Bool) -> a -> IO [a]
+naf c x = getOneValue (c x) >>= return . maybe [x] (const [])
+
+------------------------------------------------------------------------------
+-- Primitive encapsulated search operations.
+-- Note that these operations are not fully declarative,
+-- i.e., the results depend on the order of evaluation and program rules.
+
+--- Returns all values of an expression.
+--- Conceptually, all values are computed on a copy
 --- of the expression, i.e., the evaluation of the expression does not share
 --- any results. In PAKCS, the evaluation suspends as long as the expression
 --- contains unbound variables or the computed
@@ -45,15 +89,11 @@ getAllValues e = return (allValues e)
 --- Note that this operation is not purely declarative since the ordering
 --- of the computed values depends on the ordering of the program rules.
 allValues :: a -> [a]
-#ifdef __KICS2__
-allValues e = ST.allValuesDFS (ST.someSearchTree e)
-#else
-allValues external
-#endif
+allValues = CF.allValues
 
---- Returns some value for an expression (currently, via an incomplete
---- depth-first strategy). If the expression has no value, the
---- computation fails. Conceptually, the value is computed on a copy
+--- Returns some value for an expression.
+--- If the expression has no value, the computation fails.
+--- Conceptually, the value is computed on a copy
 --- of the expression, i.e., the evaluation of the expression does not share
 --- any results. In PAKCS, the evaluation suspends as long as the expression
 --- contains unbound variables or the computed
@@ -64,15 +104,11 @@ allValues external
 --- Thus, this operation should be used only if the expression
 --- has a single value.
 someValue :: a -> a
-#ifdef __KICS2__
-someValue = ST.someValueWith ST.dfsStrategy
-#else
-someValue external
-#endif
+someValue = CF.someValue
 
---- Returns just one value for an expression (currently, via an incomplete
---- depth-first strategy). If the expression has no value, `Nothing`
---- is returned. Conceptually, the value is computed on a copy
+--- Returns just one value for an expression.
+--- If the expression has no value, `Nothing` is returned.
+--- Conceptually, the value is computed on a copy
 --- of the expression, i.e., the evaluation of the expression does not share
 --- any results. In PAKCS, the evaluation suspends as long as the expression
 --- contains unbound variables or the computed
@@ -83,17 +119,10 @@ someValue external
 --- Thus, this operation should be used only if the expression
 --- has a single value.
 oneValue :: a -> Maybe a
-#ifdef __KICS2__
-oneValue x =
-  let vals = ST.allValuesWith ST.dfsStrategy (ST.someSearchTree x)
-  in (if null vals then Nothing else Just (head vals))
-#else
-oneValue external
-#endif
+oneValue = CF.oneValue
 
 --- Returns all values satisfying a predicate, i.e., all arguments such that
---- the predicate applied to the argument can be evaluated to `True`
---- (currently, via an incomplete depth-first strategy).
+--- the predicate applied to the argument can be evaluated to `True`.
 --- In PAKCS, the evaluation suspends as long as the predicate expression
 --- contains unbound variables or the computed
 --- values contain unbound variables.
@@ -104,8 +133,7 @@ allSolutions :: Data a => (a -> Bool) -> [a]
 allSolutions p = allValues (invertPred p)
 
 --- Returns some value satisfying a predicate, i.e., some argument such that
---- the predicate applied to the argument can be evaluated to `True`
---- (currently, via an incomplete depth-first strategy).
+--- the predicate applied to the argument can be evaluated to `True`.
 --- If there is no value satisfying the predicate, the computation fails.
 ---
 --- Note that this operation is not purely declarative since the ordering
@@ -134,11 +162,7 @@ invertPred p | p x = x where x free
 --- Conceptually, the argument is evaluated on a copy, i.e.,
 --- even if the computation does not fail, it has not been evaluated.
 isFail :: a -> Bool
-#ifdef __KICS2__
-isFail x = null (allValues (x `seq` ()))
-#else
-isFail external
-#endif
+isFail = CF.isFail
 
 #ifdef __PAKCS__
 ------------------------------------------------------------------------------
@@ -146,12 +170,12 @@ isFail external
 --- In contrast to `allValues`, this operation does not wait
 --- until all "outside" variables are bound to values,
 --- but it returns all values computable by term rewriting
---- and ignores all computations that require bindings for outside variables.
+--- and ignores all computations that requires bindings for outside variables.
 rewriteAll :: a -> [a]
-rewriteAll external
+rewriteAll = CF.rewriteAll
 
 --- Similarly to 'rewriteAll' but returns only some value computable
 --- by term rewriting. Returns `Nothing` if there is no such value.
 rewriteSome :: a -> Maybe a
-rewriteSome external
+rewriteSome = CF.rewriteSome
 #endif

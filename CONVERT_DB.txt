@@ -1,0 +1,29 @@
+To convert the database:
+
+    > sqlitebrowser Smap.db
+
+- browse User/Metadata and modify Prelude.
+- browse Version and modify Time.
+- save database
+
+
+
+
+On smap host:
+
+    > sudo cp /var/www/smap/data/Smap.db /tmp
+    > sudo chown mh:mh /tmp/Smap.db 
+    > mv /tmp/Smap.db ~/home/curry/smap/src/data
+
+Then on lascombes:
+
+    > cpm-switch-pakcs2
+    > cd ~/home/curry/smap/src
+    > pakcs2 :l Model.Smap
+    ...> saveAllData "SAVED"
+
+On petrus:
+
+    > update-from home/curry/smap/src/SAVED
+    > cd ~/home/curry/smap/src
+    > pakcs3 :l Model.Smap
