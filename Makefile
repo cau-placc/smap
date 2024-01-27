@@ -72,8 +72,7 @@ deploy: checkdeploy
 	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
 
 $(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
-	$(CPM) exec $(CURRY2CGI) --cpmexec \"$(CPM) exec\" \
-	  --system="$(CURRYHOME)" \
+	$(CURRY2CGI) --cpm="$(CPM)" --system="$(CURRYHOME)" \
 	  -i Controller.Admin \
 	  -i Controller.AuthN \
 	  -i Controller.Browser \

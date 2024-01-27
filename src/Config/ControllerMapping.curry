@@ -38,6 +38,6 @@ getController url ctrlRef =
     BrowserController -> browserController url
     SmapIEController  -> smapIEController  url
     StaticController  -> staticController  url
-    _                 -> showInvalidUrlErrorPage url
+    -- _                 -> showInvalidUrlErrorPage url
 
 --------------------------------------------------------------------------------

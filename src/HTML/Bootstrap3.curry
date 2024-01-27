@@ -2,7 +2,7 @@
 --- Library for Bootstrap 3 components (work in progress).
 ---
 --- @author Lasse Kristopher Meyer
---- @version October 2022
+--- @version January 2024
 --------------------------------------------------------------------------------
 
 module HTML.Bootstrap3 (
@@ -11,7 +11,8 @@ module HTML.Bootstrap3 (
   glyphicon,navbarHeader,navbarBrand,labelDefault,labelInfo,labelWarning,badge,
   jumbotron,pageHeader,panelDefault,panelHeading,panelBody,panelFooter,
   modal,modalDialog,modalContent,modalHeader,modalBody,modalFooter,modalDismiss,
-  modalToggle,stdModal,dropdownToggle,tooltipToggle,collapseToggle,
+  modalToggle,stdModal,scriptShowModal,
+  dropdownToggle,tooltipToggle,collapseToggle,
   withFade,
   parentId,targetClass,targetId,withLoadingText
 ) where
@@ -158,6 +159,16 @@ stdModal modalId labelId title body footer =
           body
         ,modalFooter
           footer]]]
+
+--- A JavaScript element which can be put at the end of the page body
+--- in order to show a modal defined in the page after the page is loaded.
+scriptShowModal :: String -> [BaseHtml]
+scriptShowModal modalid =
+  [hStruct "script"
+    [htmlText $ "$(document).ready(function(){ $(\"#" ++ modalid ++
+                "\").modal('show'); });"
+    ]
+  ]
 
 -- Dropdown
 

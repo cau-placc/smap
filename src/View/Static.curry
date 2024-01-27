@@ -3,7 +3,7 @@
 --- page, the help page or the about page).
 ---
 --- @author Lasse Kristopher Meyer
---- @version October 2022
+--- @version January 2024
 --------------------------------------------------------------------------------
 
 module View.Static (
@@ -12,7 +12,7 @@ module View.Static (
 
 import Prelude hiding (div,span)
 
-import Control.SetFunctions
+import Control.Search.SetFunctions
 import System.Views
 import System.SmapHtml
 

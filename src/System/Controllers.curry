@@ -5,7 +5,7 @@
 --- also exports the general type synonym for controllers.
 ---
 --- @author Lasse Kristopher Meyer
---- @version October 2022
+--- @version January 2024
 --------------------------------------------------------------------------------
 
 module System.Controllers (
@@ -14,12 +14,13 @@ module System.Controllers (
   showInvalidUrlErrorPage,showTransactionErrorPage,
   showNotYetImplementedErrorPage,stdErrorPageTitle,
   validateKeyAndApply,validateKeyAndApplyOn,next,nextFor,
-  getPage
+  getPage, cookieProceedInfo
 ) where
 
 import KeyDatabase
 import Prelude hiding (div, empty)
 
+import HTML.Bootstrap3
 import HTML.Session
 
 import System.Alerts
@@ -179,16 +180,32 @@ nextFor controller arg =
 --- Builds the complete HTML form from the view returned by a controller. Adds
 --- form parameters and the basic layout (including the navigation bar and
 --- sticky footer).
+--- If the view is empty, this is caused by a missing session in a controller
+--- so that a message to proceed and reload is generated.
 --- @param view - the view returned by the last active controller
 getPage :: [BaseHtml] -> IO HtmlPage
-getPage view = do
+getPage view = case view of
+  [] -> do uparam <- getUrlParameter
+           getPageCookieInfo False (cookieProceedInfo uparam)
+  _  -> do hassession <- doesSessionExist
+           getPageCookieInfo (not hassession) view
+
+--- Builds the complete HTML form from the view returned by a controller. Adds
+--- form parameters and the basic layout (including the navigation bar and
+--- sticky footer).
+--- @param withcookieinfo - if true, inform about cookies
+--- @param view - the view returned by the last active controller
+getPageCookieInfo :: Bool -> [BaseHtml] -> IO HtmlPage
+getPageCookieInfo withcookieinfo view = do
   body   <- addLayoutToView
   langs  <- getAllLanguages
-  withSessionCookieInfo $ HtmlPage "Smap"
+  withSessionCookie $ HtmlPage "Smap"
     ([viewportMetaTag, favicon] ++
-     (jsHeadIncludes $ map languageName langs) ++
-     cssIncludes)
-    (body ++ jsBodyIncludes)
+    (jsHeadIncludes $ map languageName langs) ++
+    cssIncludes)
+    (body ++ jsBodyIncludes ++
+    (if withcookieinfo then [cookieModal] ++ scriptShowModal cookieModalID
+                       else []))
  where
   addLayoutToView =
     do url        <- getUrl
@@ -205,5 +222,25 @@ getPage view = do
     BaseStruct "input" [("type","hidden"),("value","smap-ie")] [] : _ ->
       [style "height: 100%;"]
     _ -> []
+
+  cookieModalID = "cookieModal"
+
+  -- Modal dialog used when there is no session and cookies must be set:
+  cookieModal =  stdModal cookieModalID (cookieModalID ++ "Label")
+    [htxt "Cookie Information"]
+    [htxt cookieInfoText]
+    [htxt "Close to proceed: ",
+     buttonButton [ ("class","btn btn-primary"), ("data-dismiss","modal") ]
+                  [htxt "Close"]]
+
+cookieInfoText :: String
+cookieInfoText =
+  "This web site uses technical cookies for navigation and user inputs."
+
+cookieProceedInfo :: HTML h => String -> [h]
+cookieProceedInfo urlparam =
+  [ h1 [] [text "Cookie Info"],
+    p [] [ text $ cookieInfoText ++ " In order to proceed, "
+         , strong [] [a [href ('?' : urlparam)] [text "please click here."]]]]
 
 --------------------------------------------------------------------------------

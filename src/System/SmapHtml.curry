@@ -222,7 +222,7 @@ stickyFooter =
   (div [] `withId` "sticky-footer")
     [container
       [p [classA "text-muted"]
-        [text "&copy; 2014-2022, Lasse Kristopher Meyer, Michael Hanus &bull; "
+        [text "&copy; 2014-2024, Lasse Kristopher Meyer, Michael Hanus &bull; "
         ,a [href "?about"] [text " About"]]]]
 
 -- A panel with a width (in columns between 2 and 12), title, body, and footer.

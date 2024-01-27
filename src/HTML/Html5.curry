@@ -14,7 +14,7 @@ module HTML.Html5 (
   module HTML.Base, HtmlAttr,
   text,empty,
   a,article,aside,b,br,button,code,div,em,fieldset,figcaption,figure,footer,
-  {-form,-}h1,h2,h3,h4,h5,h6,header,hr,i,
+  h1,h2,h3,h4,h5,h6,header,hr,i,
   img,input,label,li,meta,nav,ol,option,p,
   script,section,select,selectNoRef,small,span,strong,
   text,textArea,textAreaNoRef,ul,
@@ -182,11 +182,11 @@ selectNoRef attrs selMenu initSelVal =
 
   sI sellist sel = htmlStruct "select" [] (selOption sellist sel)
    where
-    selOption [] _ = []
-    selOption ((n,v):nvs) i =
+    selOption []          _ = []
+    selOption ((n,v):nvs) k =
       htmlStruct "option"
-        ([("value",v)] ++ if i==0 then [("selected","selected")] else [])
-        [htxt n] : selOption nvs (i-1)
+        ([("value",v)] ++ if k==0 then [("selected","selected")] else [])
+        [htxt n] : selOption nvs (k-1)
 
 
 small :: HTML h => [HtmlAttr] -> [h] -> h

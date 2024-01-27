@@ -13,7 +13,7 @@ module Controller.SmapIE (
  ) where
 
 import Data.Maybe ( listToMaybe )
-import HTML.Base  ( HtmlFormDef, formDefWithID, formElem, urlencoded2string )
+import HTML.Base  ( HtmlFormDef, formDefWithID, formElem, urlencoded2string, getUrlParameter )
 import HTML.Session
 import WUI
 
@@ -98,8 +98,8 @@ showUploadSmapIE langName initcode = do
  where 
   initSystemKey (_,systems) = showSystemKey $ head $ systems
   langNotFoundErr =
-    "Sorry, we could not find this language in our database. Choose <code>E"++
-    "ditor</code> in the navigation bar to get a list of all available lang"++
+    "Sorry, we could not find this language in our database. Choose <code>E" ++
+    "ditor</code> in the navigation bar to get a list of all available lang" ++
     "uages."
 
 -- Returns a controller that opens a program with a given key in the IE if such
@@ -139,11 +139,15 @@ showSmapIE
   -> Controller
 showSmapIE mProg execEnv mExecRes initCode initSystemKey =
   checkAuthorization (smapIEOperation $ ShowSmapIE mProg) $ \authzData -> do
-    putSessionData smapIEStore
-      (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData)
-    return [ -- for styling purposes (to increase container to 100%)
-            input [("type","hidden"),value "smap-ie"],
-            formElem smapIEForm]
+    hassession <- doesSessionExist
+    if hassession
+      then do
+        putSessionData smapIEStore
+          (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData)
+        return [ -- for styling purposes (to increase container to 100%)
+                input [("type","hidden"),value "smap-ie"],
+                formElem smapIEForm]
+      else return [] -- session is required
 
 -- The state of the SmapIE containing:
 -- - the program that will be opened (if given)
@@ -159,15 +163,16 @@ type SmapIEData =
 smapIEStore :: SessionStore SmapIEData
 smapIEStore = sessionStore "smapIEStore"
 
-smapIEForm :: HtmlFormDef SmapIEData
+smapIEForm :: HtmlFormDef (Maybe SmapIEData)
 smapIEForm = formDefWithID "Controller.SmapIE.smapIEForm" readData formHTML
  where
-  readData = getSessionData smapIEStore failed
+  readData = getSessionMaybeData smapIEStore
 
-  formHTML (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData) =
-    smapIEPage mProg execEnv mExecRes initCode initSystemKey
-               doExecuteProgram tryShowProgramCreationForm
-               tryShowVersionCreationForm showSmapIE authzData
+  formHTML (Just (mProg, execEnv, mExecRes, initCode, initSystemKey, authzData))
+    = smapIEPage mProg execEnv mExecRes initCode initSystemKey
+                 doExecuteProgram tryShowProgramCreationForm
+                 tryShowVersionCreationForm showSmapIE authzData
+  formHTML Nothing = cookieProceedInfo "?"
 
 ------------------------------------------------------------------------------
 --- A WUI form to create a new program.

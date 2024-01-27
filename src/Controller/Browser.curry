@@ -230,7 +230,8 @@ modifyProgramForm :: HtmlFormDef (Program,Int)
 modifyProgramForm =
   formDefWithID "Controller.Browser.modifyProgramForm" readData formHTML
  where
-  readData = getSessionData browserStore failed
+  readData = getSessionData browserStore
+               (error "modifyProgramForm.getSessionData: no session")
 
   formHTML (prog,versNum) = modifyProgramRendering prog modifyProgAndTags
    where
@@ -253,7 +254,8 @@ createCommentForm :: HtmlFormDef (Program,Int)
 createCommentForm =
   formDefWithID "Controller.Browser.createCommentForm" readData formHTML
  where
-  readData = getSessionData browserStore failed
+  readData = getSessionData browserStore
+               (error "createCommentForm.getSessionData: no session")
 
   formHTML (prog,versNum) = createCommentRendering prog doCreateComCtrl
    where

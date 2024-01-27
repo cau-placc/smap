@@ -13,8 +13,8 @@ Install new version:
 
 2. Create local installation for deploy:
 
-   - either set SYSTEM to kics2 in Makefile and run `make deploy`
-   - or run `make SYSTEM=/opt/kics2/kics2 deploy`
+   - either set CURRYHOME to kics2 in Makefile and run `make deploy`
+   - or run `make CURRYHOME=/opt/kics2/kics2 deploy`
 
 3 Login at smap.informatik.uni-kiel.de and execute:
 
