@@ -137,9 +137,9 @@ httpPost host doc snr input = do
     ]
 
 test1 :: IO String
-test1 = httpPost "www-ps.informatik.uni-kiel.de" "/~pakcs/smap/exec/PAKCS.cgi?1.14.0" 80 "main = 3*4"
+test1 = httpPost "www-ps.informatik.uni-kiel.de" "/~pakcs/smap/exec/PAKCS.cgi?3.6.0" 80 "main = 3*4"
 test2 :: IO String
-test2 = httpGet "www-ps.informatik.uni-kiel.de" "/~pakcs/smap/exec/PAKCS.cgi?1.14.0" 80 "main = 3*4"
+test2 = httpGet "www-ps.informatik.uni-kiel.de" "/~pakcs/smap/exec/PAKCS.cgi?3.6.0" 80 "main = 3*4"
 
 -- Splits a URL into the host name, path, and socket number (default 80).
 -- @author Michael Hanus

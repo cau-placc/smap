@@ -9,7 +9,7 @@ import HTML.Base      ( string2urlencoded )
 
 -- The base url of Smap:
 smapBaseUrl :: String
-smapBaseUrl = "http://www-ps.informatik.uni-kiel.de/smap/smap.cgi"
+smapBaseUrl = "https://smap.informatik.uni-kiel.de/smap.cgi"
 --smapBaseUrl = "http://localhost/mh/smap/smap.cgi"
 
 --- Generate URL for a given program.
