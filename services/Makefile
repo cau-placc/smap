@@ -12,14 +12,13 @@ SWILOAD=safeload.pl
 STDLIBDIR=curry_libs
 
 .PHONY: install
-install: Curry_PAKCS Curry_KiCS2 Haskell_GHC Prolog_SWI
+install: Curry_System Haskell_GHC Prolog_SWI
 	mkdir -p $(CGIDIR)
 	chmod 755 $(CGIDIR)
 	$(MAKE) uninstall
-	mv Curry_PAKCS $(CGIDIR)/PAKCS.cgi
+	mv Curry_System $(CGIDIR)/CURRY.cgi
 	cp -a $(STDLIBDIR)* $(CGIDIR)/
 	chmod -R go+rX $(CGIDIR)/$(STDLIBDIR)*
-	mv Curry_KiCS2 $(CGIDIR)/KiCS2.cgi
 	mv Haskell_GHC $(CGIDIR)/GHC.cgi
 	mv Prolog_SWI  $(CGIDIR)/SWI.cgi
 	cp $(SWILOAD) $(CGIDIR)
@@ -31,11 +30,8 @@ uninstall:
 	cd $(CGIDIR) && rm -f PAKCS.cgi KiCS2.cgi GHC.cgi SWI.cgi $(SWILOAD)
 	cd $(CGIDIR) && rm -rf $(STDLIBDIR)*
 
-Curry_PAKCS: Curry_PAKCS.curry SimpleWebService.curry
-	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_PAKCS.curry :save :quit
-
-Curry_KiCS2: Curry_KiCS2.curry SimpleWebService.curry
-	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_KiCS2.curry :save :quit
+Curry_System: Curry_System.curry SimpleWebService.curry
+	$(CURRYSYSTEM) $(CURRYOPTS) :load Curry_System.curry :save :quit
 
 Haskell_GHC: Haskell_GHC.curry SimpleWebService.curry
 	$(CURRYSYSTEM) $(CURRYOPTS) :load Haskell_GHC.curry :save :quit

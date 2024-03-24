@@ -27,7 +27,7 @@ main = runServiceAsCGI executeWithGHC
 
 --- Paths to required binaries.
 runghc :: String
-runghc   = "/opt/ghc/bin/runghc"
+runghc   = "/usr/bin/runghc"
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
