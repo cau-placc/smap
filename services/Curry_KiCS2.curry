@@ -42,8 +42,7 @@ kics2Frontend version = kics2Bin version </> "kics2-frontend"
 
 -- A CPM bin directory appropriate for the KiCS2 version
 cpmBin :: String -> String
-cpmBin version = "/net/medoc/home/kics2/.cpm/bin_kics" ++
-                 (if "0." `isPrefixOf` version then "1" else [head version])
+cpmBin version = "/net/medoc/home/kics2/.cpm/bin_kics" ++ [head version]
 
 timeout :: String
 timeout  = "/usr/bin/timeout"
@@ -84,37 +83,35 @@ executeWithKiCS2 urlparam inputprog = do
   createDirectoryIfMissing True execDir
   setCurrentDirectory execDir
   writeFile filename prog
-  let target = if "0." `isPrefixOf` version then "--flat" else "--typed-flat"
   writeFile shFile
             ("#!/bin/sh\n"++
              unwords [ addBinPath version
                      , kics2Frontend version
-                     , target, "--extended"
+                     , "--typed-flat", "--extended"
                      , "-D__KICS2__=" ++ versionAsCPP version
                      , "-i", kics2Lib version, modName])
   (exit1,out1,err1) <- evalCmd "/bin/sh" [shFile] ""
   if exit1 > 0
     then do setCurrentDirectory currDir
-            system $ "/bin/rm -r "++execDir
+            system $ "/bin/rm -r " ++ execDir
             return $ parseResult (exit1,out1,err1)
     else do writeFile shFile
-              ("#!/bin/sh\n"++
+              ("#!/bin/sh\n" ++
                unwords ([addBinPath version, kics2 version]
-                        ++ kics2Params++
+                        ++ kics2Params ++
                         [":set " ++
                          (if allsols then "-" else "+") ++ "first",
-                         ":set safe",
-                         ":load",modName,":eval","main",":quit"]))
-            system $ "chmod 755 "++shFile
+                         ":set safe",":load",modName,
+                         ":eval","main",":quit"]))
+            system $ "chmod 755 " ++ shFile
             result <- evalCmd timeout [timeLimit,shFile] ""
             setCurrentDirectory currDir
-            system $ "/bin/rm -r "++execDir
+            system $ "/bin/rm -r " ++ execDir
             return $ parseResult result
  where
   -- add the Curry system bin directory and a CPM bin directory to the path
   addBinPath v = "PATH=" ++ kics2Bin v ++ ":" ++ cpmBin v ++
                  ":$PATH && export PATH && "
-
 
   versionAsCPP vs = case splitOn "." vs of
     (maj:min:_) -> case (reads maj, reads min) of
@@ -127,11 +124,12 @@ executeWithKiCS2 urlparam inputprog = do
 --- @param result - exit status, stdin content and stderr content
 parseResult :: (Int,String,String) -> String
 parseResult (exit,out,err)
-  | exit == 0   = show exit++"\n"++dropWarning out++err
-  | exit == 2   =           "0\n"++dropWarning out -- no more solutions
-  | exit == 124 = "124\nTIME OUT (after "++timeLimit++" seconds)!"
-  | otherwise   = show exit++"\n"++
-                  "ERROR (exit code: "++show exit++")\n"++out++dropWarning err
+  | exit == 0   = show exit ++ "\n" ++ dropWarning out ++ err
+  | exit == 2   =           "0\n" ++ dropWarning out ++ err -- no more solutions
+  | exit == 124 = "124\nTIME OUT (after " ++ timeLimit ++ " seconds)!"
+  | otherwise   = show exit ++ "\n" ++
+                  "ERROR (exit code: " ++ show exit ++ ")\n" ++ out ++
+                  dropWarning err
   where
     dropWarning res =
       if "Warning" `isPrefixOf` res
@@ -150,7 +148,7 @@ getModuleName prog =
        else "Main"
   where
     progWOLeadingWSP = dropWhile isSpace prog
-    isSpace c        = c==' '||c=='\n'||c=='\r'||c=='\t'
+    isSpace c        = c==' ' || c=='\n' || c=='\r' || c=='\t'
     dropLine         = drop 1 . dropWhile (/='\n')
 
 --------------------------------------------------------------------------------

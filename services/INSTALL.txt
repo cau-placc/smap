@@ -3,7 +3,7 @@ To install all current web services on www-ps:
 Login as "mh@bellecombe"
 ------------------------
 
-    > cd home/curry/smap/services && make
+    > cd home/curry/applications/smap/services && make
 
 Login as "pakcs@bellecombe"
 ---------------------------

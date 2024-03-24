@@ -108,13 +108,13 @@ executeWithPAKCS urlparam inputprog = do
             system $ "/bin/rm -r " ++ execDir
             return $ parseResult (exit1,out1,err1)
     else do writeFile shFile
-              ("#!/bin/sh\n"++
-                unwords ([addBinPath version, pakcs version]
-                         ++ pakcsParams ++
-                         [":set " ++
-                          (if allsols then "-" else "+") ++ "first",
-                          ":set safe",":load",modName,
-                          ":eval","main",":quit"]))
+              ("#!/bin/sh\n" ++
+               unwords ([addBinPath version, pakcs version]
+                        ++ pakcsParams ++
+                        [":set " ++
+                         (if allsols then "-" else "+") ++ "first",
+                         ":set safe",":load",modName,
+                         ":eval","main",":quit"]))
             system $ "chmod 755 " ++ shFile
             result <- evalCmd timeout [timeLimit,shFile] ""
             setCurrentDirectory currDir
