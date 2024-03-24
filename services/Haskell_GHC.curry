@@ -61,8 +61,8 @@ executeWithGHC urlparam inputprog = do
       fileName = maybe "Prog" id modName ++ ".hs"
       moduleHeader = maybe "module Prog where\n\n" (const "") modName
       mainProg = let mname = maybe "Prog" id modName
-                  in "import qualified " ++ mname ++ 
-                     "\n\nmain = print " ++ mname ++ ".main\n"
+                 in "import qualified " ++ mname ++ 
+                    "\n\nmain = print " ++ mname ++ ".main\n"
   currDir <- getCurrentDirectory
   setEnv "HOME" currDir -- since GHC requires HOME for getAppUserDataDirectory
   createDirectoryIfMissing True execDir
@@ -70,10 +70,8 @@ executeWithGHC urlparam inputprog = do
   writeFile fileName (moduleHeader ++ prog)
   writeFile "Main.hs" mainProg
   result <- if containsUnsafe prog
-            then return (1,"","Program contains unsafe operations!")
-            else evalCmd timeout
-                         [timeLimit,runghc,"Main.hs"]
-                         ""
+              then return (1,"","Program contains unsafe operations!")
+              else evalCmd timeout [timeLimit,runghc,"Main.hs"] ""
   setCurrentDirectory currDir
   system $ "/bin/rm -r " ++ execDir
   return $ parseResult result
@@ -95,26 +93,26 @@ parseResult (exit,out,err)
 findModuleName :: String -> Maybe String
 findModuleName prog =
   if "--" `isPrefixOf` progWOLeadingWSP
-  then findModuleName $ dropLine prog
-  else if "module" `isPrefixOf` progWOLeadingWSP
-       then Just $ fst $ break (`elem` [' ','(']) $ drop 1 $ snd $
-                                             break (==' ') progWOLeadingWSP
-       else Nothing
-  where
-    progWOLeadingWSP = dropWhile isSpace prog
-    isSpace c        = c==' '||c=='\n'||c=='\r'||c=='\t'
-    dropLine         = drop 1 . dropWhile (/='\n')
+    then findModuleName $ dropLine prog
+    else if "module" `isPrefixOf` progWOLeadingWSP
+           then Just $ fst $ break (`elem` [' ','(']) $ drop 1 $ snd $
+                       break (==' ') progWOLeadingWSP
+           else Nothing
+ where
+  progWOLeadingWSP = dropWhile isSpace prog
+  isSpace c        = c==' '||c=='\n'||c=='\r'||c=='\t'
+  dropLine         = drop 1 . dropWhile (/='\n')
 
 --- Check whether program refers to "Unsafe":
 --- @param prog - the Curry program
 containsUnsafe :: String -> Bool
 containsUnsafe prog =
   let us = snd (break (=='U') prog)
-   in if null us
-      then False
-      else if "Unsafe" `isPrefixOf` us
-           then True
-           else containsUnsafe (tail us)
+  in if null us
+       then False
+       else if "Unsafe" `isPrefixOf` us
+              then True
+              else containsUnsafe (tail us)
 
 ------------------------------------------------------------------------------
 
