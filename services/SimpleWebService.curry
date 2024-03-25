@@ -46,12 +46,12 @@ runServiceAsCGI service = do
   putStrLn ""  -- end of HTTP header
   putStr result
  where
-   -- get n chars from stdin:
-   getNChars n =
-     if n<=0 then return ""
-             else do c <- getChar
-                     cs <- getNChars (n-1)
-                     return (c:cs)
+  -- get n chars from stdin:
+  getNChars n =
+    if n<=0 then return ""
+            else do c <- getChar
+                    cs <- getNChars (n-1)
+                    return (c:cs)
 
 ------------------------------------------------------------------------
 --- Connecting to a web service:
@@ -89,29 +89,29 @@ isValidUrl = isJust . partitionUrl
 -- request of a document:
 httpPost :: String -> String -> Int -> String -> IO String
 httpPost hostname docpath portnum input = do
- str <- connectToSocket hostname portnum
- hPutStrLn str ("POST " ++ docpath ++ " HTTP/1.0")
- hPutStrLn str ("Host: " ++ hostname)
- hPutStrLn str "Content-Type: text/plain; charset=ISO-8859-1"
- hPutStrLn str ("Content-Length: "++show (length input))
- hPutStrLn str "" -- end of HTTP header
- hPutStrLn str input
- hFlush str
- result <- hGetContents str
- return (readContent result)
+  str <- connectToSocket hostname portnum
+  hPutStrLn str ("POST " ++ docpath ++ " HTTP/1.0")
+  hPutStrLn str ("Host: " ++ hostname)
+  hPutStrLn str "Content-Type: text/plain; charset=ISO-8859-1"
+  hPutStrLn str ("Content-Length: "++show (length input))
+  hPutStrLn str "" -- end of HTTP header
+  hPutStrLn str input
+  hFlush str
+  result <- hGetContents str
+  return (readContent result)
 
 -- yield content (i.e., the string following the first empty line)
 readContent :: String -> String
 readContent s = case break (=='\n') s of
-    (_,'\n':'\r':'\n':conts) -> conts
-    (_,'\n':'\n':conts) -> conts
-    (_,'\n':noconts) -> readContent noconts
-    _ -> "error: no content read"
+  (_,'\n':'\r':'\n':conts) -> conts
+  (_,'\n':'\n':conts) -> conts
+  (_,'\n':noconts) -> readContent noconts
+  _ -> "error: no content read"
 
 ------------------------------------------------------------------------
 -- Example:
 execURL :: String
-execURL = "http://giscours.informatik.uni-kiel.de/~pakcs/smap/exec/PAKCS.cgi"
+execURL = "http://www-ps.informatik.uni-kiel.de/~pakcs/smap/exec/PAKCS.cgi"
 
 test1 :: IO ()
 test1 = connectToCGI execURL "main = 3+4" >>= putStrLn

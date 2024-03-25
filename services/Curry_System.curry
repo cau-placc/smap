@@ -126,7 +126,6 @@ executeWithCurry urlparam inputprog = do
              unwords [ addBinPath currysys version
                      , curryFrontend currysys version
                      , if currysys == PAKCS then "--flat" else "--typed-flat"
-                     , "--extended"
                      , "-D__" ++ currySystemUC currysys ++ "__=" ++
                        versionAsCPP version
                      , "-i", curryLib currysys version, modName])

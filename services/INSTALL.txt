@@ -3,7 +3,23 @@ To install all current web services on www-ps:
 Login as "mh@bellecombe"
 ------------------------
 
+Generate the executables in ~/public_html/smap/exec:
+
     > cd home/curry/applications/smap/services && make
+
+
+Login at Smap server (as "mh@climens")
+--------------------------------------
+
+    > sudo -s
+    > cd /var/www/smap/exec
+    > cp -p ~mh/public_html/smap/exec/*.cgi .
+    > rm -rf curry_libs* && cp -a ~mh/public_html/smap/exec/curry_libs* .
+    > chown -R www-data:www-data .
+
+
+------------------------------------------------------------------------------
+OLD:
 
 Login as "pakcs@bellecombe"
 ---------------------------
@@ -11,3 +27,5 @@ Login as "pakcs@bellecombe"
     > cd public_html/smap/exec
     > cp -p ~mh/public_html/smap/exec/*.cgi .
     > rm -rf curry_libs* && cp -a ~mh/public_html/smap/exec/curry_libs* .
+
+------------------------------------------------------------------------------
