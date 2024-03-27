@@ -125,7 +125,10 @@ executeWithCurry urlparam inputprog = do
             ("#!/bin/sh\n"++
              unwords [ addBinPath currysys version
                      , curryFrontend currysys version
-                     , if currysys == PAKCS then "--flat" else "--typed-flat"
+                     , if currysys == PAKCS then "--flat"
+                                            else "--type-annotated-flat"
+                     , "-o" -- output file, e.g., `.curry/pakcs-3.6.0`
+                     , ".curry/" ++ currySystemLC currysys ++ "-" ++ version
                      , "-D__" ++ currySystemUC currysys ++ "__=" ++
                        versionAsCPP version
                      , "-i", curryLib currysys version, modName])

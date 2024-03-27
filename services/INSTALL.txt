@@ -1,7 +1,7 @@
 To install all current web services on www-ps:
 
-Login as "mh@bellecombe"
-------------------------
+Login as "mh@mouton"
+--------------------
 
 Generate the executables in ~/public_html/smap/exec:
 
