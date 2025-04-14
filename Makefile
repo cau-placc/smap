@@ -1,7 +1,10 @@
 # Generic Makefile for Spicey applications
 
-# Definition of the root of the Curry system to be used:
-CURRYHOME=$(HOME)/pakcs
+# tar file to be generated with the complete web application
+TARFILE := $(CURDIR)/SMAP.tgz
+
+# Definition of the root of the Curry system used to compile the webapp:
+CURRYHOME=/opt/pakcs/pakcs
 #CURRYHOME=/opt/kics2/kics2
 
 # Curry bin directory to be used:
@@ -11,13 +14,16 @@ CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored:
-WEBSERVERDIR=$(HOME)/public_html/smap
+WEBDIR=$(HOME)/public_html/smap
 
-# Executable of the Curry Package Manager CPM:
+# Executable of the Curry Package Manager CPM to install the web application:
 CPM := $(CURRYBIN)/cypm
 
 # Executable of the curry2cgi:
 CURRY2CGI := $(shell which curry2cgi)
+
+# The main module of the webapp:
+WEBAPPMAIN = Main
 
 ############################################################################
 
@@ -30,6 +36,9 @@ all:
 .PHONY: install
 install:
 	$(CPM) install
+
+$(WEBDIR):
+	mkdir -p $(WEBDIR)
 
 # check presence of tools required for deployment and install them:
 .PHONY: checkdeploy
@@ -58,26 +67,38 @@ run:
 # Deploy the generated Spicey application, i.e., install it in the
 # web pages:
 .PHONY: deploy
-deploy: checkdeploy
-	mkdir -p $(WEBSERVERDIR)
-	$(MAKE) $(WEBSERVERDIR)/smap.cgi
+deploy: checkdeploy | $(WEBDIR)
+	$(MAKE) $(WEBDIR)/smap.cgi
 	# copy other files (style sheets, images,...)
-	cp -r public/* $(WEBSERVERDIR)
-	chmod -R go+rX $(WEBSERVERDIR)
-	mkdir -p $(WEBSERVERDIR)/data # create private data dir
-	chmod 700 $(WEBSERVERDIR)/data
-	cp -p data/htaccess $(WEBSERVERDIR)/data/.htaccess # and make it private
-	mkdir -p $(WEBSERVERDIR)/sessiondata # create private data dir
-	chmod 700 $(WEBSERVERDIR)/sessiondata
-	cp -p data/htaccess $(WEBSERVERDIR)/sessiondata/.htaccess # and make it private
+	cp -r public/* $(WEBDIR)
+	chmod -R go+rX $(WEBDIR)
+	mkdir -p $(WEBDIR)/data # create private data dir
+	chmod 700 $(WEBDIR)/data
+	cp -p data/htaccess $(WEBDIR)/data/.htaccess # and make it private
+	mkdir -p $(WEBDIR)/sessiondata # create private data dir
+	chmod 700 $(WEBDIR)/sessiondata
+	cp -p data/htaccess $(WEBDIR)/sessiondata/.htaccess # and make it private
 
-$(WEBSERVERDIR)/smap.cgi: src/*.curry src/*/*.curry
+$(WEBDIR)/smap.cgi: src/*.curry src/*/*.curry
 	$(CURRY2CGI) --cpm="$(CPM)" --system="$(CURRYHOME)" \
 	  -i Controller.Admin \
 	  -i Controller.AuthN \
 	  -i Controller.Browser \
 	  -i Controller.SmapIE \
-	  -o $@ Main.curry
+	  -o $@ $(WEBAPPMAIN)
+
+# create tar file with complete web app
+.PHONY: tar
+tar:
+	/bin/rm -f $(TARFILE)
+	$(MAKE) $(TARFILE)
+
+$(TARFILE): $(WEBDIR)/smap.cgi
+	cd $(WEBDIR) && tar czvf $(TARFILE) .
+	chmod 644 $(TARFILE)
+	@echo "tar file with web app generated:"
+	@echo "$(TARFILE)"
+	@echo "Copy and unpack it in the desired directory of the web server"
 
 # clean up generated the package directory
 .PHONY: clean
@@ -88,4 +109,4 @@ clean:
 # database files first!)
 .PHONY: cleanall
 cleanall: clean
-	/bin/rm -f $(WEBSERVERDIR)/smap.cgi*
+	/bin/rm -f $(WEBDIR)/smap.cgi*

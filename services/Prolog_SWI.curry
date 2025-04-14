@@ -8,7 +8,7 @@ import System.FilePath
 import System.IOExts    ( evalCmd )
 import System.Process   ( getPID, system )
 
-import HTML.Base        ( urlencoded2string )
+import Network.URL      ( urlencoded2string )
 
 import SimpleWebService ( runServiceAsCGI )
 

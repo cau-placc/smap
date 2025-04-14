@@ -5,16 +5,17 @@
 --- program and version creation and executing programs.
 ---
 --- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
---- @version October 2022
+--- @version April 2025
 --------------------------------------------------------------------------------
 
 module Controller.SmapIE (
   smapIEController, smapIEForm, pcCreateForm, pvCreateForm
  ) where
 
-import Data.Maybe ( listToMaybe )
-import HTML.Base  ( HtmlFormDef, formDefWithID, formElem, urlencoded2string, getUrlParameter )
+import Data.Maybe   ( listToMaybe )
+import HTML.Base    ( HtmlFormDef, formDefWithID, formElem, getUrlParameter )
 import HTML.Session
+import Network.URL  ( urlencoded2string )
 import WUI
 
 import Model.ExecEnv

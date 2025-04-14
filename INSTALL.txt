@@ -1,75 +1,52 @@
 Installation of Smap at
 =======================
 
-https://smap.informatik.uni-kiel.de/
+https://smap.curry-lang.org/
 --------------------------------------
 
-Installation directory: /var/www/smap
+Installation directory: /var/www/vhosts/curry-lang.org/smap.curry-lang.org
 
 Install new version:
 --------------------
 
-1. Login at bellecombe
+1. Login at sam-hanus.de
 
 2. Create local installation for deploy:
 
    - either set CURRYHOME to kics2 in Makefile and run `make deploy`
    - or run `make CURRYHOME=/opt/kics2/kics2 deploy`
 
-3 Login at smap.informatik.uni-kiel.de and execute:
+3. Create tar file `SMAP.tgz` pf the web installation:
 
-      > sudo cp ~mh/public_html/smap/smap.cgi.bin /var/www/smap
+       > make tar
 
+4. Unpack and install tar file in installation directory.
+   If necessary, add the following `.htaccess` file after unpacking:
+
+       Options +ExecCGI
+       AddHandler cgi-script .cgi
 
 
 Install the execution services:
 -------------------------------
 
-- Login as pakcs@bellecombe
-- > cd smap/services
-- Follow the instructions "INSTALL.txt"
+Login as sam-hanus.de and
+
+    > cd home/curry/applications/smap/services
+    > make clean
+    > make
+
+Then copy the directory `~/public_html/smap/exec` as `exec` into
+the installation directory.
 
 
 Save current data to local files:
 ---------------------------------
 
-Login on `smap.informatik.uni-kiel.de` and execute `update-from-smap`
- 
+Login on `sam-hanus.de` and execute
+
+    > ~/home/curry/applications/smap/fetch-smapdb.sh
+
+This copies the database into `~/public_html/smap/data/Smap.db`.
 
 ------------------------------------------------------------------------------
-Old installation:
------------------
-
-http://www-ps.informatik.uni-kiel.de/smap/ (forwarded to actual installation)
-
-The old implementation based on html1 is still available at
-
-http://www-ps.informatik.uni-kiel.de/smap/smap1
-
-(only for testing purposes, without actual data)
-
-
-- Installation directory on giscours (alias www-ps):
-  /srv/sites/informatik.uni-kiel.de/www-ps/htdocs/smap
-
-- Install by: giscours> ./install.sh
-
-- To enable apache2 to serve cgi script:
-
-Add in /etc/apache2/include/default.inc :
-
-<Directory /srv/sites/informatik.uni-kiel.de/www-ps/htdocs/smap>
-    AddHandler cgi-script .cgi
-    AllowOverride None
-    Options ExecCGI FollowSymLinks
-    Require all granted
-</Directory>
-
-OLD (apache 2.2):
-<Directory /srv/sites/informatik.uni-kiel.de/www-ps/htdocs/smap>
-	   AllowOverride None
-	   Options ExecCGI FollowSymLinks
-	   Order allow,deny
-	   Allow from all
-</Directory>
-

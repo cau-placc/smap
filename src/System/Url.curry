@@ -3,7 +3,7 @@
 --- essentially the CGI parameter strings passed to the main script).
 ---
 --- @author Lasse Kristopher Meyer
---- @version October 2022
+--- @version April 2025
 --------------------------------------------------------------------------------
 
 module System.Url (
@@ -11,9 +11,11 @@ module System.Url (
   getIntValueFromQueryString,getStrValueFromQueryString
 ) where
 
-import HTML.Base
 import Data.List
 import Numeric
+
+import HTML.Base   ( getUrlParameter )
+import Network.URL ( urlencoded2string )
 
 --------------------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 --- page, the help page or the about page).
 ---
 --- @author Lasse Kristopher Meyer
---- @version January 2024
+--- @version April 2025
 --------------------------------------------------------------------------------
 
 module View.Static (
@@ -131,7 +131,7 @@ aboutPage =
               [text "(as part of a bachelor's project in 2013/2014)"]
             ,hr []
             ,h4 [] [glyphicon "user",text " Maintained by"]
-            ,a [href "http://www.informatik.uni-kiel.de/~mh/",targetBlank]
+            ,a [href "https://www.michaelhanus.de/",targetBlank]
                [text "Michael Hanus"]
             ,hr []
             ,h4 [] [glyphicon "link",text " Further links"]
@@ -175,9 +175,9 @@ aboutPage =
     psTxt =
       "Research group of Programming Languages and Compiler Construction"
     curryUrl =
-      "http://www.curry-lang.org"
+      "https://www.curry-lang.org"
     spiceyUrl = 
-      "http://www.informatik.uni-kiel.de/~pakcs/spicey/"
+      "https://cpm.curry-lang.org/pkgs/spicey.html"
     codemirrorUrl =
       "http://codemirror.net/"
     bootstrapUrl =

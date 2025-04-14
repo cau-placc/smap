@@ -41,4 +41,4 @@ Prolog_SWI: Prolog_SWI.curry SimpleWebService.curry
 
 .PHONY: clean
 clean: uninstall
-	cleancurry -r
+	cleancurry

@@ -6,7 +6,7 @@
 --- the execution results.
 ---
 --- @author Lasse Kristopher Meyer, Michael Hanus
---- @version October 2022
+--- @version April 2025
 --------------------------------------------------------------------------------
 
 module System.Execution (
@@ -23,8 +23,8 @@ import System.IOExts      ( connectToCommand, readCompleteFile )
 import System.Process     ( getPID, system )
 import System.PreludeHelpers
 
-import HTML.Base     ( string2urlencoded )
 import Network.Socket
+import Network.URL        ( string2urlencoded )
 
 import Model.ExecEnv
 

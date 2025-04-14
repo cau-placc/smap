@@ -16,3 +16,9 @@ smapDB = smapDataDir </> "Smap.db"
 --- Email address of mail sender.
 smapEmail :: String
 smapEmail = "smap@curry-lang.org"
+
+-- The base url of Smap:
+smapBaseUrl :: String
+smapBaseUrl = "https://smap.curry-lang.org/smap.cgi"
+--smapBaseUrl = "http://localhost/mh/smap/smap.cgi"
+

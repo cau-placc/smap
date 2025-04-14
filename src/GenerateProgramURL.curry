@@ -5,12 +5,9 @@ module GenerateProgramURL(generateUploadURL) where
 
 import System.Process ( system )
 
-import HTML.Base      ( string2urlencoded )
+import Network.URL    ( string2urlencoded )
 
--- The base url of Smap:
-smapBaseUrl :: String
-smapBaseUrl = "https://smap.informatik.uni-kiel.de/smap.cgi"
---smapBaseUrl = "http://localhost/mh/smap/smap.cgi"
+import Config.Smap    ( smapBaseUrl )
 
 --- Generate URL for a given program.
 --- @param uploadlanguage - the programming language for uploaded program

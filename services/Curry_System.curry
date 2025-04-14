@@ -12,7 +12,7 @@ import System.IO
 import System.IOExts    ( evalCmd )
 import System.Process   ( getPID, system )
 
-import HTML.Base        ( urlencoded2string )
+import Network.URL      ( urlencoded2string )
 
 import SimpleWebService ( runServiceAsCGI )
 
@@ -109,7 +109,7 @@ executeWithCurry urlparam inputprog = do
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
       (currysys,version) = if length urlparams < 2
-                             then (PAKCS,"3.6.0")
+                             then (PAKCS,"3.8.0")
                              else (read (head urlparams), urlparams !! 1)
       allsols  = length urlparams > 2 && urlparams!!2 == "all"
       prog = if null inputprog && not (null urlparams)
