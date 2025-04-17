@@ -14,7 +14,7 @@ CURRYOPTIONS=:set -time
 
 # Target directory where the compiled cgi programs, style sheets, etc
 # should be stored:
-WEBDIR=$(HOME)/public_html/smap
+WEBDIR=$(HOME)/public_html/curry/smap
 
 # Executable of the Curry Package Manager CPM to install the web application:
 CPM := $(CURRYBIN)/cypm
