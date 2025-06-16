@@ -4,8 +4,8 @@
 TARFILE := $(CURDIR)/SMAP.tgz
 
 # Definition of the root of the Curry system used to compile the webapp:
-CURRYHOME=/opt/pakcs/pakcs
-#CURRYHOME=/opt/kics2/kics2
+#CURRYHOME=/opt/pakcs/pakcs
+CURRYHOME=/opt/kics2/kics2
 
 # Curry bin directory to be used:
 export CURRYBIN=$(CURRYHOME)/bin

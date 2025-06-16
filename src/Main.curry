@@ -1,17 +1,18 @@
 --------------------------------------------------------------------------------
---- The main module of this Spicey application.
---- @author Lasse Kristopher Meyer
---- @version October 2022
+--- The main module of the Smap web application.
+---
+--- @author Lasse Kristopher Meyer (with changes by Michael Hanus)
+--- @version June 2025
 --------------------------------------------------------------------------------
 
-module Main (
-  main
-) where
+module Main ( main )
+ where
 
 import HTML.Html5
 import System.Controllers
 import Config.ControllerMapping
 import Controller.Download
+import KeyDatabase               ( closeDBHandles )
 import System.Routes
 import System.Url
 
@@ -19,9 +20,13 @@ import System.Url
 -- Main function                                                              --
 --------------------------------------------------------------------------------
 
---- The main function! Calls the dispatcher.
+--- The main function which calls the dispatcher and closes all open database
+--- handles (to avoid zombie processes).
 main :: IO HtmlPage
-main = dispatcher
+main = do
+  page <- dispatcher >>= (return $!!) -- strictly evaluate result page
+  closeDBHandles                      -- now close all open handles
+  return page
 
 --- The dispatcher function. Gets the current URL and the associated controller
 --- reference (see `RoutesData`), maps the reference to an actual controller and

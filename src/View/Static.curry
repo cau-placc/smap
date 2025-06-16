@@ -125,7 +125,7 @@ aboutPage =
             ,h4 [] [glyphicon "user",text " Initially developed by"]
             ,span [classA "text-muted"] 
               [text "Lasse Kristopher Meyer "
-            ,a [href $ "mailto:"++mail] [glyphicon "envelope"]]
+            ,a [href $ "mailto:" ++ mail] [glyphicon "envelope"]]
             ,br []
             ,span [classA "text-muted small"] 
               [text "(as part of a bachelor's project in 2013/2014)"]
@@ -163,11 +163,11 @@ aboutPage =
     mail =
       "lkm@informatik.uni-kiel.de"
     cauUrl =
-      "http://www.uni-kiel.de/"
+      "https://www.uni-kiel.de/"
     ifiUrl =
-      "http://www.inf.uni-kiel.de/en"
+      "https://www.uni-kiel.de/en/tf/faculty/institutes/computer-science"
     psUrl =
-      "https://www.ps.informatik.uni-kiel.de/"
+      "https://www.uni-kiel.de/en/tf/research/institute-computer-science/programming-languages-and-compiler-construction"
     cauTxt =
       "Kiel University"
     ifiTxt =

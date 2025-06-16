@@ -6,30 +6,30 @@
 --- integer key as a first parameter.
 ---
 --- This module reimplements the interface of the module
---- <code>KeyDatabase</code> based on the
---- <a href="http://sqlite.org/">SQLite</a> database engine.
---- In order to use it you need to have <code>sqlite3</code> in your
---- <code>PATH</code> environment variable or adjust the value of the
---- constant <code>path'to'sqlite3</code>.
+--- `KeyDatabase` based on the
+--- [SQLite](http://sqlite.org/) database engine.
+--- In order to use it you need to have `sqlite3` in your
+--- `PATH` environment variable or adjust the value of the
+--- constant `path2sqlite3`.
 ---
---- Programs that use the <code>KeyDatabase</code> module can be adjusted
+--- Programs that use the `KeyDatabase` module can be adjusted
 --- to use this module instead by replacing the imports of
---- <code>Dynamic</code>, <code>Database</code>, and
---- <code>KeyDatabase</code> with this module and changing the declarations
---- of database predicates to use the function <code>persistentSQLite</code>
---- instead of <code>dynamic</code> or <code>persistent</code>.
---- This module redefines the types <code>Dynamic</code>,
---- <code>Query</code>, and <code>Transaction</code> and although both
+--- `Dynamic`, `Database`, and
+--- `KeyDatabase` with this module and changing the declarations
+--- of database predicates to use the function `persistentSQLite`
+--- instead of `dynamic` or `persistent`.
+--- This module redefines the types `Dynamic`,
+--- `Query`, and `Transaction` and although both
 --- implementations can be used in the same program (by importing modules
 --- qualified) they cannot be mixed.
 ---
---- Compared with the interface of <code>KeyDatabase</code>, this module
---- lacks definitions for <code>index</code>, <code>sortByIndex</code>,
---- <code>groupByIndex</code>, and <code>runTNA</code> and adds the
---- functions <code>deleteDBEntries</code> and <code>closeDBHandles</code>.
+--- Compared with the interface of `KeyDatabase`, this module
+--- lacks definitions for `index`, `sortByIndex`,
+--- `groupByIndex`, and `runTNA` and adds the
+--- functions `deleteDBEntries` and `closeDBHandles`.
 ---
 --- @author Sebastian Fischer with changes by Michael Hanus
---- @version August 2011
+--- @version June 2025
 ------------------------------------------------------------------------------
 
 module KeyDatabase (
@@ -53,8 +53,9 @@ module KeyDatabase (
 
   ) where
 
-import Control.Monad  ( when )
-import Data.List      ( intersperse, insertBy )
+import Control.Monad  ( unless, when )
+import Data.Function  ( on )
+import Data.List      ( init, intersperse, insertBy )
 import Data.Maybe
 import System.IO      ( Handle, hPutStrLn, hGetLine, hFlush, hClose, stderr )
 
@@ -65,8 +66,8 @@ import System.Process ( system )
 infixl 1 |>>, |>>=
 
 -- adjust this if 'sqlite3' is not in the PATH
-path'to'sqlite3 :: String
-path'to'sqlite3 = "sqlite3"
+path2sqlite3 :: String
+path2sqlite3 = "sqlite3"
 
 -- Query and Transaction types
 
@@ -132,7 +133,7 @@ catchTrans action =
 
 --- Executes a possibly composed transaction on the current state
 --- of dynamic predicates as a single transaction.
---- Similar to <code>runT</code> but a run-time error is raised
+--- Similar to `runT` but a run-time error is raised
 --- if the execution of the transaction fails.
 runJustT :: Transaction a -> IO a
 runJustT t =
@@ -246,8 +247,8 @@ tableName = fst . snd . dbInfo
 colNames :: KeyPred _ -> [ColName]
 colNames = snd . snd . dbInfo
 
---- This function is used instead of <code>dynamic</code> or
---- <code>persistent</code> to declare predicates whose facts are stored
+--- This function is used instead of `dynamic` or
+--- `persistent` to declare predicates whose facts are stored
 --- in an SQLite database.
 ---
 --- If the provided database or the table do not exist they are created
@@ -256,8 +257,8 @@ colNames = snd . snd . dbInfo
 --- Multiple column names can be provided if the second argument of
 --- the predicate is a tuple with a matching arity. Other record types
 --- are not supported. If no column names are provided a table with a
---- single column called <code>info</code> is created. Columns of name
---- <code>_rowid_</code> are not supported and lead to a run-time
+--- single column called `info` is created. Columns of name
+--- `_rowid_` are not supported and lead to a run-time
 --- error.
 ---
 --- @param dbFile - the name of the associated database file
@@ -307,7 +308,7 @@ readKeyInfo row =
   (keyStr,_:infoStr) = break (','==) row
 
 --- Queries the information stored under the given key. Yields
---- <code>Nothing</code> if the given key is not present.
+--- `Nothing` if the given key is not present.
 getDBInfo :: (Read a, Show a) => KeyPred a -> Key -> Query (Maybe a)
 getDBInfo keyPred key = Query $
   do rows <- selectRows keyPred "*" $ "where _rowid_ = " ++ show key
@@ -317,7 +318,7 @@ getDBInfo keyPred key = Query $
   readHeadIfExists (x:_) = return $!! Just (readInfo x)
 
 --- Queries the information stored under the given keys. Yields
---- <code>Nothing</code> if a given key is not present.
+--- `Nothing` if a given key is not present.
 getDBInfos :: (Read a, Show a) => KeyPred a -> [Key] -> Query (Maybe [a])
 getDBInfos keyPred keys = Query $
   do rows <- selectRows keyPred "_rowid_,*" $
@@ -346,7 +347,7 @@ deleteDBEntries keyPred keys =
     "where _rowid_ in (" ++ commaSep (map show keys) ++ ")"
 
 --- Updates the information stored under the given key. The
---- transaction is aborted with a <code>KeyNotExistsError</code> if
+--- transaction is aborted with a `KeyNotExistsError` if
 --- the given key is not present in the database.
 updateDBEntry :: Show a => KeyPred a -> Key -> a -> Transaction ()
 updateDBEntry keyPred key info =
@@ -521,22 +522,15 @@ ensureDBHandle db =
      unless (db `elem` map fst dbHandles) $ addNewDBHandle dbHandles
  where
   addNewDBHandle dbHandles = do
-    exsqlite3 <- system $ "which " ++ path'to'sqlite3 ++ " > /dev/null"
+    exsqlite3 <- system $ "which " ++ path2sqlite3 ++ " > /dev/null"
     when (exsqlite3>0) $
       error "Database interface `sqlite3' not found. Please install package `sqlite3'!"
-    h <- connectToCommand $ path'to'sqlite3 ++ " " ++ db
+    h <- connectToCommand $ path2sqlite3 ++ " " ++ db
     hPutAndFlush h ".separator ','"
     writeGlobalT openDBHandles $ -- sort against deadlock
       insertBy ((<=) `on` fst) (db,h) dbHandles
     isTrans <- readGlobalT currentlyInTransaction
     unless (not isTrans) $ hPutStrLn h "begin immediate;"
-
-unless :: Bool -> IO () -> IO ()
-unless False action = action
-unless True  _      = return ()
-
-on :: (b -> b -> c) -> (a -> b) -> a -> a -> c
-on f g x y = f (g x) (g y)
 
 ensureDBTable :: DBFile -> TableName -> [ColName] -> IO ()
 ensureDBTable db table cols =
@@ -576,9 +570,6 @@ showTupleArgs = splitTLC . removeOuterParens . show
 
 removeOuterParens :: String -> String
 removeOuterParens ('(':cs) = init cs
-
-init :: [a] -> [a]
-init = reverse . tail . reverse
 
 -- split at top-level commas
 splitTLC :: String -> [String]
