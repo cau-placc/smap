@@ -6,13 +6,13 @@
 import Control.Monad    ( when )
 import Data.Char        ( toLower, toUpper )
 import Data.List
-import System.Directory
-import System.FilePath
 import System.IO
-import System.IOExts    ( evalCmd )
-import System.Process   ( getPID, system )
 
 import Network.URL      ( urlencoded2string )
+import System.Directory
+import System.FilePath
+import System.IOExts    ( evalCmd )
+import System.Process   ( getPID, system )
 
 import SimpleWebService ( runServiceAsCGI )
 
@@ -65,8 +65,8 @@ curryFrontend cs version =
 
 -- A CPM bin directory appropriate for the Curry system and version
 cpmBin :: CurrySystem -> String -> String
-cpmBin PAKCS _ = "/net/medoc/home/pakcs/.cpm/bin_pakcs"
-cpmBin KiCS2 _ = "/net/medoc/home/kics2/.cpm/bin_kics2"
+cpmBin PAKCS _ = "/opt/pakcs/.cpm/bin"
+cpmBin KiCS2 _ = "/opt/kics2/.cpm/bin"
 
 --- Timeout command.
 timeout :: String
@@ -109,7 +109,7 @@ executeWithCurry urlparam inputprog = do
       filename = modName <.> "curry"
       urlparams = split (\c -> c =='&' || c=='?') urlparam
       (currysys,version) = if length urlparams < 2
-                             then (PAKCS,"3.8.0")
+                             then (PAKCS,"3.9.0")
                              else (read (head urlparams), urlparams !! 1)
       allsols  = length urlparams > 2 && urlparams!!2 == "all"
       prog = if null inputprog && not (null urlparams)

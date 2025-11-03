@@ -530,7 +530,7 @@ ensureDBHandle db =
     writeGlobalT openDBHandles $ -- sort against deadlock
       insertBy ((<=) `on` fst) (db,h) dbHandles
     isTrans <- readGlobalT currentlyInTransaction
-    unless (not isTrans) $ hPutStrLn h "begin immediate;"
+    when isTrans $ hPutStrLn h "begin immediate;"
 
 ensureDBTable :: DBFile -> TableName -> [ColName] -> IO ()
 ensureDBTable db table cols =
